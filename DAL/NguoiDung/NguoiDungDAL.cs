@@ -65,12 +65,14 @@ namespace DAL.NguoiDung
         // Đăng ký
         public int DangKy(string tenDangNhap, string matKhauMaHoa, string email)
         {
-            string query = @"INSERT INTO NguoiDung (TenDangNhap, MatKhauMaHoa, Email) 
-                            VALUES (@TenDangNhap, @MatKhauMaHoa, @Email)";
+            string query = @"INSERT INTO NguoiDung (TenDangNhap, MatKhauMaHoa, Email, MaVaiTro, MaCapDo) 
+                            VALUES (@TenDangNhap, @MatKhauMaHoa, @Email, @MaVaiTro, @MaCapDo)";
             var parameters = new[] {
                 new SqlParameter("@TenDangNhap", tenDangNhap),
                 new SqlParameter("@MatKhauMaHoa", matKhauMaHoa),
-                new SqlParameter("@Email", email)
+                new SqlParameter("@Email", email),
+                new SqlParameter("@MaVaiTro", 2),
+                new SqlParameter("@MaCapDo", 1)
             };
             return DatabaseHelper.ExecuteNonQuery(query, _dbType, parameters);
         }
