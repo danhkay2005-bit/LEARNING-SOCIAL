@@ -9,6 +9,7 @@ namespace DAL.NguoiDung
     public class TuyChinhProfileDAL
     {
         private readonly DatabaseType _dbType = DatabaseType.NguoiDung;
+        private readonly DatabaseHelper _dbHelper = new();
         // ============================================================
         // TẠO MẶC ĐỊNH
         // ============================================================
@@ -20,7 +21,7 @@ namespace DAL.NguoiDung
             var parameters = new[] {
                 new SqlParameter("@MaNguoiDung", maNguoiDung)
             };
-            return DatabaseHelper.ExecuteNonQuery(query, _dbType, parameters);
+            return _dbHelper.ExecuteNonQuery(query, _dbType, parameters);
         }
 
         // ============================================================
@@ -33,7 +34,7 @@ namespace DAL.NguoiDung
             var parameters = new[] {
                 new SqlParameter("@MaNguoiDung", maNguoiDung)
             };
-            return DatabaseHelper.ExecuteQuery(query, _dbType, parameters);
+            return _dbHelper.ExecuteQuery(query, _dbType, parameters);
         }
 
         // ============================================================
@@ -50,7 +51,7 @@ namespace DAL.NguoiDung
                 new SqlParameter("@MaNguoiDung", maNguoiDung),
                 new SqlParameter("@MaAvatar", (object?)maAvatar ?? DBNull.Value)
             };
-            return DatabaseHelper.ExecuteNonQuery(query, _dbType, parameters);
+            return _dbHelper.ExecuteNonQuery(query, _dbType, parameters);
         }
 
         // ============================================================
@@ -67,7 +68,7 @@ namespace DAL.NguoiDung
                 new SqlParameter("@MaNguoiDung", maNguoiDung),
                 new SqlParameter("@MaKhung", (object?)maKhung ?? DBNull.Value)
             };
-            return DatabaseHelper.ExecuteNonQuery(query, _dbType, parameters);
+            return _dbHelper.ExecuteNonQuery(query, _dbType, parameters);
         }
 
         // ============================================================
@@ -84,7 +85,7 @@ namespace DAL.NguoiDung
                 new SqlParameter("@MaNguoiDung", maNguoiDung),
                 new SqlParameter("@MaHinhNen", (object?)maHinhNen ?? DBNull.Value)
             };
-            return DatabaseHelper.ExecuteNonQuery(query, _dbType, parameters);
+            return _dbHelper.ExecuteNonQuery(query, _dbType, parameters);
         }
 
         // ============================================================
@@ -101,7 +102,7 @@ namespace DAL.NguoiDung
                 new SqlParameter("@MaNguoiDung", maNguoiDung),
                 new SqlParameter("@MaHieuUng", (object?)maHieuUng ?? DBNull.Value)
             };
-            return DatabaseHelper.ExecuteNonQuery(query, _dbType, parameters);
+            return _dbHelper.ExecuteNonQuery(query, _dbType, parameters);
         }
 
         // ============================================================
@@ -118,7 +119,7 @@ namespace DAL.NguoiDung
                 new SqlParameter("@MaNguoiDung", maNguoiDung),
                 new SqlParameter("@MaTheme", (object?)maTheme ?? DBNull.Value)
             };
-            return DatabaseHelper.ExecuteNonQuery(query, _dbType, parameters);
+            return _dbHelper.ExecuteNonQuery(query, _dbType, parameters);
         }
 
         // ============================================================
@@ -135,7 +136,7 @@ namespace DAL.NguoiDung
                 new SqlParameter("@MaNguoiDung", maNguoiDung),
                 new SqlParameter("@MaNhacNen", (object?)maNhacNen ?? DBNull.Value)
             };
-            return DatabaseHelper.ExecuteNonQuery(query, _dbType, parameters);
+            return _dbHelper.ExecuteNonQuery(query, _dbType, parameters);
         }
 
         // ============================================================
@@ -152,7 +153,7 @@ namespace DAL.NguoiDung
                 new SqlParameter("@MaNguoiDung", maNguoiDung),
                 new SqlParameter("@MaBadge", (object?)maBadge ?? DBNull.Value)
             };
-            return DatabaseHelper.ExecuteNonQuery(query, _dbType, parameters);
+            return _dbHelper.ExecuteNonQuery(query, _dbType, parameters);
         }
 
         // ============================================================
@@ -169,7 +170,7 @@ namespace DAL.NguoiDung
                 new SqlParameter("@MaNguoiDung", maNguoiDung),
                 new SqlParameter("@MaHuyHieu", (object?)maHuyHieu ?? DBNull.Value)
             };
-            return DatabaseHelper.ExecuteNonQuery(query, _dbType, parameters);
+            return _dbHelper.ExecuteNonQuery(query, _dbType, parameters);
         }
 
         // ============================================================
@@ -186,7 +187,7 @@ namespace DAL.NguoiDung
                 new SqlParameter("@MaNguoiDung", maNguoiDung),
                 new SqlParameter("@CauChamNgon", (object)cauChamNgon ?? DBNull.Value)
             };
-            return DatabaseHelper.ExecuteNonQuery(query, _dbType, parameters);
+            return _dbHelper.ExecuteNonQuery(query, _dbType, parameters);
         }
     }
 }

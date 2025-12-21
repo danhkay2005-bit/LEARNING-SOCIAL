@@ -9,6 +9,7 @@ namespace DAL.NguoiDung
     public class ThanhTuuDatDuocDAL
     {
         private readonly DatabaseType _dbType = DatabaseType.NguoiDung;
+        private readonly DatabaseHelper _dbHelper = new();
         // Lấy thành tựu đã đạt của người dùng
         public DataTable LayTheoNguoiDung(Guid maNguoiDung)
         {
@@ -18,7 +19,7 @@ namespace DAL.NguoiDung
                             WHERE td.MaNguoiDung = @MaNguoiDung 
                             ORDER BY td.NgayDat DESC";
             var parameters = new[] { new SqlParameter("@MaNguoiDung", maNguoiDung) };
-            return DatabaseHelper.ExecuteQuery(query, _dbType, parameters);
+            return _dbHelper.ExecuteQuery(query, _dbType, parameters);
         }
 
         // Kiểm tra đã đạt thành tựu
@@ -29,7 +30,7 @@ namespace DAL.NguoiDung
                 new SqlParameter("@MaNguoiDung", maNguoiDung),
                 new SqlParameter("@MaThanhTuu", maThanhTuu)
             };
-            object? result = DatabaseHelper.ExecuteScalar(query, _dbType, parameters);
+            object? result = _dbHelper.ExecuteScalar(query, _dbType, parameters);
             int count = (result != null) ? Convert.ToInt32(result) : 0;
             return count > 0;
         }
@@ -42,7 +43,7 @@ namespace DAL.NguoiDung
                 new SqlParameter("@MaNguoiDung", maNguoiDung),
                 new SqlParameter("@MaThanhTuu", maThanhTuu)
             };
-            return DatabaseHelper.ExecuteNonQuery(query, _dbType, parameters);
+            return _dbHelper.ExecuteNonQuery(query, _dbType, parameters);
         }
 
         // Đánh dấu đã xem
@@ -53,7 +54,7 @@ namespace DAL.NguoiDung
                 new SqlParameter("@MaNguoiDung", maNguoiDung),
                 new SqlParameter("@MaThanhTuu", maThanhTuu)
             };
-            return DatabaseHelper.ExecuteNonQuery(query, _dbType, parameters);
+            return _dbHelper.ExecuteNonQuery(query, _dbType, parameters);
         }
 
         // Đếm số thành tựu đã đạt
@@ -61,7 +62,7 @@ namespace DAL.NguoiDung
         {
             string query = "SELECT COUNT(*) FROM ThanhTuuDatDuoc WHERE MaNguoiDung = @MaNguoiDung";
             var parameters = new[] { new SqlParameter("@MaNguoiDung", maNguoiDung) };
-            object? result = DatabaseHelper.ExecuteScalar(query, _dbType, parameters);
+            object? result = _dbHelper.ExecuteScalar(query, _dbType, parameters);
             return (result != null) ? Convert.ToInt32(result) : 0;
         }
     }

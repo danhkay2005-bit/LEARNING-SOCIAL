@@ -8,23 +8,25 @@ namespace DAL.NguoiDung
 {
     public class VaiTroDAL
     {
+        private readonly DatabaseType _dbType = DatabaseType.NguoiDung;
+        private readonly DatabaseHelper _dbHelper = new();   
         // Lấy tất cả
-        public static DataTable LayTatCa()
+        public DataTable LayTatCa()
         {
             string query = "SELECT * FROM VaiTro";
-            return DatabaseHelper.ExecuteQuery(query, DatabaseType.NguoiDung);
+            return _dbHelper.ExecuteQuery(query, _dbType);
         }
 
         // Lấy theo ID
-        public static DataTable LayTheoMa(int maVaiTro)
+        public DataTable LayTheoMa(int maVaiTro)
         {
             string query = "SELECT * FROM VaiTro WHERE MaVaiTro = @MaVaiTro";
             var parameters = new[] { new SqlParameter("@MaVaiTro", maVaiTro) };
-            return DatabaseHelper.ExecuteQuery(query, DatabaseType.NguoiDung, parameters);
+            return _dbHelper.ExecuteQuery(query, _dbType, parameters);
         }
 
         // Thêm
-        public static int Them(string tenVaiTro, string moTa)
+        public int Them(string tenVaiTro, string moTa)
         {
             string query = "INSERT INTO VaiTro (TenVaiTro, MoTa) VALUES (@TenVaiTro, @MoTa)";
             var parameters = new[]
@@ -32,11 +34,11 @@ namespace DAL.NguoiDung
                 new SqlParameter("@TenVaiTro", tenVaiTro),
                 new SqlParameter("@MoTa", (object)moTa ??  DBNull.Value)
             };
-            return DatabaseHelper.ExecuteNonQuery(query, DatabaseType.NguoiDung, parameters);
+            return _dbHelper.ExecuteNonQuery(query, _dbType, parameters);
         }
 
         // Sửa
-        public static int Sua(int maVaiTro, string tenVaiTro, string moTa)
+        public int Sua(int maVaiTro, string tenVaiTro, string moTa)
         {
             string query = "UPDATE VaiTro SET TenVaiTro = @TenVaiTro, MoTa = @MoTa WHERE MaVaiTro = @MaVaiTro";
             var parameters = new[]
@@ -45,15 +47,15 @@ namespace DAL.NguoiDung
                 new SqlParameter("@TenVaiTro", tenVaiTro),
                 new SqlParameter("@MoTa", (object)moTa ?? DBNull.Value)
             };
-            return DatabaseHelper.ExecuteNonQuery(query, DatabaseType.NguoiDung, parameters);
+            return _dbHelper.ExecuteNonQuery(query, _dbType, parameters);
         }
 
         // Xóa
-        public static int Xoa(int maVaiTro)
+        public int Xoa(int maVaiTro)
         {
             string query = "DELETE FROM VaiTro WHERE MaVaiTro = @MaVaiTro";
             var parameters = new[] { new SqlParameter("@MaVaiTro", maVaiTro) };
-            return DatabaseHelper.ExecuteNonQuery(query, DatabaseType.NguoiDung, parameters);
+            return _dbHelper.ExecuteNonQuery(query, _dbType, parameters);
         }
     }
 }

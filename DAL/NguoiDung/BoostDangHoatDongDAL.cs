@@ -1,4 +1,5 @@
 ﻿using Common;
+// Remove: using static Common.DatabaseHelper;
 using Microsoft.Data.SqlClient;
 using System;
 using System.Data;
@@ -9,6 +10,7 @@ namespace DAL.NguoiDung
     public class BoostDangHoatDongDAL
     {
         private readonly DatabaseType _dbType = DatabaseType.NguoiDung;
+        private readonly DatabaseHelper _dbHelper = new();
         // ============================================================
         // LẤY DỮ LIỆU
         // ============================================================
@@ -18,7 +20,7 @@ namespace DAL.NguoiDung
         {
             string query = "SELECT * FROM BoostDangHoatDong WHERE MaNguoiDung = @MaNguoiDung";
             var parameters = new[] { new SqlParameter("@MaNguoiDung", maNguoiDung) };
-            return DatabaseHelper.ExecuteQuery(query, _dbType, parameters);
+            return _dbHelper.ExecuteQuery(query, _dbType, parameters);
         }
 
         // Lấy boost đang hoạt động của người dùng
@@ -29,7 +31,7 @@ namespace DAL.NguoiDung
                             AND ConHieuLuc = 1 
                             AND ThoiGianKetThuc > GETDATE()";
             var parameters = new[] { new SqlParameter("@MaNguoiDung", maNguoiDung) };
-            return DatabaseHelper.ExecuteQuery(query, _dbType, parameters);
+            return _dbHelper.ExecuteQuery(query, _dbType, parameters);
         }
 
         // Lấy boost theo loại (XP hoặc Vang)
@@ -44,7 +46,7 @@ namespace DAL.NguoiDung
                 new SqlParameter("@MaNguoiDung", maNguoiDung),
                 new SqlParameter("@LoaiBoost", loaiBoost)
             };
-            return DatabaseHelper.ExecuteQuery(query, _dbType, parameters);
+            return _dbHelper.ExecuteQuery(query, _dbType, parameters);
         }
 
         // Lấy theo ID
@@ -52,7 +54,7 @@ namespace DAL.NguoiDung
         {
             string query = "SELECT * FROM BoostDangHoatDong WHERE MaBoost = @MaBoost";
             var parameters = new[] { new SqlParameter("@MaBoost", maBoost) };
-            return DatabaseHelper.ExecuteQuery(query, _dbType, parameters);
+            return _dbHelper.ExecuteQuery(query, _dbType, parameters);
         }
 
         // ============================================================
@@ -71,7 +73,7 @@ namespace DAL.NguoiDung
                 new SqlParameter("@MaNguoiDung", maNguoiDung),
                 new SqlParameter("@LoaiBoost", loaiBoost)
             };
-            object? result = DatabaseHelper.ExecuteScalar(query, _dbType, parameters);
+            object? result = _dbHelper.ExecuteScalar(query, _dbType, parameters);
             int count = result != DBNull.Value ? Convert.ToInt32(result) : 0;
             return count > 0;
         }
@@ -88,7 +90,7 @@ namespace DAL.NguoiDung
                 new SqlParameter("@MaNguoiDung", maNguoiDung),
                 new SqlParameter("@LoaiBoost", loaiBoost)
             };
-            object? result = DatabaseHelper.ExecuteScalar(query, _dbType, parameters);
+            object? result = _dbHelper.ExecuteScalar(query, _dbType, parameters);
             return result != DBNull.Value ? Convert.ToDouble(result) : 1.0;
         }
 
@@ -110,7 +112,7 @@ namespace DAL.NguoiDung
                 new SqlParameter("@HeSoNhan", heSoNhan),
                 new SqlParameter("@ThoiHanPhut", thoiHanPhut)
             };
-            return DatabaseHelper.ExecuteNonQuery(query, _dbType, parameters);
+            return _dbHelper.ExecuteNonQuery(query, _dbType, parameters);
         }
 
         // Tắt boost
@@ -118,7 +120,7 @@ namespace DAL.NguoiDung
         {
             string query = "UPDATE BoostDangHoatDong SET ConHieuLuc = 0 WHERE MaBoost = @MaBoost";
             var parameters = new[] { new SqlParameter("@MaBoost", maBoost) };
-            return DatabaseHelper.ExecuteNonQuery(query, _dbType, parameters);
+            return _dbHelper.ExecuteNonQuery(query, _dbType, parameters);
         }
 
         // Tắt tất cả boost của người dùng
@@ -126,7 +128,7 @@ namespace DAL.NguoiDung
         {
             string query = "UPDATE BoostDangHoatDong SET ConHieuLuc = 0 WHERE MaNguoiDung = @MaNguoiDung";
             var parameters = new[] { new SqlParameter("@MaNguoiDung", maNguoiDung) };
-            return DatabaseHelper.ExecuteNonQuery(query, _dbType, parameters);
+            return _dbHelper.ExecuteNonQuery(query, _dbType, parameters);
         }
 
         // Cập nhật boost hết hạn
@@ -135,7 +137,7 @@ namespace DAL.NguoiDung
             string query = @"UPDATE BoostDangHoatDong 
                             SET ConHieuLuc = 0 
                             WHERE ConHieuLuc = 1 AND ThoiGianKetThuc <= GETDATE()";
-            return DatabaseHelper.ExecuteNonQuery(query, _dbType);
+            return _dbHelper.ExecuteNonQuery(query, _dbType);
         }
 
         // Xóa boost
@@ -143,7 +145,7 @@ namespace DAL.NguoiDung
         {
             string query = "DELETE FROM BoostDangHoatDong WHERE MaBoost = @MaBoost";
             var parameters = new[] { new SqlParameter("@MaBoost", maBoost) };
-            return DatabaseHelper.ExecuteNonQuery(query, _dbType, parameters);
+            return _dbHelper.ExecuteNonQuery(query, _dbType, parameters);
         }
 
         // ============================================================
@@ -158,7 +160,7 @@ namespace DAL.NguoiDung
                             AND ConHieuLuc = 1 
                             AND ThoiGianKetThuc > GETDATE()";
             var parameters = new[] { new SqlParameter("@MaNguoiDung", maNguoiDung) };
-            object? result = DatabaseHelper.ExecuteScalar(query, _dbType, parameters);
+            object? result = _dbHelper.ExecuteScalar(query, _dbType, parameters);
             return result != DBNull.Value ? Convert.ToInt32(result) : 0;
         }
 
@@ -169,7 +171,7 @@ namespace DAL.NguoiDung
                             FROM BoostDangHoatDong 
                             WHERE MaBoost = @MaBoost AND ConHieuLuc = 1";
             var parameters = new[] { new SqlParameter("@MaBoost", maBoost) };
-            object? result = DatabaseHelper.ExecuteScalar(query, _dbType, parameters);
+            object? result = _dbHelper.ExecuteScalar(query, _dbType, parameters);
             return result != DBNull.Value ? Convert.ToInt32(result) : 0;
         }
     }

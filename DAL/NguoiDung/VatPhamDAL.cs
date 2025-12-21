@@ -8,35 +8,37 @@ namespace DAL.NguoiDung
 {
     public class VatPhamDAL
     {
+        private readonly DatabaseType _dbType = DatabaseType.NguoiDung;
+        private readonly DatabaseHelper _dbHelper = new();
         // Lấy tất cả
-        public static DataTable LayTatCa()
+        public DataTable LayTatCa()
         {
             string query = "SELECT * FROM VatPham WHERE ConHang = 1";
-            return DatabaseHelper.ExecuteQuery(query, DatabaseType.NguoiDung);
+            return _dbHelper.ExecuteQuery(query, _dbType);
         }
 
         // Lấy theo ID
-        public static DataTable LayTheoMa(int maVatPham)
+        public DataTable LayTheoMa(int maVatPham)
         {
             string query = "SELECT * FROM VatPham WHERE MaVatPham = @MaVatPham";
             var parameters = new[] { new SqlParameter("@MaVatPham", maVatPham) };
-            return DatabaseHelper.ExecuteQuery(query, DatabaseType.NguoiDung, parameters);
+            return _dbHelper.ExecuteQuery(query, _dbType, parameters);
         }
 
         // Lấy theo danh mục
-        public static DataTable LayTheoDanhMuc(int maDanhMuc)
+        public DataTable LayTheoDanhMuc(int maDanhMuc)
         {
             string query = "SELECT * FROM VatPham WHERE MaDanhMuc = @MaDanhMuc AND ConHang = 1";
             var parameters = new[] { new SqlParameter("@MaDanhMuc", maDanhMuc) };
-            return DatabaseHelper.ExecuteQuery(query, DatabaseType.NguoiDung, parameters);
+            return _dbHelper.ExecuteQuery(query, _dbType, parameters);
         }
 
         // Tăng số lượng bán ra
-        public static int TangSoLuongBan(int maVatPham)
+        public int TangSoLuongBan(int maVatPham)
         {
             string query = "UPDATE VatPham SET SoLuongBanRa = SoLuongBanRa + 1 WHERE MaVatPham = @MaVatPham";
             var parameters = new[] { new SqlParameter("@MaVatPham", maVatPham) };
-            return DatabaseHelper.ExecuteNonQuery(query, DatabaseType.NguoiDung, parameters);
+            return _dbHelper.ExecuteNonQuery(query, _dbType, parameters);
         }
     }
 }

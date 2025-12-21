@@ -9,11 +9,12 @@ namespace DAL.NguoiDung
     public class CapDoDAL
     {
         private readonly DatabaseType _dbType = DatabaseType.NguoiDung;
+        private readonly DatabaseHelper _dbHelper = new();   
         // Lấy tất cả
         public DataTable LayTatCa()
         {
             string query = "SELECT * FROM CapDo ORDER BY MucXPToiThieu";
-            return DatabaseHelper.ExecuteQuery(query, _dbType);
+            return _dbHelper.ExecuteQuery(query, _dbType);
         }
 
         // Lấy theo ID
@@ -21,7 +22,7 @@ namespace DAL.NguoiDung
         {
             string query = "SELECT * FROM CapDo WHERE MaCapDo = @MaCapDo";
             var parameters = new[] { new SqlParameter("@MaCapDo", maCapDo) };
-            return DatabaseHelper.ExecuteQuery(query, _dbType, parameters);
+            return _dbHelper.ExecuteQuery(query, _dbType, parameters);
         }
 
         // Lấy cấp độ theo XP
@@ -29,7 +30,7 @@ namespace DAL.NguoiDung
         {
             string query = "SELECT TOP 1 * FROM CapDo WHERE MucXPToiThieu <= @XP ORDER BY MucXPToiThieu DESC";
             var parameters = new[] { new SqlParameter("@XP", xp) };
-            return DatabaseHelper.ExecuteQuery(query, _dbType, parameters);
+            return _dbHelper.ExecuteQuery(query, _dbType, parameters);
         }
 
         // Thêm
@@ -45,7 +46,7 @@ namespace DAL.NguoiDung
                 new SqlParameter("@MauSacKhung", (object)mauSacKhung ?? DBNull. Value),
                 new SqlParameter("@MoKhoaTinhNang", (object)moKhoaTinhNang ??  DBNull.Value)
             };
-            return DatabaseHelper.ExecuteNonQuery(query, _dbType, parameters);
+            return _dbHelper.ExecuteNonQuery(query, _dbType, parameters);
         }
     }
 }

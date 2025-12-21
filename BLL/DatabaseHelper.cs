@@ -7,11 +7,11 @@ namespace Common
 {
     public class DatabaseHelper
     {
-        private readonly string connNguoiDung = ConfigurationManager.ConnectionStrings["NguoiDung"].ConnectionString;
-        private readonly string connHocTap = ConfigurationManager.ConnectionStrings["HocTap"].ConnectionString;
-        private readonly string connMXH = ConfigurationManager.ConnectionStrings["MXH"].ConnectionString;
+        private static readonly string connNguoiDung = ConfigurationManager.ConnectionStrings["NguoiDung"].ConnectionString;
+        private static readonly string connHocTap = ConfigurationManager.ConnectionStrings["HocTap"].ConnectionString;
+        private static readonly string connMXH = ConfigurationManager.ConnectionStrings["MXH"].ConnectionString;
 
-        public string GetConnectionString(DatabaseType dpType)
+        public static string GetConnectionString(DatabaseType dpType)
         {
             return dpType switch
             {
@@ -23,14 +23,14 @@ namespace Common
         }
         //Tạo Connection
 
-        public SqlConnection GetConnection(DatabaseType dpType)
+        public static SqlConnection GetConnection(DatabaseType dpType)
         {
             string connString = GetConnectionString(dpType);
             return new SqlConnection(connString);
         }
 
         //SELECT - Trả về DataTable
-        public DataTable ExecuteQuery(string query, DatabaseType dpType, SqlParameter[]? parameters = null)
+        public static DataTable ExecuteQuery(string query, DatabaseType dpType, SqlParameter[]? parameters = null)
         {
             var dt = new DataTable();
             using SqlConnection conn = GetConnection(dpType);
@@ -45,7 +45,7 @@ namespace Common
         }
 
         //INSERT, UPDATE, DELETE - Trả về số dòng bị ảnh hưởng
-        public int ExecuteNonQuery(string query, DatabaseType dpType, SqlParameter[]? parameters = null)
+        public static int ExecuteNonQuery(string query, DatabaseType dpType, SqlParameter[]? parameters = null)
         {
             using SqlConnection conn = GetConnection(dpType);
             using var cmd = new SqlCommand(query, conn); 
@@ -56,7 +56,7 @@ namespace Common
         }
 
         //COUNT, MAX - Trả về giá trị đơn
-        public object? ExecuteScalar(string query, DatabaseType dpType, SqlParameter[]? parameters = null)
+        public static object? ExecuteScalar(string query, DatabaseType dpType, SqlParameter[]? parameters = null)
         {
             using SqlConnection conn = GetConnection(dpType);
             using var cmd = new SqlCommand(query, conn);

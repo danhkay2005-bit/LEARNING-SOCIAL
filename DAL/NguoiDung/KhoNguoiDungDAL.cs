@@ -9,12 +9,13 @@ namespace DAL.NguoiDung
     public class KhoNguoiDungDAL
     {
         private readonly DatabaseType _dbType = DatabaseType.NguoiDung;
+        private readonly DatabaseHelper _dbHelper = new();
         // Lấy kho của người dùng
         public DataTable LayKhoNguoiDung(Guid maNguoiDung)
         {
             string query = "SELECT * FROM KhoNguoiDung WHERE MaNguoiDung = @MaNguoiDung";
             var parameters = new[] { new SqlParameter("@MaNguoiDung", maNguoiDung) };
-            return DatabaseHelper.ExecuteQuery(query, _dbType, parameters);
+            return _dbHelper.ExecuteQuery(query, _dbType, parameters);
         }
 
         // Kiểm tra đã sở hữu vật phẩm
@@ -25,7 +26,7 @@ namespace DAL.NguoiDung
                 new SqlParameter("@MaNguoiDung", maNguoiDung),
                 new SqlParameter("@MaVatPham", maVatPham)
             };
-            object? result = DatabaseHelper.ExecuteScalar(query, _dbType, parameters);
+            object? result = _dbHelper.ExecuteScalar(query, _dbType, parameters);
             int count = (result != null) ? Convert.ToInt32(result) : 0;
             return count > 0;
         }
@@ -41,7 +42,7 @@ namespace DAL.NguoiDung
                 new SqlParameter("@SoLuong", soLuong),
                 new SqlParameter("@ThoiGianHetHan", (object?)thoiGianHetHan ?? DBNull. Value)
             };
-            return DatabaseHelper.ExecuteNonQuery(query, _dbType, parameters);
+            return _dbHelper.ExecuteNonQuery(query, _dbType, parameters);
         }
 
         // Cập nhật số lượng
@@ -55,7 +56,7 @@ namespace DAL.NguoiDung
                 new SqlParameter("@MaVatPham", maVatPham),
                 new SqlParameter("@SoLuong", soLuongThem)
             };
-            return DatabaseHelper.ExecuteNonQuery(query, _dbType, parameters);
+            return _dbHelper.ExecuteNonQuery(query, _dbType, parameters);
         }
 
         // Trang bị vật phẩm
@@ -67,7 +68,7 @@ namespace DAL.NguoiDung
                 new SqlParameter("@MaVatPham", maVatPham),
                 new SqlParameter("@DaTrangBi", trangBi)
             };
-            return DatabaseHelper.ExecuteNonQuery(query, _dbType, parameters);
+            return _dbHelper.ExecuteNonQuery(query, _dbType, parameters);
         }
     }
 }

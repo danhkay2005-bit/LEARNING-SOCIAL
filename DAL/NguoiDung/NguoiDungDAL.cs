@@ -9,6 +9,7 @@ namespace DAL.NguoiDung
     public class NguoiDungDAL
     {
         private readonly DatabaseType _dbType = DatabaseType.NguoiDung;
+        private readonly DatabaseHelper _dbHelper = new();
         // ============================================================
         // LẤY DỮ LIỆU
         // ============================================================
@@ -17,15 +18,15 @@ namespace DAL.NguoiDung
         public DataTable LayTatCa()
         {
             string query = "SELECT * FROM NguoiDung WHERE DaXoa = 0";
-            return DatabaseHelper.ExecuteQuery(query, _dbType);
+            return _dbHelper.ExecuteQuery(query, _dbType);
         }
 
         // Lấy theo ID
         public DataTable LayTheoMa(Guid maNguoiDung)
         {
             string query = "SELECT * FROM NguoiDung WHERE MaNguoiDung = @MaNguoiDung AND DaXoa = 0";
-            var parameters = new[]{ new SqlParameter("@MaNguoiDung", maNguoiDung) };
-            return DatabaseHelper.ExecuteQuery(query, _dbType, parameters);
+            var parameters = new[] { new SqlParameter("@MaNguoiDung", maNguoiDung) };
+            return _dbHelper.ExecuteQuery(query, _dbType, parameters);
         }
 
         // Lấy theo Username
@@ -33,7 +34,7 @@ namespace DAL.NguoiDung
         {
             string query = "SELECT * FROM NguoiDung WHERE TenDangNhap = @TenDangNhap AND DaXoa = 0";
             var parameters = new[] { new SqlParameter("@TenDangNhap", tenDangNhap) };
-            return DatabaseHelper.ExecuteQuery(query, _dbType, parameters);
+            return _dbHelper.ExecuteQuery(query, _dbType, parameters);
         }
 
         // Lấy theo Email
@@ -41,7 +42,7 @@ namespace DAL.NguoiDung
         {
             string query = "SELECT * FROM NguoiDung WHERE Email = @Email AND DaXoa = 0";
             var parameters = new[] { new SqlParameter("@Email", email) };
-            return DatabaseHelper.ExecuteQuery(query, _dbType, parameters);
+            return _dbHelper.ExecuteQuery(query, _dbType, parameters);
         }
 
         // ============================================================
@@ -59,7 +60,7 @@ namespace DAL.NguoiDung
                 new SqlParameter("@TenDangNhap", tenDangNhap),
                 new SqlParameter("@MatKhauMaHoa", matKhauMaHoa)
             };
-            return DatabaseHelper.ExecuteQuery(query, _dbType, parameters);
+            return _dbHelper.ExecuteQuery(query, _dbType, parameters);
         }
 
         // Đăng ký
@@ -74,7 +75,7 @@ namespace DAL.NguoiDung
                 new SqlParameter("@MaVaiTro", 2),
                 new SqlParameter("@MaCapDo", 1)
             };
-            return DatabaseHelper.ExecuteNonQuery(query, _dbType, parameters);
+            return _dbHelper.ExecuteNonQuery(query, _dbType, parameters);
         }
 
         // Kiểm tra Username tồn tại
@@ -82,7 +83,7 @@ namespace DAL.NguoiDung
         {
             string query = "SELECT COUNT(*) FROM NguoiDung WHERE TenDangNhap = @TenDangNhap";
             var parameters = new[] { new SqlParameter("@TenDangNhap", tenDangNhap) };
-            object? result = DatabaseHelper.ExecuteScalar(query, _dbType, parameters);
+            object? result = _dbHelper.ExecuteScalar(query, _dbType, parameters);
             int count = result is int i ? i : Convert.ToInt32(result ?? 0);
             return count > 0;
         }
@@ -92,7 +93,7 @@ namespace DAL.NguoiDung
         {
             string query = "SELECT COUNT(*) FROM NguoiDung WHERE Email = @Email";
             var parameters = new[] { new SqlParameter("@Email", email) };
-            object? result = DatabaseHelper.ExecuteScalar(query, _dbType, parameters);
+            object? result = _dbHelper.ExecuteScalar(query, _dbType, parameters);
             int count = result is int i ? i : Convert.ToInt32(result ?? 0);
             return count > 0;
         }
@@ -117,7 +118,7 @@ namespace DAL.NguoiDung
                 new SqlParameter("@GioiTinh", (object?)gioiTinh ?? DBNull.Value),
                 new SqlParameter("@TieuSu", (object?)tieuSu ?? DBNull.Value)
             };
-            return DatabaseHelper.ExecuteNonQuery(query, _dbType, parameters);
+            return _dbHelper.ExecuteNonQuery(query, _dbType, parameters);
         }
 
         // Cập nhật avatar
@@ -128,7 +129,7 @@ namespace DAL.NguoiDung
                 new SqlParameter("@MaNguoiDung", maNguoiDung),
                 new SqlParameter("@HinhDaiDien", (object)hinhDaiDien ?? DBNull.Value)
             };
-            return DatabaseHelper.ExecuteNonQuery(query, _dbType, parameters);
+            return _dbHelper.ExecuteNonQuery(query, _dbType, parameters);
         }
 
         // Đổi mật khẩu
@@ -139,7 +140,7 @@ namespace DAL.NguoiDung
                 new SqlParameter("@MaNguoiDung", maNguoiDung),
                 new SqlParameter("@MatKhauMaHoa", matKhauMaHoaMoi)
             };
-            return DatabaseHelper.ExecuteNonQuery(query, _dbType, parameters);
+            return _dbHelper.ExecuteNonQuery(query, _dbType, parameters);
         }
 
         // ============================================================
@@ -154,7 +155,7 @@ namespace DAL.NguoiDung
                 new SqlParameter("@MaNguoiDung", maNguoiDung),
                 new SqlParameter("@XP", xpThem)
             };
-            return DatabaseHelper.ExecuteNonQuery(query, _dbType, parameters);
+            return _dbHelper.ExecuteNonQuery(query, _dbType, parameters);
         }
 
         // Cập nhật Vàng
@@ -165,7 +166,7 @@ namespace DAL.NguoiDung
                 new SqlParameter("@MaNguoiDung", maNguoiDung),
                 new SqlParameter("@Vang", vangThem)
             };
-            return DatabaseHelper.ExecuteNonQuery(query, _dbType, parameters);
+            return _dbHelper.ExecuteNonQuery(query, _dbType, parameters);
         }
 
         // Cập nhật Kim Cương
@@ -176,7 +177,7 @@ namespace DAL.NguoiDung
                 new SqlParameter("@MaNguoiDung", maNguoiDung),
                 new SqlParameter("@KimCuong", kimCuongThem)
             };
-            return DatabaseHelper.ExecuteNonQuery(query, _dbType, parameters);
+            return _dbHelper.ExecuteNonQuery(query, _dbType, parameters);
         }
 
         // ============================================================
@@ -195,7 +196,7 @@ namespace DAL.NguoiDung
                 new SqlParameter("@MaNguoiDung", maNguoiDung),
                 new SqlParameter("@ChuoiNgay", chuoiNgay)
             };
-            return DatabaseHelper.ExecuteNonQuery(query, _dbType, parameters);
+            return _dbHelper.ExecuteNonQuery(query, _dbType, parameters);
         }
 
         // Reset streak
@@ -203,7 +204,7 @@ namespace DAL.NguoiDung
         {
             string query = "UPDATE NguoiDung SET ChuoiNgayHocLienTiep = 0 WHERE MaNguoiDung = @MaNguoiDung";
             var parameters = new[] { new SqlParameter("@MaNguoiDung", maNguoiDung) };
-            return DatabaseHelper.ExecuteNonQuery(query, _dbType, parameters);
+            return _dbHelper.ExecuteNonQuery(query, _dbType, parameters);
         }
 
         // Cập nhật Freeze
@@ -214,7 +215,7 @@ namespace DAL.NguoiDung
                 new SqlParameter("@MaNguoiDung", maNguoiDung),
                 new SqlParameter("@SoFreeze", soFreeze)
             };
-            return DatabaseHelper.ExecuteNonQuery(query, _dbType, parameters);
+            return _dbHelper.ExecuteNonQuery(query, _dbType, parameters);
         }
 
         // ============================================================
@@ -235,7 +236,7 @@ namespace DAL.NguoiDung
                 new SqlParameter("@SoTheDung", soTheDungThem),
                 new SqlParameter("@ThoiGian", thoiGianPhutThem)
             };
-            return DatabaseHelper.ExecuteNonQuery(query, _dbType, parameters);
+            return _dbHelper.ExecuteNonQuery(query, _dbType, parameters);
         }
 
         // Cập nhật thống kê thách đấu
@@ -245,7 +246,7 @@ namespace DAL.NguoiDung
                 ? "UPDATE NguoiDung SET SoTranThachDau = SoTranThachDau + 1, SoTranThang = SoTranThang + 1 WHERE MaNguoiDung = @MaNguoiDung"
                 : "UPDATE NguoiDung SET SoTranThachDau = SoTranThachDau + 1, SoTranThua = SoTranThua + 1 WHERE MaNguoiDung = @MaNguoiDung";
             var parameters = new[] { new SqlParameter("@MaNguoiDung", maNguoiDung) };
-            return DatabaseHelper.ExecuteNonQuery(query, _dbType, parameters);
+            return _dbHelper.ExecuteNonQuery(query, _dbType, parameters);
         }
 
         // ============================================================
@@ -262,7 +263,7 @@ namespace DAL.NguoiDung
                 new SqlParameter("@MaNguoiDung", maNguoiDung),
                 new SqlParameter("@Online", online)
             };
-            return DatabaseHelper.ExecuteNonQuery(query, _dbType, parameters);
+            return _dbHelper.ExecuteNonQuery(query, _dbType, parameters);
         }
 
         // Xác thực email
@@ -270,7 +271,7 @@ namespace DAL.NguoiDung
         {
             string query = "UPDATE NguoiDung SET DaXacThucEmail = 1 WHERE MaNguoiDung = @MaNguoiDung";
             var parameters = new[] { new SqlParameter("@MaNguoiDung", maNguoiDung) };
-            return DatabaseHelper.ExecuteNonQuery(query, _dbType, parameters);
+            return _dbHelper.ExecuteNonQuery(query, _dbType, parameters);
         }
 
         // Xóa mềm
@@ -278,7 +279,7 @@ namespace DAL.NguoiDung
         {
             string query = "UPDATE NguoiDung SET DaXoa = 1 WHERE MaNguoiDung = @MaNguoiDung";
             var parameters = new[] { new SqlParameter("@MaNguoiDung", maNguoiDung) };
-            return DatabaseHelper.ExecuteNonQuery(query, _dbType, parameters);
+            return _dbHelper.ExecuteNonQuery(query, _dbType, parameters);
         }
 
         // ============================================================
@@ -289,7 +290,7 @@ namespace DAL.NguoiDung
         public int DemTongNguoiDung()
         {
             string query = "SELECT COUNT(*) FROM NguoiDung WHERE DaXoa = 0";
-            object? result = DatabaseHelper.ExecuteScalar(query, _dbType);
+            object? result = _dbHelper.ExecuteScalar(query, _dbType);
             return result is int i ? i : Convert.ToInt32(result ?? 0);
         }
 
@@ -297,14 +298,14 @@ namespace DAL.NguoiDung
         public DataTable LayTopXP(int top)
         {
             string query = $"SELECT TOP {top} * FROM NguoiDung WHERE DaXoa = 0 ORDER BY TongDiemXP DESC";
-            return DatabaseHelper.ExecuteQuery(query, _dbType);
+            return _dbHelper.ExecuteQuery(query, _dbType);
         }
 
         // Lấy top Streak
         public DataTable LayTopStreak(int top)
         {
             string query = $"SELECT TOP {top} * FROM NguoiDung WHERE DaXoa = 0 ORDER BY ChuoiNgayHocLienTiep DESC";
-            return DatabaseHelper.ExecuteQuery(query, _dbType);
+            return _dbHelper.ExecuteQuery(query, _dbType);
         }
     }
 }

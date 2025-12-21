@@ -9,11 +9,12 @@ namespace DAL.NguoiDung
     public class ThanhTuuDAL
     {
         private readonly DatabaseType _dbType = DatabaseType.NguoiDung;
+        private readonly DatabaseHelper _dbHelper = new();
         // Lấy tất cả
         public DataTable LayTatCa()
         {
             string query = "SELECT * FROM ThanhTuu";
-            return DatabaseHelper.ExecuteQuery(query, _dbType);
+            return _dbHelper.ExecuteQuery(query, _dbType);
         }
 
         // Lấy theo loại
@@ -21,7 +22,7 @@ namespace DAL.NguoiDung
         {
             string query = "SELECT * FROM ThanhTuu WHERE LoaiThanhTuu = @LoaiThanhTuu";
             var parameters = new[] { new SqlParameter("@LoaiThanhTuu", loaiThanhTuu) };
-            return DatabaseHelper.ExecuteQuery(query, _dbType, parameters);
+            return _dbHelper.ExecuteQuery(query, _dbType, parameters);
         }
 
         // Lấy thành tựu chưa đạt của người dùng
@@ -30,7 +31,7 @@ namespace DAL.NguoiDung
             string query = @"SELECT * FROM ThanhTuu 
                             WHERE MaThanhTuu NOT IN (SELECT MaThanhTuu FROM ThanhTuuDatDuoc WHERE MaNguoiDung = @MaNguoiDung)";
             var parameters = new[] { new SqlParameter("@MaNguoiDung", maNguoiDung) };
-            return DatabaseHelper.ExecuteQuery(query, _dbType, parameters);
+            return _dbHelper.ExecuteQuery(query, _dbType, parameters);
         }
     }
 }

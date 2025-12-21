@@ -9,12 +9,13 @@ namespace DAL.NguoiDung
     public class LichSuGiaoDichDAL
     {
         private readonly DatabaseType _dbType = DatabaseType.NguoiDung;
+        private readonly DatabaseHelper _dbHelper = new();
         // Lấy lịch sử của người dùng
         public DataTable LayTheoNguoiDung(Guid maNguoiDung, int soLuong)
         {
             string query = $"SELECT TOP {soLuong} * FROM LichSuGiaoDich WHERE MaNguoiDung = @MaNguoiDung ORDER BY ThoiGian DESC";
             var parameters = new[] { new SqlParameter("@MaNguoiDung", maNguoiDung) };
-            return DatabaseHelper.ExecuteQuery(query, _dbType, parameters);
+            return _dbHelper.ExecuteQuery(query, _dbType, parameters);
         }
 
         // Thêm giao dịch
@@ -34,7 +35,7 @@ namespace DAL.NguoiDung
                 new SqlParameter("@MaVatPham", (object?)maVatPham ?? DBNull.Value),
                 new SqlParameter("@MaNguoiLienQuan", (object?)maNguoiLienQuan ?? DBNull.Value)
             };
-            return DatabaseHelper.ExecuteNonQuery(query, _dbType, parameters);
+            return _dbHelper.ExecuteNonQuery(query, _dbType, parameters);
         }
     }
 }
