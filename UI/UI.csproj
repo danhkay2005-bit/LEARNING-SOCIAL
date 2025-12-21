@@ -15,6 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="frmTestConnection\" />
     <Folder Include="Share\" />
     <Folder Include="UserControls\" />
   </ItemGroup>

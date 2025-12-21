@@ -117,5 +117,10 @@ namespace UI.Forms
             base.OnFormClosing(e);
             Application.Exit();
         }
+
+        private void frmDangNhap_Load(object sender, EventArgs e)
+        {
+
+        }
     }
 }
