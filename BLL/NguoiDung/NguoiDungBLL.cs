@@ -89,7 +89,7 @@ namespace BLL.NguoiDung
                         _tuyChinhDAL.TaoMacDinh(maNguoiDung);
 
                         // 11. Ghi log hoạt động
-                        _lichSuDAL.Them(maNguoiDung, LoaiHoatDong.DangKy, "Đăng ký tài khoản thành công", string.Empty);
+                        _lichSuDAL.Them(maNguoiDung, "Đăng ký", "Đăng ký tài khoản thành công", string.Empty);
                     }
 
                     return new KetQua(true, "Đăng ký thành công!");
@@ -163,7 +163,7 @@ namespace BLL.NguoiDung
                 _nguoiDungDAL.CapNhatTrangThaiOnline(maNguoiDung, true);
 
                 // 8. Ghi log hoạt động
-                _lichSuDAL.Them(maNguoiDung, LoaiHoatDong.DangNhap, "Đăng nhập thành công", string.Empty);
+                _lichSuDAL.Them(maNguoiDung, "Đăng nhập", "Đăng nhập thành công", string.Empty);
 
                 return new KetQua(true, "Đăng nhập thành công!");
             }
@@ -197,7 +197,7 @@ namespace BLL.NguoiDung
                 _nguoiDungDAL.CapNhatTrangThaiOnline(maNguoiDung, false);
 
                 // 2. Ghi log
-                _lichSuDAL.Them(maNguoiDung, LoaiHoatDong.DangXuat, "Đăng xuất", string.Empty);
+                _lichSuDAL.Them(maNguoiDung, "Đăng xuất", "Đăng xuất", string.Empty);
 
                 // 3. Xóa session
                 SessionManager.Logout();
@@ -262,7 +262,7 @@ namespace BLL.NguoiDung
                 if (result > 0)
                 {
                     // 5. Ghi log
-                    _lichSuDAL.Them(maNguoiDung, LoaiHoatDong.DoiMatKhau, "Đổi mật khẩu thành công", string.Empty);
+                    _lichSuDAL.Them(maNguoiDung, "Đổi mật khẩu", "Đổi mật khẩu thành công", string.Empty);
                     return new KetQua(true, "Đổi mật khẩu thành công!");
                 }
 
@@ -304,7 +304,7 @@ namespace BLL.NguoiDung
                         _nguoiDungDAL.CapNhatStreakFreeze(maNguoiDung, soFreeze - 1);
 
                         // Ghi log
-                        _lichSuDAL.Them(maNguoiDung, LoaiHoatDong.ChuoiNgay, "Tự động sử dụng Streak Freeze", string.Empty);
+                        _lichSuDAL.Them(maNguoiDung, "Chuỗi ngày", "Tự động sử dụng Streak Freeze", string.Empty);
                     }
                     else
                     {
@@ -315,7 +315,7 @@ namespace BLL.NguoiDung
                         SessionManager.UpdateStreak(0);
 
                         // Ghi log
-                        _lichSuDAL.Them(maNguoiDung, LoaiHoatDong.ChuoiNgay, "Mất chuỗi ngày học", string.Empty);
+                        _lichSuDAL.Them(maNguoiDung, "Chuỗi ngày", "Mất chuỗi ngày học", string.Empty);
                     }
                 }
                 // Nếu nghỉ > 1 ngày → Reset
@@ -323,7 +323,7 @@ namespace BLL.NguoiDung
                 {
                     _nguoiDungDAL.ResetStreak(maNguoiDung);
                     SessionManager.UpdateStreak(0);
-                    _lichSuDAL.Them(maNguoiDung, LoaiHoatDong.ChuoiNgay, "Mất chuỗi ngày học", string.Empty);
+                    _lichSuDAL.Them(maNguoiDung, "Chuỗi ngày", "Mất chuỗi ngày học", string.Empty);
                 }
             }
             catch

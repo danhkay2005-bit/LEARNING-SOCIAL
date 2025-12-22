@@ -19,7 +19,7 @@ namespace DAL.NguoiDung
         }
 
         // Thêm hoạt động
-        public int Them(Guid maNguoiDung, LoaiHoatDong loaiHoatDong, string moTa, string duLieuThem)
+        public int Them(Guid maNguoiDung, string loaiHoatDong, string moTa, string duLieuThem)
         {
             string query = @"INSERT INTO LichSuHoatDong (MaNguoiDung, LoaiHoatDong, MoTa, DuLieuThem) 
                             VALUES (@MaNguoiDung, @LoaiHoatDong, @MoTa, @DuLieuThem)";
