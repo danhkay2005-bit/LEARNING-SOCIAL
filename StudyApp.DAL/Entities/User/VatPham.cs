@@ -27,11 +27,7 @@ public partial class VatPham
 
     public byte? DoHiem { get; set; }
 
-    public int? SoLuongBanRa { get; set; }
-
     public bool? ConHang { get; set; }
-
-    public int? GioiHanSoLuong { get; set; }
 
     public DateTime? ThoiGianTao { get; set; }
 
