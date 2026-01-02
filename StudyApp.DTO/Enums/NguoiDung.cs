@@ -32,5 +32,5 @@ namespace StudyApp.DTO.Enums
     }
 
     public enum LoaiTienTeGiaoDichEnum { Vang, KimCuong }   
-    public enum LoaiDieuKienNhiemVuEnum { HocThe, ThachDau, DiemDanh, MuaVatPham, TuongTac, ChiaSeBoDe, LenLevel }
+    public enum LoaiDieuKienEnum { HocThe, ThachDau, DiemDanh, MuaVatPham, TuongTac, ChiaSeBoDe, LenLevel }
 }
