@@ -39,4 +39,25 @@ namespace StudyApp.DTO.Responses.Learning
         public string? ThongBao { get; set; }
         public BinhLuanBoDeResponse? BinhLuan { get; set; }
     }
+
+
+    /// <summary>
+    /// Response người thích bình luận bộ đề
+    /// </summary>
+    public class NguoiThichBinhLuanBoDeResponse
+    {
+        public Guid MaNguoiDung { get; set; }
+        public int MaBinhLuan { get; set; }
+        public NguoiDungTomTatResponse? NguoiDung { get; set; }
+        public DateTime? ThoiGian { get; set; }
+    }
+
+    /// <summary>
+    /// Response danh sách người thích bình luận
+    /// </summary>
+    public class DanhSachNguoiThichBinhLuanResponse
+    {
+        public List<NguoiThichBinhLuanBoDeResponse> NguoiThichs { get; set; } = new();
+        public int TongSo { get; set; }
+    }
 }
