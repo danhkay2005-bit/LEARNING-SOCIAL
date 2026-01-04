@@ -18,9 +18,9 @@ public class TaoThanhTuuRequest
     public string? HinhHuy { get; set; }
 
     [Required(ErrorMessage = "Loại thành tựu là bắt buộc")]
-    public string LoaiThanhTuu { get; set; } = null!;
+    public LoaiThanhTuuEnum LoaiThanhTuu { get; set; }  // Changed to enum
 
-    public string? DieuKienLoai { get; set; }
+    public LoaiDieuKienEnum? DieuKienLoai { get; set; }  // Changed to nullable enum
 
     [Required(ErrorMessage = "Điều kiện giá trị là bắt buộc")]
     [Range(1, int.MaxValue, ErrorMessage = "Giá trị điều kiện phải lớn hơn 0")]
@@ -52,8 +52,9 @@ public class CapNhatThanhTuuRequest
 
     public string? BieuTuong { get; set; }
     public string? HinhHuy { get; set; }
-    public LoaiThanhTuuEnum LoaiThanhTuu { get; set; }
-    public LoaiDieuKienEnum DieuKienLoai { get; set; }
+
+    public LoaiThanhTuuEnum? LoaiThanhTuu { get; set; }  // Made nullable
+    public LoaiDieuKienEnum? DieuKienLoai { get; set; }  // Made nullable
 
     [Range(1, int.MaxValue, ErrorMessage = "Giá trị điều kiện phải lớn hơn 0")]
     public int? DieuKienGiaTri { get; set; }

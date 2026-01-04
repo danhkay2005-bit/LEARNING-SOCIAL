@@ -25,12 +25,6 @@ public class LichSuGiaoDichResponse
         LoaiTienTeGiaoDichEnum.KimCuong => "Kim cương",
         _ => "Không xác định"
     };
-    public string IconLoaiTien => LoaiTien switch
-    {
-        LoaiTienTeGiaoDichEnum.Vang => "🪙",
-        LoaiTienTeGiaoDichEnum.KimCuong => "💎",
-        _ => "💰"
-    };
     public int SoLuong { get; set; }
     public bool LaChi => SoLuong < 0 || SoDuSau < SoDuTruoc;
     public int SoDuTruoc { get; set; }
