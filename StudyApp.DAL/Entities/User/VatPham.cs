@@ -19,8 +19,6 @@ public partial class VatPham
 
     public string? DuongDanHinh { get; set; }
 
-    public string? DuongDanFile { get; set; }
-
     public int? ThoiHanPhut { get; set; }
 
     public double? GiaTriHieuUng { get; set; }

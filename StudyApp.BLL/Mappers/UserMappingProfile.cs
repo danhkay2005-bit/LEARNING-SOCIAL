@@ -4,6 +4,7 @@ using StudyApp.DTO.Enums;
 using StudyApp.DTO.Requests.NguoiDung;
 using StudyApp.DTO.Responses.NguoiDung;
 using static StudyApp.BLL.Mappers.MappingHelpers;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace StudyApp.BLL.Mappers;
 
@@ -238,19 +239,19 @@ public class UserMappingProfile : Profile
         // TaoThanhTuuRequest -> ThanhTuu (Admin)
         CreateMap<TaoThanhTuuRequest, ThanhTuu>()
             .ForMember(dest => dest.MaThanhTuu, opt => opt.Ignore())
-            .ForMember(dest => dest.LoaiThanhTuu, opt => opt.MapFrom(src => src.LoaiThanhTuu.ToString())) 
+            .ForMember(dest => dest.LoaiThanhTuu, opt => opt.MapFrom(src => src.LoaiThanhTuu.ToString()))
             .ForMember(dest => dest.DieuKienLoai, opt => opt.MapFrom(src => src.DieuKienLoai.HasValue ? src.DieuKienLoai.Value.ToString() : null))
             .ForMember(dest => dest.ThoiGianTao, opt => opt.MapFrom(_ => DateTime.UtcNow))
             .ForMember(dest => dest.ThanhTuuDatDuocs, opt => opt.Ignore());
 
         // CapNhatThanhTuuRequest -> ThanhTuu (Admin)
         CreateMap<CapNhatThanhTuuRequest, ThanhTuu>()
-    .ForMember(dest => dest.MaThanhTuu, opt => opt.Ignore())
-    .ForMember(dest => dest.LoaiThanhTuu, opt => opt.MapFrom(src => src.LoaiThanhTuu.HasValue ? src.LoaiThanhTuu.Value.ToString() : null))
-    .ForMember(dest => dest.DieuKienLoai, opt => opt.MapFrom(src => src.DieuKienLoai.HasValue ? src.DieuKienLoai.Value.ToString() : null))
-    .ForMember(dest => dest.ThoiGianTao, opt => opt.Ignore())
-    .ForMember(dest => dest.ThanhTuuDatDuocs, opt => opt.Ignore())
-    .ForAllMembers(opt => opt.Condition((src, dest, srcMember) => srcMember != null));
+            .ForMember(dest => dest.MaThanhTuu, opt => opt.Ignore())
+            .ForMember(dest => dest.LoaiThanhTuu, opt => opt.MapFrom(src => src.LoaiThanhTuu.HasValue ? src.LoaiThanhTuu.Value.ToString() : null))
+            .ForMember(dest => dest.DieuKienLoai, opt => opt.MapFrom(src => src.DieuKienLoai.HasValue ? src.DieuKienLoai.Value.ToString() : null))
+            .ForMember(dest => dest.ThoiGianTao, opt => opt.Ignore())
+            .ForMember(dest => dest.ThanhTuuDatDuocs, opt => opt.Ignore())
+            .ForAllMembers(opt => opt.Condition((src, dest, srcMember) => srcMember != null));
         #endregion
 
         #region ThanhTuuDatDuoc
@@ -322,7 +323,6 @@ public class UserMappingProfile : Profile
             .ForMember(dest => dest.DaTrangBi, opt => opt.MapFrom(src => src.DaTrangBi ?? false))
             .ForMember(dest => dest.TenVatPham, opt => opt.Ignore()) // Map từ Navigation
             .ForMember(dest => dest.DuongDanHinh, opt => opt.Ignore())
-            .ForMember(dest => dest.DuongDanFile, opt => opt.Ignore())
             .ForMember(dest => dest.TenDanhMuc, opt => opt.Ignore())
             .ForMember(dest => dest.DoHiem, opt => opt.Ignore());
         #endregion

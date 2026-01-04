@@ -9,8 +9,6 @@ public partial class DanhMucSanPham
 
     public string TenDanhMuc { get; set; } = null!;
 
-    public string? BieuTuong { get; set; }
-
     public string? MoTa { get; set; }
 
     public int? ThuTuHienThi { get; set; }

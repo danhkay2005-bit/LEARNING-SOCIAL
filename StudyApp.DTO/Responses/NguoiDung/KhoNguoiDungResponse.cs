@@ -9,7 +9,6 @@ public class KhoNguoiDungResponse
     public int MaVatPham { get; set; }
     public string TenVatPham { get; set; } = null!;
     public string? DuongDanHinh { get; set; }
-    public string? DuongDanFile { get; set; }
     public int? SoLuong { get; set; }
     public bool? DaTrangBi { get; set; }
     public DateTime? ThoiGianMua { get; set; }
