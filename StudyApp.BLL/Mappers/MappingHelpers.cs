@@ -28,24 +28,41 @@ public static class MappingHelpers
     #region String Helpers
     public static string? Truncate(string? value, int maxLength)
     {
-        if (string.IsNullOrEmpty(value) || value.Length <= maxLength) return value;
-        return value.Substring(0, maxLength) + "...";
+        if (string.IsNullOrEmpty(value) || value.Length <= maxLength)
+            return value;
+
+        return value[..maxLength] + "...";
     }
+
 
     public static string? GetFirstImage(string? images)
     {
-        if (string.IsNullOrEmpty(images)) return null;
-        if (images.TrimStart().StartsWith("["))
+        if (string.IsNullOrWhiteSpace(images))
+            return null;
+
+        var trimmed = images.TrimStart();
+
+        if (trimmed.StartsWith('['))
         {
             try
             {
-                var list = System.Text.Json.JsonSerializer.Deserialize<List<string>>(images);
+                var list = System.Text.Json.JsonSerializer
+                    .Deserialize<List<string>>(trimmed);
+
                 return list?.FirstOrDefault();
             }
-            catch { return images; }
+            catch
+            {
+                return images;
+            }
         }
-        return images.Split(',', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()?.Trim();
+
+        return images
+            .Split(',', StringSplitOptions.RemoveEmptyEntries)
+            .FirstOrDefault()
+            ?.Trim();
     }
+
     #endregion
 
     #region Time Helpers
@@ -82,7 +99,7 @@ public static class MappingHelpers
     public static string FormatFileSize(int? bytes)
     {
         if (!bytes.HasValue || bytes.Value <= 0) return "0 B";
-        string[] sizes = { "B", "KB", "MB", "GB" };
+        var sizes = new[] { "B", "KB", "MB", "GB" };
         double len = bytes.Value;
         int order = 0;
         while (len >= 1024 && order < sizes.Length - 1) { order++; len /= 1024; }
