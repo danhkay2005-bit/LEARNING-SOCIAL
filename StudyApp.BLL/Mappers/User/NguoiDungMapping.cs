@@ -1,10 +1,191 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using AutoMapper;
+using StudyApp.DAL.Entities.User;
+using StudyApp.DTO.Enums;
+using StudyApp.DTO.Requests.NguoiDung;
+using StudyApp.DTO.Responses.NguoiDung;
+using static StudyApp.BLL.Mappers.MappingHelpers;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace StudyApp.BLL.Mappers.User
 {
-    internal class NguoiDungMapping
-    {
+    public class NguoiDungMapping: Profile
+    {  
+        public NguoiDungMapping()
+        {
+            // NguoiDung -> NguoiDungResponse (thông tin cơ bản)
+            CreateMap<NguoiDung, NguoiDungResponse>()
+                .ForMember(dest => dest.GioiTinh, opt => opt.MapFrom(src => ByteToEnum<GioiTinhEnum>(src.GioiTinh)))
+                .ForMember(dest => dest.TrangThaiOnline, opt => opt.MapFrom(src => src.TrangThaiOnline ?? false))
+                .ForMember(dest => dest.VaiTro, opt => opt.Ignore())
+                .ForMember(dest => dest.CapDo, opt => opt.Ignore());
+
+            // NguoiDung -> NguoiDungChiTietResponse (thông tin đầy đủ)
+            CreateMap<NguoiDung, NguoiDungChiTietResponse>()
+                .ForMember(dest => dest.GioiTinh, opt => opt.MapFrom(src => ByteToEnum<GioiTinhEnum>(src.GioiTinh)))
+                .ForMember(dest => dest.TrangThaiOnline, opt => opt.MapFrom(src => src.TrangThaiOnline ?? false))
+                .ForMember(dest => dest.Vang, opt => opt.MapFrom(src => src.Vang ?? 0))
+                .ForMember(dest => dest.KimCuong, opt => opt.MapFrom(src => src.KimCuong ?? 0))
+                .ForMember(dest => dest.TongDiemXp, opt => opt.MapFrom(src => src.TongDiemXp ?? 0))
+                .ForMember(dest => dest.TongSoTheHoc, opt => opt.MapFrom(src => src.TongSoTheHoc ?? 0))
+                .ForMember(dest => dest.TongSoTheDung, opt => opt.MapFrom(src => src.TongSoTheDung ?? 0))
+                .ForMember(dest => dest.TongThoiGianHocPhut, opt => opt.MapFrom(src => src.TongThoiGianHocPhut ?? 0))
+                .ForMember(dest => dest.ChuoiNgayHocLienTiep, opt => opt.MapFrom(src => src.ChuoiNgayHocLienTiep ?? 0))
+                .ForMember(dest => dest.ChuoiNgayDaiNhat, opt => opt.MapFrom(src => src.ChuoiNgayDaiNhat ?? 0))
+                .ForMember(dest => dest.SoStreakFreeze, opt => opt.MapFrom(src => src.SoStreakFreeze ?? 0))
+                .ForMember(dest => dest.SoStreakHoiSinh, opt => opt.MapFrom(src => src.SoStreakHoiSinh ?? 0))
+                .ForMember(dest => dest.SoTranThachDau, opt => opt.MapFrom(src => src.SoTranThachDau ?? 0))
+                .ForMember(dest => dest.SoTranThang, opt => opt.MapFrom(src => src.SoTranThang ?? 0))
+                .ForMember(dest => dest.SoTranThua, opt => opt.MapFrom(src => src.SoTranThua ?? 0))
+                .ForMember(dest => dest.DaXacThucEmail, opt => opt.MapFrom(src => src.DaXacThucEmail ?? false))
+                .ForMember(dest => dest.VaiTro, opt => opt.Ignore())
+                .ForMember(dest => dest.CapDo, opt => opt.Ignore())
+                .ForMember(dest => dest.TuyChinhProfile, opt => opt.Ignore());
+
+            // NguoiDung -> NguoiDungTomTatResponse (thông tin ngắn gọn cho danh sách)
+            CreateMap<NguoiDung, NguoiDungTomTatResponse>()
+                .ForMember(dest => dest.TongDiemXp, opt => opt.MapFrom(src => src.TongDiemXp ?? 0))
+                .ForMember(dest => dest.TrangThaiOnline, opt => opt.MapFrom(src => src.TrangThaiOnline ?? false))
+                .ForMember(dest => dest.TenCapDo, opt => opt.Ignore());
+
+            // NguoiDung -> BangXepHangNguoiDungResponse
+            CreateMap<NguoiDung, BangXepHangNguoiDungResponse>()
+                .ForMember(dest => dest.Hang, opt => opt.Ignore())
+                .ForMember(dest => dest.TongDiemXp, opt => opt.MapFrom(src => src.TongDiemXp ?? 0))
+                .ForMember(dest => dest.ChuoiNgayHocLienTiep, opt => opt.MapFrom(src => src.ChuoiNgayHocLienTiep ?? 0))
+                .ForMember(dest => dest.TenCapDo, opt => opt.Ignore());
+            // DangKyNguoiDungRequest -> NguoiDung (đăng ký tài khoản mới)
+            CreateMap<DangKyNguoiDungRequest, NguoiDung>()
+                .ForMember(dest => dest.MaNguoiDung, opt => opt.MapFrom(_ => Guid.NewGuid()))
+                .ForMember(dest => dest.MatKhauMaHoa, opt => opt.Ignore()) // Mã hóa ở service
+                .ForMember(dest => dest.ThoiGianTao, opt => opt.MapFrom(_ => DateTime.UtcNow))
+                .ForMember(dest => dest.DaXacThucEmail, opt => opt.MapFrom(_ => false))
+                .ForMember(dest => dest.TrangThaiOnline, opt => opt.MapFrom(_ => false))
+                .ForMember(dest => dest.DaXoa, opt => opt.MapFrom(_ => false))
+                .ForMember(dest => dest.Vang, opt => opt.MapFrom(_ => 0))
+                .ForMember(dest => dest.KimCuong, opt => opt.MapFrom(_ => 0))
+                .ForMember(dest => dest.TongDiemXp, opt => opt.MapFrom(_ => 0))
+                .ForMember(dest => dest.TongSoTheHoc, opt => opt.MapFrom(_ => 0))
+                .ForMember(dest => dest.TongSoTheDung, opt => opt.MapFrom(_ => 0))
+                .ForMember(dest => dest.TongThoiGianHocPhut, opt => opt.MapFrom(_ => 0))
+                .ForMember(dest => dest.ChuoiNgayHocLienTiep, opt => opt.MapFrom(_ => 0))
+                .ForMember(dest => dest.ChuoiNgayDaiNhat, opt => opt.MapFrom(_ => 0))
+                .ForMember(dest => dest.SoStreakFreeze, opt => opt.MapFrom(_ => 0))
+                .ForMember(dest => dest.SoStreakHoiSinh, opt => opt.MapFrom(_ => 0))
+                .ForMember(dest => dest.SoTranThachDau, opt => opt.MapFrom(_ => 0))
+                .ForMember(dest => dest.SoTranThang, opt => opt.MapFrom(_ => 0))
+                .ForMember(dest => dest.SoTranThua, opt => opt.MapFrom(_ => 0))
+                .ForMember(dest => dest.MaVaiTro, opt => opt.Ignore())
+                .ForMember(dest => dest.MaCapDo, opt => opt.Ignore())
+                .ForMember(dest => dest.GioiTinh, opt => opt.Ignore())
+                .ForMember(dest => dest.NgaySinh, opt => opt.Ignore())
+                .ForMember(dest => dest.HinhDaiDien, opt => opt.Ignore())
+                .ForMember(dest => dest.AnhBia, opt => opt.Ignore())
+                .ForMember(dest => dest.TieuSu, opt => opt.Ignore())
+                .ForMember(dest => dest.NgayHoatDongCuoi, opt => opt.Ignore())
+                .ForMember(dest => dest.LanOnlineCuoi, opt => opt.Ignore())
+                // Navigation properties
+                .ForMember(dest => dest.MaCapDoNavigation, opt => opt.Ignore())
+                .ForMember(dest => dest.MaVaiTroNavigation, opt => opt.Ignore())
+                .ForMember(dest => dest.CaiDatNguoiDung, opt => opt.Ignore())
+                .ForMember(dest => dest.TuyChinhProfile, opt => opt.Ignore())
+                .ForMember(dest => dest.BaoVeChuoiNgays, opt => opt.Ignore())
+                .ForMember(dest => dest.BoostDangHoatDongs, opt => opt.Ignore())
+                .ForMember(dest => dest.DiemDanhHangNgays, opt => opt.Ignore())
+                .ForMember(dest => dest.KhoNguoiDungs, opt => opt.Ignore())
+                .ForMember(dest => dest.LichSuGiaoDiches, opt => opt.Ignore())
+                .ForMember(dest => dest.LichSuHoatDongs, opt => opt.Ignore())
+                .ForMember(dest => dest.ThanhTuuDatDuocs, opt => opt.Ignore())
+                .ForMember(dest => dest.TienDoNhiemVus, opt => opt.Ignore());
+
+            // CapNhatThongTinCaNhanRequest -> NguoiDung (cập nhật thông tin)
+            CreateMap<CapNhatThongTinCaNhanRequest, NguoiDung>()
+                .ForMember(dest => dest.MaNguoiDung, opt => opt.Ignore())
+                .ForMember(dest => dest.TenDangNhap, opt => opt.Ignore())
+                .ForMember(dest => dest.MatKhauMaHoa, opt => opt.Ignore())
+                .ForMember(dest => dest.MaVaiTro, opt => opt.Ignore())
+                .ForMember(dest => dest.MaCapDo, opt => opt.Ignore())
+                .ForMember(dest => dest.HinhDaiDien, opt => opt.Ignore())
+                .ForMember(dest => dest.AnhBia, opt => opt.Ignore())
+                .ForMember(dest => dest.Vang, opt => opt.Ignore())
+                .ForMember(dest => dest.KimCuong, opt => opt.Ignore())
+                .ForMember(dest => dest.TongDiemXp, opt => opt.Ignore())
+                .ForMember(dest => dest.TongSoTheHoc, opt => opt.Ignore())
+                .ForMember(dest => dest.TongSoTheDung, opt => opt.Ignore())
+                .ForMember(dest => dest.TongThoiGianHocPhut, opt => opt.Ignore())
+                .ForMember(dest => dest.ChuoiNgayHocLienTiep, opt => opt.Ignore())
+                .ForMember(dest => dest.ChuoiNgayDaiNhat, opt => opt.Ignore())
+                .ForMember(dest => dest.SoStreakFreeze, opt => opt.Ignore())
+                .ForMember(dest => dest.SoStreakHoiSinh, opt => opt.Ignore())
+                .ForMember(dest => dest.NgayHoatDongCuoi, opt => opt.Ignore())
+                .ForMember(dest => dest.SoTranThachDau, opt => opt.Ignore())
+                .ForMember(dest => dest.SoTranThang, opt => opt.Ignore())
+                .ForMember(dest => dest.SoTranThua, opt => opt.Ignore())
+                .ForMember(dest => dest.DaXacThucEmail, opt => opt.Ignore())
+                .ForMember(dest => dest.TrangThaiOnline, opt => opt.Ignore())
+                .ForMember(dest => dest.LanOnlineCuoi, opt => opt.Ignore())
+                .ForMember(dest => dest.DaXoa, opt => opt.Ignore())
+                .ForMember(dest => dest.ThoiGianTao, opt => opt.Ignore())
+                // Navigation properties
+                .ForMember(dest => dest.MaCapDoNavigation, opt => opt.Ignore())
+                .ForMember(dest => dest.MaVaiTroNavigation, opt => opt.Ignore())
+                .ForMember(dest => dest.CaiDatNguoiDung, opt => opt.Ignore())
+                .ForMember(dest => dest.TuyChinhProfile, opt => opt.Ignore())
+                .ForMember(dest => dest.BaoVeChuoiNgays, opt => opt.Ignore())
+                .ForMember(dest => dest.BoostDangHoatDongs, opt => opt.Ignore())
+                .ForMember(dest => dest.DiemDanhHangNgays, opt => opt.Ignore())
+                .ForMember(dest => dest.KhoNguoiDungs, opt => opt.Ignore())
+                .ForMember(dest => dest.LichSuGiaoDiches, opt => opt.Ignore())
+                .ForMember(dest => dest.LichSuHoatDongs, opt => opt.Ignore())
+                .ForMember(dest => dest.ThanhTuuDatDuocs, opt => opt.Ignore())
+                .ForMember(dest => dest.TienDoNhiemVus, opt => opt.Ignore())
+                .ForAllMembers(opt => opt.Condition((src, dest, srcMember) => srcMember != null));
+
+            // CapNhatHinhAnhProfileRequest -> NguoiDung
+            CreateMap<CapNhatHinhAnhProfileRequest, NguoiDung>()
+                .ForMember(dest => dest.MaNguoiDung, opt => opt.Ignore())
+                .ForMember(dest => dest.TenDangNhap, opt => opt.Ignore())
+                .ForMember(dest => dest.MatKhauMaHoa, opt => opt.Ignore())
+                .ForMember(dest => dest.Email, opt => opt.Ignore())
+                .ForMember(dest => dest.SoDienThoai, opt => opt.Ignore())
+                .ForMember(dest => dest.HoVaTen, opt => opt.Ignore())
+                .ForMember(dest => dest.NgaySinh, opt => opt.Ignore())
+                .ForMember(dest => dest.GioiTinh, opt => opt.Ignore())
+                .ForMember(dest => dest.MaVaiTro, opt => opt.Ignore())
+                .ForMember(dest => dest.MaCapDo, opt => opt.Ignore())
+                .ForMember(dest => dest.TieuSu, opt => opt.Ignore())
+                .ForMember(dest => dest.Vang, opt => opt.Ignore())
+                .ForMember(dest => dest.KimCuong, opt => opt.Ignore())
+                .ForMember(dest => dest.TongDiemXp, opt => opt.Ignore())
+                .ForMember(dest => dest.TongSoTheHoc, opt => opt.Ignore())
+                .ForMember(dest => dest.TongSoTheDung, opt => opt.Ignore())
+                .ForMember(dest => dest.TongThoiGianHocPhut, opt => opt.Ignore())
+                .ForMember(dest => dest.ChuoiNgayHocLienTiep, opt => opt.Ignore())
+                .ForMember(dest => dest.ChuoiNgayDaiNhat, opt => opt.Ignore())
+                .ForMember(dest => dest.SoStreakFreeze, opt => opt.Ignore())
+                .ForMember(dest => dest.SoStreakHoiSinh, opt => opt.Ignore())
+                .ForMember(dest => dest.NgayHoatDongCuoi, opt => opt.Ignore())
+                .ForMember(dest => dest.SoTranThachDau, opt => opt.Ignore())
+                .ForMember(dest => dest.SoTranThang, opt => opt.Ignore())
+                .ForMember(dest => dest.SoTranThua, opt => opt.Ignore())
+                .ForMember(dest => dest.DaXacThucEmail, opt => opt.Ignore())
+                .ForMember(dest => dest.TrangThaiOnline, opt => opt.Ignore())
+                .ForMember(dest => dest.LanOnlineCuoi, opt => opt.Ignore())
+                .ForMember(dest => dest.DaXoa, opt => opt.Ignore())
+                .ForMember(dest => dest.ThoiGianTao, opt => opt.Ignore())
+                // Navigation properties
+                .ForMember(dest => dest.MaCapDoNavigation, opt => opt.Ignore())
+                .ForMember(dest => dest.MaVaiTroNavigation, opt => opt.Ignore())
+                .ForMember(dest => dest.CaiDatNguoiDung, opt => opt.Ignore())
+                .ForMember(dest => dest.TuyChinhProfile, opt => opt.Ignore())
+                .ForMember(dest => dest.BaoVeChuoiNgays, opt => opt.Ignore())
+                .ForMember(dest => dest.BoostDangHoatDongs, opt => opt.Ignore())
+                .ForMember(dest => dest.DiemDanhHangNgays, opt => opt.Ignore())
+                .ForMember(dest => dest.KhoNguoiDungs, opt => opt.Ignore())
+                .ForMember(dest => dest.LichSuGiaoDiches, opt => opt.Ignore())
+                .ForMember(dest => dest.LichSuHoatDongs, opt => opt.Ignore())
+                .ForMember(dest => dest.ThanhTuuDatDuocs, opt => opt.Ignore())
+                .ForMember(dest => dest.TienDoNhiemVus, opt => opt.Ignore())
+                .ForAllMembers(opt => opt.Condition((src, dest, srcMember) => srcMember != null));
+        }
     }
 }
