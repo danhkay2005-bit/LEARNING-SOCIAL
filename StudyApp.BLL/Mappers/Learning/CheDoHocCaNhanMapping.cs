@@ -1,9 +1,8 @@
 ﻿using AutoMapper;
 using StudyApp.DAL.Entities.Learning;
-using StudyApp.DTO.Enums;
 using StudyApp.DTO.Requests.Learning;
 using StudyApp.DTO.Responses.Learning;
-using static StudyApp.BLL.Mappers.MappingHelpers;
+using StudyApp.DTO.Enums;
 
 namespace StudyApp.BLL.Mappers.Learning
 {
@@ -11,27 +10,57 @@ namespace StudyApp.BLL.Mappers.Learning
     {
         public CheDoHocCaNhanMapping()
         {
+            // ============================
+            // REQUEST → ENTITY
+            // ============================
+
+            // Cập nhật chế độ học cá nhân
             CreateMap<CapNhatCheDoHocRequest, CheDoHocCaNhan>()
-                .ForMember(d => d.MaNguoiDung, o => o.Ignore()) // Thường lấy từ context người dùng
-                .ForMember(d => d.ThoiGianCapNhat, o => o.MapFrom(_ => DateTime.UtcNow))
-                .ForMember(d => d.ThuTuHoc, o => o.MapFrom((s, d) => s.ThuTuHoc.HasValue ? s.ThuTuHoc.Value.ToString() : d.ThuTuHoc))
-                .ForAllMembers(o => o.Condition((s, d, sm) => sm != null));
+                .ForMember(dest => dest.ThuTuHoc,
+                    opt => opt.MapFrom(src => src.ThuTuHoc != null
+                        ? src.ThuTuHoc.ToString()
+                        : null))
+                .ForMember(dest => dest.ThoiGianCapNhat,
+                    opt => opt.MapFrom(_ => DateTime.Now))
+                .ForMember(dest => dest.MaNguoiDung, opt => opt.Ignore());
+
+            // ============================
+            // ENTITY → RESPONSE
+            // ============================
 
             CreateMap<CheDoHocCaNhan, CheDoHocCaNhanResponse>()
-                .ForMember(d => d.SoTheMoiMoiNgay, o => o.MapFrom(s => s.SoTheMoiMoiNgay ?? 20))
-                .ForMember(d => d.SoTheOnTapToiDa, o => o.MapFrom(s => s.SoTheOnTapToiDa ?? 100))
-                .ForMember(d => d.ThoiGianHienCauHoi, o => o.MapFrom(s => s.ThoiGianHienCauHoi ?? 10))
-                .ForMember(d => d.ThoiGianHienDapAn, o => o.MapFrom(s => s.ThoiGianHienDapAn ?? 5))
-                .ForMember(d => d.ThoiGianMoiTheToiDa, o => o.MapFrom(s => s.ThoiGianMoiTheToiDa ?? 60))
-                .ForMember(d => d.ThuTuHoc, o => o.MapFrom(s => ParseEnum<ThuTuHocEnum>(s.ThuTuHoc)))
-                .ForMember(d => d.UuTienTheKho, o => o.MapFrom(s => s.UuTienTheKho ?? false))
-                .ForMember(d => d.UuTienTheSapHetHan, o => o.MapFrom(s => s.UuTienTheSapHetHan ?? true))
-                .ForMember(d => d.TronDapAnTracNghiem, o => o.MapFrom(s => s.TronDapAnTracNghiem ?? true))
-                .ForMember(d => d.HienGoiY, o => o.MapFrom(s => s.HienGoiY ?? true))
-                .ForMember(d => d.HienGiaiThich, o => o.MapFrom(s => s.HienGiaiThich ?? true))
-                .ForMember(d => d.HienThongKeSauPhien, o => o.MapFrom(s => s.HienThongKeSauPhien ?? true))
-                .ForMember(d => d.BatAmThanh, o => o.MapFrom(s => s.BatAmThanh ?? true))
-                .ForMember(d => d.TuDongPhatAm, o => o.MapFrom(s => s.TuDongPhatAm ?? false));
+                .ForMember(dest => dest.ThuTuHoc,
+                    opt => opt.MapFrom(src => MappingHelpers.ParseThuTuHoc(src.ThuTuHoc)))
+
+                // Giá trị mặc định an toàn
+                .ForMember(dest => dest.SoTheMoiMoiNgay,
+                    opt => opt.MapFrom(src => src.SoTheMoiMoiNgay ?? 20))
+                .ForMember(dest => dest.SoTheOnTapToiDa,
+                    opt => opt.MapFrom(src => src.SoTheOnTapToiDa ?? 100))
+                .ForMember(dest => dest.ThoiGianHienCauHoi,
+                    opt => opt.MapFrom(src => src.ThoiGianHienCauHoi ?? 5))
+                .ForMember(dest => dest.ThoiGianHienDapAn,
+                    opt => opt.MapFrom(src => src.ThoiGianHienDapAn ?? 5))
+                .ForMember(dest => dest.ThoiGianMoiTheToiDa,
+                    opt => opt.MapFrom(src => src.ThoiGianMoiTheToiDa ?? 60))
+
+                // Bool mặc định
+                .ForMember(dest => dest.UuTienTheKho,
+                    opt => opt.MapFrom(src => src.UuTienTheKho ?? false))
+                .ForMember(dest => dest.UuTienTheSapHetHan,
+                    opt => opt.MapFrom(src => src.UuTienTheSapHetHan ?? false))
+                .ForMember(dest => dest.TronDapAnTracNghiem,
+                    opt => opt.MapFrom(src => src.TronDapAnTracNghiem ?? true))
+                .ForMember(dest => dest.HienGoiY,
+                    opt => opt.MapFrom(src => src.HienGoiY ?? true))
+                .ForMember(dest => dest.HienGiaiThich,
+                    opt => opt.MapFrom(src => src.HienGiaiThich ?? true))
+                .ForMember(dest => dest.HienThongKeSauPhien,
+                    opt => opt.MapFrom(src => src.HienThongKeSauPhien ?? true))
+                .ForMember(dest => dest.BatAmThanh,
+                    opt => opt.MapFrom(src => src.BatAmThanh ?? true))
+                .ForMember(dest => dest.TuDongPhatAm,
+                    opt => opt.MapFrom(src => src.TuDongPhatAm ?? false));
         }
     }
 }

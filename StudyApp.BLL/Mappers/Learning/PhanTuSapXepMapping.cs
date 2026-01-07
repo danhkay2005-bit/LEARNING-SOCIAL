@@ -1,30 +1,51 @@
 ﻿using AutoMapper;
 using StudyApp.DAL.Entities.Learning;
-using StudyApp.DTO.Enums;
 using StudyApp.DTO.Requests.Learning;
 using StudyApp.DTO.Responses.Learning;
-using static StudyApp.BLL.Mappers.MappingHelpers;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace StudyApp.BLL.Mappers.Learning
 {
+    /// <summary>
+    /// Mapping cho Phần tử sắp xếp (PhanTuSapXep)
+    /// </summary>
     public class PhanTuSapXepMapping : Profile
     {
         public PhanTuSapXepMapping()
         {
+            // =====================================================
+            // REQUEST -> ENTITY
+            // Tạo phần tử sắp xếp
+            // =====================================================
             CreateMap<TaoPhanTuSapXepRequest, PhanTuSapXep>()
-                .ForMember(d => d.MaPhanTu, o => o.Ignore())
-                .ForMember(d => d.MaThe, o => o.Ignore())
-                .ForMember(d => d.MaTheNavigation, o => o.Ignore());
+                .ForMember(dest => dest.MaPhanTu, opt => opt.Ignore())       // identity
+                .ForMember(dest => dest.MaThe, opt => opt.Ignore())         // lấy từ route
+                .ForMember(dest => dest.MaTheNavigation, opt => opt.Ignore());
 
+            // =====================================================
+            // REQUEST -> ENTITY
+            // Cập nhật phần tử sắp xếp
+            // =====================================================
             CreateMap<CapNhatPhanTuSapXepRequest, PhanTuSapXep>()
-                .ForMember(d => d.MaPhanTu, o => o.Ignore())
-                .ForMember(d => d.MaThe, o => o.Ignore())
-                .ForAllMembers(o => o.Condition((s, d, sm) => sm != null));
+                .ForMember(dest => dest.MaThe, opt => opt.Ignore())
+                .ForMember(dest => dest.MaTheNavigation, opt => opt.Ignore())
+                .ForAllMembers(opt =>
+                    opt.Condition((src, dest, value) => value != null));
 
+            // =====================================================
+            // ENTITY -> RESPONSE
+            // PhanTuSapXep -> PhanTuSapXepResponse
+            // =====================================================
             CreateMap<PhanTuSapXep, PhanTuSapXepResponse>();
 
+            // =====================================================
+            // ENTITY -> RESPONSE (KHI HỌC)
+            // Thứ tự hiển thị được service trộn sẵn
+            // =====================================================
             CreateMap<PhanTuSapXep, PhanTuSapXepHocResponse>()
-                .ForMember(d => d.ThuTuHienThi, o => o.Ignore());
+                .ForMember(dest => dest.ThuTuHienThi, opt => opt.Ignore());
         }
     }
 }

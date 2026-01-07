@@ -6,7 +6,7 @@ using StudyApp.DTO.Requests.Social;
 using StudyApp.DTO.Responses.Social;
 using System;
 
-namespace StudyApp.BLL.Mappers
+namespace StudyApp.BLL.Mappers.Social
 {
     /// <summary>
     /// AutoMapper profile cho Bài Đăng (Request ↔ Entity ↔ Response)

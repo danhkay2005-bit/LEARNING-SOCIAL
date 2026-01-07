@@ -1,29 +1,49 @@
 ﻿using AutoMapper;
 using StudyApp.DAL.Entities.Learning;
-using StudyApp.DTO.Enums;
 using StudyApp.DTO.Requests.Learning;
 using StudyApp.DTO.Responses.Learning;
-using static StudyApp.BLL.Mappers.MappingHelpers;
 
 namespace StudyApp.BLL.Mappers.Learning
 {
+    /// <summary>
+    /// Mapping cho Từ điền khuyết (Fill-in-the-blank)
+    /// </summary>
     public class TuDienKhuyetMapping : Profile
     {
         public TuDienKhuyetMapping()
         {
+            // =====================================================
+            // REQUEST -> ENTITY
+            // TẠO TỪ ĐIỀN KHUYẾT
+            // =====================================================
             CreateMap<TaoTuDienKhuyetRequest, TuDienKhuyet>()
-                .ForMember(d => d.MaTuDienKhuyet, o => o.Ignore())
-                .ForMember(d => d.MaThe, o => o.Ignore())
-                .ForMember(d => d.MaTheNavigation, o => o.Ignore());
-            CreateMap<CapNhatTuDienKhuyetRequest, TuDienKhuyet>()
-                .ForMember(d => d.MaTuDienKhuyet, o => o.Ignore())
-                .ForMember(d => d.MaThe, o => o.Ignore())
-                .ForAllMembers(o => o.Condition((s, d, sm) => sm != null));
+                .ForMember(dest => dest.MaTuDienKhuyet, opt => opt.Ignore())
+                .ForMember(dest => dest.MaThe, opt => opt.Ignore()) // gán ở service
+                .ForMember(dest => dest.MaTheNavigation, opt => opt.Ignore());
 
+            // =====================================================
+            // REQUEST -> ENTITY
+            // CẬP NHẬT TỪ ĐIỀN KHUYẾT
+            // =====================================================
+            CreateMap<CapNhatTuDienKhuyetRequest, TuDienKhuyet>()
+                .ForMember(dest => dest.MaThe, opt => opt.Ignore())
+                .ForMember(dest => dest.MaTheNavigation, opt => opt.Ignore())
+                .ForAllMembers(opt =>
+                    opt.Condition((src, dest, value) => value != null));
+
+            // =====================================================
+            // ENTITY -> RESPONSE
+            // TỪ ĐIỀN KHUYẾT CHI TIẾT
+            // =====================================================
             CreateMap<TuDienKhuyet, TuDienKhuyetResponse>();
 
+            // =====================================================
+            // ENTITY -> RESPONSE
+            // TỪ ĐIỀN KHUYẾT KHI HỌC (ẨN ĐÁP ÁN)
+            // =====================================================
             CreateMap<TuDienKhuyet, TuDienKhuyetHocResponse>()
-            .ForMember(d => d.DoRongTu, o => o.MapFrom(s => Math.Max(s.TuCanDien.Length + 2, 5)));
+                .ForMember(dest => dest.DoRongTu,
+                    opt => opt.MapFrom(src => src.TuCanDien.Length));
         }
     }
 }

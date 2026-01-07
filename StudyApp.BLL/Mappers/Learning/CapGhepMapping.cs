@@ -1,9 +1,7 @@
 ﻿using AutoMapper;
 using StudyApp.DAL.Entities.Learning;
-using StudyApp.DTO.Enums;
 using StudyApp.DTO.Requests.Learning;
 using StudyApp.DTO.Responses.Learning;
-using static StudyApp.BLL.Mappers.MappingHelpers;
 
 namespace StudyApp.BLL.Mappers.Learning
 {
@@ -11,21 +9,39 @@ namespace StudyApp.BLL.Mappers.Learning
     {
         public CapGhepMapping()
         {
+            // ============================
+            // REQUEST → ENTITY
+            // ============================
+
+            // Tạo cặp ghép mới
             CreateMap<TaoCapGhepRequest, CapGhep>()
-                .ForMember(d => d.MaCap, o => o.Ignore())
-                .ForMember(d => d.MaThe, o => o.Ignore())
-                .ForMember(d => d.MaTheNavigation, o => o.Ignore());
+                .ForMember(dest => dest.MaCap, opt => opt.Ignore())
+                .ForMember(dest => dest.MaThe, opt => opt.Ignore())
+                .ForMember(dest => dest.MaTheNavigation, opt => opt.Ignore());
 
+            // Cập nhật cặp ghép
             CreateMap<CapNhatCapGhepRequest, CapGhep>()
-                .ForMember(d => d.MaCap, o => o.Ignore())
-                .ForMember(d => d.MaThe, o => o.Ignore())
-                .ForAllMembers(o => o.Condition((s, d, sm) => sm != null));
+                .ForMember(dest => dest.MaThe, opt => opt.Ignore())
+                .ForMember(dest => dest.MaTheNavigation, opt => opt.Ignore());
 
+            // ============================
+            // ENTITY → RESPONSE
+            // ============================
+
+            // Response chi tiết
             CreateMap<CapGhep, CapGhepResponse>()
-                .ForMember(d => d.ThuTu, o => o.MapFrom(s => s.ThuTu ?? 0));
+                .ForMember(dest => dest.ThuTu,
+                    opt => opt.MapFrom(src => src.ThuTu ?? 0));
 
+            // Response dùng khi học (vế trái)
             CreateMap<CapGhep, CapGhepHocResponse>()
-                .ForMember(d => d.ThuTuVeTrai, o => o.MapFrom(s => s.ThuTu ?? 0));
+                .ForMember(dest => dest.ThuTuVeTrai,
+                    opt => opt.MapFrom(src => src.ThuTu ?? 0));
+
+            // Response danh sách vế phải (đã trộn)
+            CreateMap<CapGhep, VePhaiItem>()
+                .ForMember(dest => dest.ThuTuHienThi,
+                    opt => opt.MapFrom(src => src.ThuTu ?? 0));
         }
     }
 }

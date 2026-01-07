@@ -57,7 +57,7 @@ namespace StudyApp.DTO.Responses.Learning
     /// </summary>
     public class DanhSachNguoiThichBinhLuanResponse
     {
-        public List<NguoiThichBinhLuanBoDeResponse> NguoiThichs { get; set; } = new();
+        public List<NguoiThichBinhLuanBoDeResponse> NguoiThichs { get; set; } = [];
         public int TongSo { get; set; }
     }
 }

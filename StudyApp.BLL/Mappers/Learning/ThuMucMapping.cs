@@ -1,51 +1,104 @@
 ﻿using AutoMapper;
 using StudyApp.DAL.Entities.Learning;
-using StudyApp.DTO.Enums;
 using StudyApp.DTO.Requests.Learning;
 using StudyApp.DTO.Responses.Learning;
-using static StudyApp.BLL.Mappers.MappingHelpers;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace StudyApp.BLL.Mappers.Learning
 {
+    /// <summary>
+    /// Mapping cho Thư mục (ThuMuc)
+    /// </summary>
     public class ThuMucMapping : Profile
     {
-        public ThuMucMapping() 
+        public ThuMucMapping()
         {
-
+            // =====================================================
+            // REQUEST -> ENTITY
+            // TẠO THƯ MỤC
+            // =====================================================
             CreateMap<TaoThuMucRequest, ThuMuc>()
-                .ForMember(d => d.MaThuMuc, o => o.Ignore())
-                .ForMember(d => d.MaNguoiDung, o => o.Ignore()) // Gán từ UserContext trong Service
-                .ForMember(d => d.ThoiGianTao, o => o.MapFrom(_ => DateTime.UtcNow))
-                .ForMember(d => d.ThoiGianCapNhat, o => o.MapFrom(_ => DateTime.UtcNow))
-                .ForMember(d => d.BoDeHocs, o => o.Ignore())
-                .ForMember(d => d.InverseMaThuMucChaNavigation, o => o.Ignore())
-                .ForMember(d => d.MaThuMucChaNavigation, o => o.Ignore());
+                .ForMember(dest => dest.MaThuMuc, opt => opt.Ignore())
+                .ForMember(dest => dest.MaNguoiDung, opt => opt.Ignore()) // từ context
+                .ForMember(dest => dest.ThoiGianTao,
+                    opt => opt.MapFrom(_ => DateTime.UtcNow))
+                .ForMember(dest => dest.ThoiGianCapNhat, opt => opt.Ignore())
+                .ForMember(dest => dest.BoDeHocs, opt => opt.Ignore())
+                .ForMember(dest => dest.InverseMaThuMucChaNavigation, opt => opt.Ignore())
+                .ForMember(dest => dest.MaThuMucChaNavigation, opt => opt.Ignore());
 
+            // =====================================================
+            // REQUEST -> ENTITY
+            // CẬP NHẬT THƯ MỤC
+            // =====================================================
             CreateMap<CapNhatThuMucRequest, ThuMuc>()
-                .ForMember(d => d.MaThuMuc, o => o.Ignore())
-                .ForMember(d => d.MaNguoiDung, o => o.Ignore())
-                .ForMember(d => d.ThoiGianTao, o => o.Ignore())
-                .ForMember(d => d.ThoiGianCapNhat, o => o.MapFrom(_ => DateTime.UtcNow))
-                .ForAllMembers(o => o.Condition((s, d, sm) => sm != null));
+                .ForMember(dest => dest.MaNguoiDung, opt => opt.Ignore())
+                .ForMember(dest => dest.ThoiGianTao, opt => opt.Ignore())
+                .ForMember(dest => dest.ThoiGianCapNhat,
+                    opt => opt.MapFrom(_ => DateTime.UtcNow))
+                .ForMember(dest => dest.BoDeHocs, opt => opt.Ignore())
+                .ForMember(dest => dest.InverseMaThuMucChaNavigation, opt => opt.Ignore())
+                .ForMember(dest => dest.MaThuMucChaNavigation, opt => opt.Ignore())
+                .ForAllMembers(opt =>
+                    opt.Condition((src, dest, value) => value != null));
 
-
+            // =====================================================
+            // ENTITY -> RESPONSE
+            // THƯ MỤC CHI TIẾT
+            // =====================================================
             CreateMap<ThuMuc, ThuMucResponse>()
-                .ForMember(d => d.ThuTu, o => o.MapFrom(s => s.ThuTu ?? 0))
-                .ForMember(d => d.SoBoDeTrongThuMuc, o => o.MapFrom(s => s.BoDeHocs.Count))
-                .ForMember(d => d.SoThuMucCon, o => o.MapFrom(s => s.InverseMaThuMucChaNavigation.Count))
-                .ForMember(d => d.ThuMucCons, o => o.Ignore())
-                .ForMember(d => d.BoDes, o => o.Ignore());
+                .ForMember(dest => dest.ThuTu,
+                    opt => opt.MapFrom(src => src.ThuTu ?? 0))
+                .ForMember(dest => dest.SoBoDeTrongThuMuc,
+                    opt => opt.MapFrom(src => src.BoDeHocs.Count))
+                .ForMember(dest => dest.SoThuMucCon,
+                    opt => opt.MapFrom(src => src.InverseMaThuMucChaNavigation.Count))
+                // danh sách con → service quyết định có load hay không
+                .ForMember(dest => dest.ThuMucCons, opt => opt.Ignore())
+                .ForMember(dest => dest.BoDes, opt => opt.Ignore());
 
+            // =====================================================
+            // ENTITY -> RESPONSE
+            // THƯ MỤC TÓM TẮT
+            // =====================================================
             CreateMap<ThuMuc, ThuMucTomTatResponse>()
-                .ForMember(d => d.SoBoDe, o => o.MapFrom(s => s.BoDeHocs.Count))
-                .ForMember(d => d.ThuTu, o => o.MapFrom(s => s.ThuTu ?? 0));
+                .ForMember(dest => dest.ThuTu,
+                    opt => opt.MapFrom(src => src.ThuTu ?? 0))
+                .ForMember(dest => dest.SoBoDe,
+                    opt => opt.MapFrom(src => src.BoDeHocs.Count));
 
+            // =====================================================
+            // ENTITY -> RESPONSE
+            // NODE CÂY THƯ MỤC
+            // (service build tree, mapper map node)
+            // =====================================================
             CreateMap<ThuMuc, ThuMucNodeResponse>()
-                .ForMember(d => d.SoBoDe, o => o.MapFrom(s => s.BoDeHocs.Count))
-                .ForMember(d => d.ThuTu, o => o.MapFrom(s => s.ThuTu ?? 0))
-                .ForMember(d => d.Children, o => o.Ignore());
+                .ForMember(dest => dest.ThuTu,
+                    opt => opt.MapFrom(src => src.ThuTu ?? 0))
+                .ForMember(dest => dest.SoBoDe,
+                    opt => opt.MapFrom(src => src.BoDeHocs.Count))
+                .ForMember(dest => dest.Children, opt => opt.Ignore());
 
+            // =====================================================
+            // ENTITY -> RESPONSE
+            // KẾT QUẢ THƯ MỤC
+            // =====================================================
+            CreateMap<ThuMuc, KetQuaThuMucResponse>()
+                .ForMember(dest => dest.ThanhCong, opt => opt.MapFrom(_ => true))
+                .ForMember(dest => dest.ThongBao, opt => opt.Ignore())
+                .ForMember(dest => dest.ThuMuc, opt => opt.MapFrom(src => src));
 
+            // =====================================================
+            // LIST ENTITY -> CÂY THƯ MỤC RESPONSE (wrapper)
+            // =====================================================
+            CreateMap<List<ThuMuc>, CayThuMucResponse>()
+                .ForMember(dest => dest.Nodes, opt => opt.Ignore()) // service build tree
+                .ForMember(dest => dest.TongSoThuMuc,
+                    opt => opt.MapFrom(src => src.Count))
+                .ForMember(dest => dest.TongSoBoDe,
+                    opt => opt.MapFrom(src => src.Sum(x => x.BoDeHocs.Count)));
         }
     }
 }

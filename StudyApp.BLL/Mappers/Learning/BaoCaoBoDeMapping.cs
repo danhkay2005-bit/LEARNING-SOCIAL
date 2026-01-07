@@ -3,7 +3,6 @@ using StudyApp.DAL.Entities.Learning;
 using StudyApp.DTO.Enums;
 using StudyApp.DTO.Requests.Learning;
 using StudyApp.DTO.Responses.Learning;
-using static StudyApp.BLL.Mappers.MappingHelpers;
 
 namespace StudyApp.BLL.Mappers.Learning
 {
@@ -11,19 +10,41 @@ namespace StudyApp.BLL.Mappers.Learning
     {
         public BaoCaoBoDeMapping()
         {
+            // ============================
+            // REQUEST → ENTITY
+            // ============================
+
+            // Người dùng gửi báo cáo
             CreateMap<BaoCaoBoDeRequest, BaoCaoBoDe>()
-                .ForMember(d => d.MaBaoCao, o => o.Ignore())
-                .ForMember(d => d.MaNguoiBaoCao, o => o.Ignore()) // Gán từ User ID trong Service
-                .ForMember(d => d.LyDo, o => o.MapFrom(s => s.LyDo.ToString()))
-                .ForMember(d => d.TrangThai, o => o.MapFrom(_ => TrangThaiBaoCaoEnum.ChoDuyet.ToString()))
-                .ForMember(d => d.ThoiGian, o => o.MapFrom(_ => DateTime.UtcNow))
-                .ForMember(d => d.MaBoDeNavigation, o => o.Ignore());
+                .ForMember(dest => dest.LyDo,
+                    opt => opt.MapFrom(src => src.LyDo.ToString()))
+                .ForMember(dest => dest.TrangThai,
+                    opt => opt.MapFrom(_ => TrangThaiBaoCaoEnum.ChoDuyet.ToString()))
+                .ForMember(dest => dest.ThoiGian,
+                    opt => opt.MapFrom(_ => DateTime.Now));
+
+            // Admin xử lý báo cáo
+            CreateMap<XuLyBaoCaoRequest, BaoCaoBoDe>()
+                .ForMember(dest => dest.TrangThai,
+                    opt => opt.MapFrom(src => src.TrangThai.ToString()))
+                // PATCH: chỉ update field được gửi
+                .ForAllMembers(opt =>
+                    opt.Condition((src, dest, srcMember) => srcMember != null)
+                );
+
+            // ============================
+            // ENTITY → RESPONSE
+            // ============================
 
             CreateMap<BaoCaoBoDe, BaoCaoBoDeResponse>()
-                .ForMember(d => d.LyDo, o => o.MapFrom(s => ParseEnum<LyDoBaoCaoEnum>(s.LyDo)))
-                .ForMember(d => d.TrangThai, o => o.MapFrom(s => ParseEnum<TrangThaiBaoCaoEnum>(s.TrangThai)))
-                .ForMember(d => d.BoDe, o => o.Ignore())
-                .ForMember(d => d.NguoiBaoCao, o => o.Ignore());
+                .ForMember(dest => dest.LyDo,
+                    opt => opt.MapFrom(src =>
+                        Enum.Parse<LyDoBaoCaoEnum>(src.LyDo)))
+                .ForMember(dest => dest.TrangThai,
+                    opt => opt.MapFrom(src =>
+                        Enum.Parse<TrangThaiBaoCaoEnum>(src.TrangThai ?? TrangThaiBaoCaoEnum.ChoDuyet.ToString())))
+                .ForMember(dest => dest.BoDe,
+                    opt => opt.MapFrom(src => src.MaBoDeNavigation));
         }
     }
 }

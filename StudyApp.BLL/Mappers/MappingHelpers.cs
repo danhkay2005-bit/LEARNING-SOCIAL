@@ -1,4 +1,7 @@
-﻿namespace StudyApp.BLL.Mappers;
+﻿using AutoMapper;
+using StudyApp.DTO.Enums;
+
+namespace StudyApp.BLL.Mappers;
 
 /// <summary>
 /// Helper methods cho AutoMapper
@@ -10,6 +13,13 @@ public static class MappingHelpers
     {
         if (string.IsNullOrEmpty(value)) return default;
         return Enum.TryParse<TEnum>(value, true, out var result) ? result : default;
+    }
+    public static ThuTuHocEnum ParseThuTuHoc(string? value)
+    {
+        return !string.IsNullOrWhiteSpace(value)
+            && Enum.TryParse<ThuTuHocEnum>(value, true, out var result)
+                ? result
+                : ThuTuHocEnum.TuDong;
     }
 
     public static TEnum? ParseEnumNullable<TEnum>(string? value) where TEnum : struct, Enum
