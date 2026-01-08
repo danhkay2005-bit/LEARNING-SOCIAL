@@ -20,10 +20,7 @@ namespace WinForms
 
             ServiceProvider = services.BuildServiceProvider();
 
-            // ⛔ TẠM THỜI CHƯA CHẠY FORM
-            // Application.Run(
-            //     ServiceProvider.GetRequiredService<MainForm>()
-            // );
+            Application.Run(new Forms.frmDangNhap());
         }
 
         private static void ConfigureServices(IServiceCollection services)
