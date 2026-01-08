@@ -108,6 +108,7 @@
             btnDatLaiMatKhau.TabIndex = 7;
             btnDatLaiMatKhau.Text = "ĐẶT LẠI MẬT KHẨU";
             btnDatLaiMatKhau.UseVisualStyleBackColor = false;
+            btnDatLaiMatKhau.Click += btnDatLaiMatKhau_Click;
             // 
             // btnHuy
             // 
@@ -117,6 +118,7 @@
             btnHuy.TabIndex = 8;
             btnHuy.Text = "HỦY";
             btnHuy.UseVisualStyleBackColor = true;
+            btnHuy.Click += btnHuy_Click;
             // 
             // frmQuenMatKhau
             // 

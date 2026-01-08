@@ -149,6 +149,7 @@
             btnDangKy.TabIndex = 11;
             btnDangKy.Text = "ĐĂNG KÝ";
             btnDangKy.UseVisualStyleBackColor = false;
+            btnDangKy.Click += btnDangKy_Click;
             // 
             // btnHuy
             // 
@@ -160,6 +161,7 @@
             btnHuy.TabIndex = 12;
             btnHuy.Text = "Hủy";
             btnHuy.UseVisualStyleBackColor = true;
+            btnHuy.Click += btnHuy_Click;
             // 
             // lblDaCoTaiKhoan
             // 
@@ -178,6 +180,7 @@
             btnDangNhap.TabIndex = 14;
             btnDangNhap.Text = "Đăng Nhập";
             btnDangNhap.UseVisualStyleBackColor = true;
+            btnDangNhap.Click += btnDangNhap_Click;
             // 
             // frmDangKy
             // 

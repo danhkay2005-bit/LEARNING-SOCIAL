@@ -15,29 +15,26 @@ namespace WinForms.Forms
         {
             InitializeComponent();
             _nguoiDungRepo = new NguoiDungRepository();
-            
+
             ConfigureForm();
             RegisterEvents();
         }
 
         private void ConfigureForm()
         {
-            // Cấu hình form 
-            this.StartPosition = FormStartPosition.CenterScreen;
-            this.FormBorderStyle = FormBorderStyle.FixedSingle;
-            this.MaximizeBox = false;
-            this.Text = "Đăng Nhập - StudyApp";
+            StartPosition = FormStartPosition.CenterScreen;
+            FormBorderStyle = FormBorderStyle.FixedSingle;
+            MaximizeBox = false;
+            Text = "Đăng Nhập - StudyApp";
 
-            // Cấu hình textbox mật khẩu
             txtMatKhau.PasswordChar = '●';
             txtMatKhau.UseSystemPasswordChar = true;
 
-            this.Load += (s, e) => txtTenDangNhap.Focus();
+            Load += (s, e) => txtTenDangNhap.Focus();
         }
 
         private void RegisterEvents()
         {
-            // Enter ở username → chuyển sang password
             txtTenDangNhap.KeyPress += (s, e) =>
             {
                 if (e.KeyChar == (char)Keys.Enter)
@@ -47,37 +44,37 @@ namespace WinForms.Forms
                 }
             };
 
-            // Enter ở password → đăng nhập luôn
             txtMatKhau.KeyPress += (s, e) =>
             {
                 if (e.KeyChar == (char)Keys.Enter)
                 {
-                    btnDangNhap_Click(s, e);
+                    TryLogin();
                     e.Handled = true;
                 }
-            };
+            };  
         }
-            
+
         private void btnDangNhap_Click(object sender, EventArgs e)
+        {
+            TryLogin();
+        }
+
+        private void TryLogin()
         {
             try
             {
-                // Validate input
                 if (!ValidateInput())
                 {
                     return;
                 }
 
-                // Disable button
                 btnDangNhap.Enabled = false;
                 btnDangNhap.Text = "Đang xử lý...";
-                this.Cursor = Cursors.WaitCursor;
+                Cursor = Cursors.WaitCursor;
 
-                // Lấy thông tin
                 string username = txtTenDangNhap.Text.Trim();
                 string password = txtMatKhau.Text;
 
-                // ✅ TÌM USER
                 var user = _nguoiDungRepo.GetUserByUsername(username);
 
                 if (user == null)
@@ -94,7 +91,6 @@ namespace WinForms.Forms
                     return;
                 }
 
-                // ✅ KIỂM TRA MẬT KHẨU
                 string hashedPassword = HashPassword(password);
 
                 if (user.MatKhauMaHoa != hashedPassword)
@@ -111,9 +107,10 @@ namespace WinForms.Forms
                     return;
                 }
 
-                // ✅ ĐĂNG NHẬP THÀNH CÔNG
                 UserSession.CurrentUser = user;
-                _nguoiDungRepo.UpdateOnlineStatus(user.MaNguoiDung, true);
+
+                // Nếu repo chưa có method này thì comment lại hoặc thêm method trong repository
+                // _nguoiDungRepo.UpdateOnlineStatus(user.MaNguoiDung, true);
 
                 MessageBox.Show(
                     $"✅ Đăng nhập thành công!\n\n" +
@@ -124,8 +121,8 @@ namespace WinForms.Forms
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information);
 
-                this.DialogResult = DialogResult.OK;
-                this.Close();
+                DialogResult = DialogResult.OK;
+                Close();
             }
             catch (Exception ex)
             {
@@ -139,7 +136,7 @@ namespace WinForms.Forms
             {
                 btnDangNhap.Enabled = true;
                 btnDangNhap.Text = "ĐĂNG NHẬP";
-                this.Cursor = Cursors.Default;
+                Cursor = Cursors.Default;
             }
         }
 
@@ -147,20 +144,16 @@ namespace WinForms.Forms
         {
             try
             {
-                // Ẩn form đăng nhập
-                this.Hide();
+                Hide();
 
-                // Mở form đăng ký
                 using (var formDangKy = new frmDangKy())
                 {
                     var result = formDangKy.ShowDialog();
 
-                    // Hiển thị lại
-                    this.Show();
+                    Show();
 
                     if (result == DialogResult.OK)
                     {
-                        // Đăng ký thành công
                         txtTenDangNhap.Clear();
                         txtMatKhau.Clear();
                         txtTenDangNhap.Focus();
@@ -169,30 +162,25 @@ namespace WinForms.Forms
             }
             catch (Exception ex)
             {
-                this.Show();
+                Show();
                 MessageBox.Show($"⚠️ Lỗi:\n\n{ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
-        private void button1_Click(object sender, EventArgs e)
+        private void btnQuenMatKhau_Click(object sender, EventArgs e)
         {
-            // ✅ QUÊN MẬT KHẨU - MỞ FORM frmQuenMatKhau
             try
             {
-                // ✅ ẨN FORM ĐĂNG NHẬP
-                this.Hide();
+                Hide();
 
-                // ✅ MỞ FORM QUÊN MẬT KHẨU
                 using (var formQuenMatKhau = new frmQuenMatKhau())
                 {
                     var result = formQuenMatKhau.ShowDialog();
 
-                    // ✅ HIỂN THỊ LẠI FORM ĐĂNG NHẬP
-                    this.Show();
+                    Show();
 
                     if (result == DialogResult.OK)
                     {
-                        // ✅ ĐẶT LẠI MẬT KHẨU THÀNH CÔNG
                         MessageBox.Show(
                             "✅ Đặt lại mật khẩu thành công!\n\n" +
                             "Vui lòng đăng nhập lại với mật khẩu mới.",
@@ -205,7 +193,6 @@ namespace WinForms.Forms
                     }
                     else
                     {
-                        // User hủy đặt lại mật khẩu
                         txtTenDangNhap.Focus();
                     }
                 }
@@ -225,8 +212,6 @@ namespace WinForms.Forms
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Information);
         }
-
-        #region Helpers
 
         private bool ValidateInput()
         {
@@ -261,11 +246,9 @@ namespace WinForms.Forms
             }
         }
 
-        #endregion
-
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
-            if (!UserSession.IsLoggedIn && this.DialogResult != DialogResult.OK)
+            if (!UserSession.IsLoggedIn && DialogResult != DialogResult.OK)
             {
                 var result = MessageBox.Show(
                     "❓ Bạn chưa đăng nhập.\n\nBạn có chắc muốn thoát?",

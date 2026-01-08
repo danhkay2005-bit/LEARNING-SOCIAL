@@ -35,7 +35,7 @@
             lblMatKhau = new Label();
             txtMatKhau = new TextBox();
             btnDangNhap = new Button();
-            button1 = new Button();
+            btnQuenMatKhau = new Button();
             btnGoogleLogin = new Button();
             lblDangNhapVoi = new Label();
             lblBanCoTaiKhoanChua = new Label();
@@ -100,15 +100,15 @@
             btnDangNhap.UseVisualStyleBackColor = false;
             btnDangNhap.Click += btnDangNhap_Click;
             // 
-            // button1
+            // btnQuenMatKhau
             // 
-            button1.Location = new Point(242, 276);
-            button1.Name = "button1";
-            button1.Size = new Size(103, 23);
-            button1.TabIndex = 6;
-            button1.Text = "Quên Mật Khẩu";
-            button1.UseVisualStyleBackColor = true;
-            button1.Click += button1_Click;
+            btnQuenMatKhau.Location = new Point(242, 276);
+            btnQuenMatKhau.Name = "btnQuenMatKhau";
+            btnQuenMatKhau.Size = new Size(103, 23);
+            btnQuenMatKhau.TabIndex = 6;
+            btnQuenMatKhau.Text = "Quên Mật Khẩu";
+            btnQuenMatKhau.UseVisualStyleBackColor = true;
+            btnQuenMatKhau.Click += btnQuenMatKhau_Click;
             // 
             // btnGoogleLogin
             // 
@@ -162,7 +162,7 @@
             Controls.Add(lblBanCoTaiKhoanChua);
             Controls.Add(lblDangNhapVoi);
             Controls.Add(btnGoogleLogin);
-            Controls.Add(button1);
+            Controls.Add(btnQuenMatKhau);
             Controls.Add(btnDangNhap);
             Controls.Add(txtMatKhau);
             Controls.Add(lblMatKhau);
@@ -183,7 +183,7 @@
         private Label lblMatKhau;
         private TextBox txtMatKhau;
         private Button btnDangNhap;
-        private Button button1;
+        private Button btnQuenMatKhau;
         private Button btnGoogleLogin;
         private Label lblDangNhapVoi;
         private Label lblBanCoTaiKhoanChua;
