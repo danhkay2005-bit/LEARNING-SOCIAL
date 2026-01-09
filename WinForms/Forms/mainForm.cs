@@ -50,14 +50,15 @@ namespace WinForms.Forms
 
             UserControl page = key switch
             {
+                "dangnhap" => CreateDangNhapControl(),
+                "dangky" => CreateDangKyControl(),
+                "quenmatkhau" => CreateQuenMatKhauControl(),
+
                 "feed" => new FeedPageControl(),
                 "study" => new StudyPageControl(),
                 "library" => new LibraryPageControl(),
                 "profile" => new ProfilePageControl(),
                 "settings" => new SettingPageControl(),
-
-                "dangnhap" => CreateDangNhapControl(),
-                "dangky" => CreateDangKyControl(),
 
                 _ => new FeedPageControl()
             };
@@ -73,13 +74,19 @@ namespace WinForms.Forms
 
             login.LoginSuccess += () =>
             {
-                _leftMenu?.RefreshMenu();   // ⭐ refresh menu
+                _leftMenu?.RefreshMenu();
                 HandleNavigate("feed");
             };
 
             login.RequestRegister += () =>
             {
                 HandleNavigate("dangky");
+            };
+
+            // ⭐ QUÊN MẬT KHẨU
+            login.RequestForgotPassword += () =>
+            {
+                HandleNavigate("quenmatkhau");
             };
 
             return login;
@@ -96,6 +103,18 @@ namespace WinForms.Forms
             };
 
             return register;
+        }
+
+        private QuenMatKhauControl CreateQuenMatKhauControl()
+        {
+            var forgot = new QuenMatKhauControl(_nguoiDungService);
+
+            forgot.RequestBackToLogin += () =>
+            {
+                HandleNavigate("dangnhap");
+            };
+
+            return forgot;
         }
 
         // ================= LOGOUT =================

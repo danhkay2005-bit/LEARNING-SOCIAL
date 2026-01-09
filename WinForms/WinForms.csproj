@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Folder Include="Forms\Author\" />
     <Folder Include="Utilities\" />
     <Folder Include="Resources\" />
   </ItemGroup>

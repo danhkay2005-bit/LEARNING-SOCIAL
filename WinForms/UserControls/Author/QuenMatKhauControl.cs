@@ -4,28 +4,26 @@ using System;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
 
-namespace WinForms.Forms
+namespace WinForms.UserControls.Author
 {
-    public partial class frmQuenMatKhau : Form
+    public partial class QuenMatKhauControl : UserControl
     {
         private readonly INguoiDungService _nguoiDungService;
 
-        public frmQuenMatKhau()
+        // ⭐ Event để mainForm điều hướng
+        public event Action? RequestBackToLogin;
+
+        public QuenMatKhauControl(INguoiDungService nguoiDungService)
         {
             InitializeComponent();
-            _nguoiDungService = Program.ServiceProvider.GetRequiredService<INguoiDungService>();
+            _nguoiDungService = nguoiDungService;
 
-            ConfigureForm();
+            ConfigureControl();
             RegisterEvents();
         }
 
-        private void ConfigureForm()
+        private void ConfigureControl()
         {
-            StartPosition = FormStartPosition.CenterScreen;
-            FormBorderStyle = FormBorderStyle.FixedSingle;
-            MaximizeBox = false;
-            Text = "Quên Mật Khẩu - StudyApp";
-
             txtMatKhauMoi.UseSystemPasswordChar = true;
             txtXacNhanMatKhau.UseSystemPasswordChar = true;
 
@@ -56,7 +54,7 @@ namespace WinForms.Forms
             {
                 if (e.KeyChar == (char)Keys.Enter)
                 {
-                    btnDatLaiMatKhau_Click(btnDatLaiMatKhau, EventArgs.Empty);
+                    DatLaiMatKhau();
                     e.Handled = true;
                 }
             };
@@ -64,44 +62,64 @@ namespace WinForms.Forms
 
         private void btnDatLaiMatKhau_Click(object sender, EventArgs e)
         {
+            DatLaiMatKhau();
+        }
+
+        private void DatLaiMatKhau()
+        {
             try
             {
                 if (!ValidateInput())
-                {
                     return;
-                }
 
                 btnDatLaiMatKhau.Enabled = false;
                 btnDatLaiMatKhau.Text = "Đang xử lý...";
                 Cursor = Cursors.WaitCursor;
 
-                string email = txtEmail.Text.Trim();
-                string newPassword = txtMatKhauMoi.Text;
+                var email = txtEmail.Text.Trim();
+                var newPassword = txtMatKhauMoi.Text;
 
                 var result = _nguoiDungService.ResetPassword(email, newPassword);
 
                 switch (result)
                 {
                     case ResetPasswordResult.Success:
-                        MessageBox.Show("✅ Đặt lại mật khẩu thành công!", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        DialogResult = DialogResult.OK;
-                        Close();
+                        MessageBox.Show(
+                            "✅ Đặt lại mật khẩu thành công!\n\nVui lòng đăng nhập lại.",
+                            "Thành công",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Information);
+
+                        RequestBackToLogin?.Invoke();
                         break;
 
                     case ResetPasswordResult.EmailNotFound:
-                        MessageBox.Show("❌ Email không tồn tại trong hệ thống!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show(
+                            "❌ Email không tồn tại!",
+                            "Lỗi",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Error);
+
                         txtEmail.Focus();
                         txtEmail.SelectAll();
                         break;
 
                     default:
-                        MessageBox.Show("❌ Không thể đặt lại mật khẩu. Vui lòng thử lại sau.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show(
+                            "❌ Không thể đặt lại mật khẩu.",
+                            "Lỗi",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Error);
                         break;
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"⚠️ Lỗi:\n\n{ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(
+                    $"⚠️ Lỗi hệ thống:\n\n{ex.Message}",
+                    "Lỗi",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
             }
             finally
             {
@@ -113,46 +131,38 @@ namespace WinForms.Forms
 
         private void btnHuy_Click(object sender, EventArgs e)
         {
-            DialogResult = DialogResult.Cancel;
-            Close();
+            RequestBackToLogin?.Invoke();
         }
 
         private bool ValidateInput()
         {
-            string email = txtEmail.Text.Trim();
+            var email = txtEmail.Text.Trim();
 
             if (string.IsNullOrWhiteSpace(email))
             {
-                MessageBox.Show("⚠️ Vui lòng nhập email!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("⚠️ Vui lòng nhập email!");
                 txtEmail.Focus();
                 return false;
             }
 
             if (!Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
             {
-                MessageBox.Show("⚠️ Email không hợp lệ!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("⚠️ Email không hợp lệ!");
                 txtEmail.Focus();
                 txtEmail.SelectAll();
                 return false;
             }
 
-            if (string.IsNullOrWhiteSpace(txtMatKhauMoi.Text))
+            if (txtMatKhauMoi.Text.Length < 6)
             {
-                MessageBox.Show("⚠️ Vui lòng nhập mật khẩu mới!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("⚠️ Mật khẩu tối thiểu 6 ký tự!");
                 txtMatKhauMoi.Focus();
                 return false;
             }
 
-            if (txtMatKhauMoi.Text.Length < 6 || txtMatKhauMoi.Text.Length > 100)
+            if (!txtMatKhauMoi.Text.Equals(txtXacNhanMatKhau.Text))
             {
-                MessageBox.Show("⚠️ Mật khẩu phải từ 6-100 ký tự!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                txtMatKhauMoi.Focus();
-                return false;
-            }
-
-            if (!string.Equals(txtMatKhauMoi.Text, txtXacNhanMatKhau.Text, StringComparison.Ordinal))
-            {
-                MessageBox.Show("⚠️ Mật khẩu xác nhận không khớp!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("⚠️ Mật khẩu xác nhận không khớp!");
                 txtXacNhanMatKhau.Clear();
                 txtXacNhanMatKhau.Focus();
                 return false;

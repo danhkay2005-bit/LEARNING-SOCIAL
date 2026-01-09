@@ -12,6 +12,7 @@ namespace WinForms.UserControls.Author
 
         public event Action? LoginSuccess;
         public event Action? RequestRegister;
+        public event Action? RequestForgotPassword;
 
         public DangNhapControl(INguoiDungService nguoiDungService)
         {
@@ -45,7 +46,7 @@ namespace WinForms.UserControls.Author
 
         private void btnQuenMatKhau_Click(object sender, EventArgs e)
         {
-            MessageBox.Show("Chức năng quên mật khẩu chưa được triển khai.");
+            RequestForgotPassword?.Invoke();
         }
     }
 }
