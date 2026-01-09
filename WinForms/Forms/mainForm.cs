@@ -1,8 +1,8 @@
 ﻿using StudyApp.BLL.Services.Interfaces.User;
 using StudyApp.DTO;
 using System;
-using System.Drawing;
 using System.Windows.Forms;
+using WinForms.UserControls.Author;
 using WinForms.UserControls.MainControl;
 using WinForms.UserControls.Pages;
 
@@ -11,30 +11,39 @@ namespace WinForms.Forms
     public partial class mainForm : Form
     {
         private readonly INguoiDungService _nguoiDungService;
+        private LeftMenuControl? _leftMenu;
+
         public mainForm(INguoiDungService nguoiDungService)
         {
             InitializeComponent();
             _nguoiDungService = nguoiDungService;
+
             InitLeftMenu();
+
+            // ⭐ QUAN TRỌNG: vào đúng màn hình ban đầu
+            if (!UserSession.IsLoggedIn)
+                HandleNavigate("dangnhap");
+            else
+                HandleNavigate("feed");
         }
 
+        // ================= LEFT MENU =================
         private void InitLeftMenu()
         {
             pnlLeft.Controls.Clear();
 
-            var leftMenu = new LeftMenuControl
+            _leftMenu = new LeftMenuControl
             {
                 Dock = DockStyle.Fill
             };
 
-            leftMenu.OnNavigate += HandleNavigate;
-            leftMenu.OnLoginClick += OpenLoginForm;
-            leftMenu.OnRegisterClick += OpenRegisterForm;
-            leftMenu.OnLogoutClick += Logout;
+            _leftMenu.OnNavigate += HandleNavigate;
+            _leftMenu.OnLogoutClick += Logout;
 
-            pnlLeft.Controls.Add(leftMenu);
+            pnlLeft.Controls.Add(_leftMenu);
         }
 
+        // ================= NAVIGATION =================
         private void HandleNavigate(string key)
         {
             midControl.Controls.Clear();
@@ -46,35 +55,55 @@ namespace WinForms.Forms
                 "library" => new LibraryPageControl(),
                 "profile" => new ProfilePageControl(),
                 "settings" => new SettingPageControl(),
+
+                "dangnhap" => CreateDangNhapControl(),
+                "dangky" => CreateDangKyControl(),
+
                 _ => new FeedPageControl()
             };
 
+            page.Dock = DockStyle.Fill;
             midControl.Controls.Add(page);
         }
 
-        private void OpenLoginForm()
+        // ================= LOGIN =================
+        private DangNhapControl CreateDangNhapControl()
         {
-            using var frm = new frmDangNhap(_nguoiDungService);
+            var login = new DangNhapControl(_nguoiDungService);
 
-            if (frm.ShowDialog() == DialogResult.OK)
+            login.LoginSuccess += () =>
             {
-                // Replace frm.LoggedInUser with UserSession.CurrentUser
-                UserSession.Login(UserSession.CurrentUser!);
-                InitLeftMenu();
+                _leftMenu?.RefreshMenu();   // ⭐ refresh menu
                 HandleNavigate("feed");
-            }
+            };
+
+            login.RequestRegister += () =>
+            {
+                HandleNavigate("dangky");
+            };
+
+            return login;
         }
 
-        private void OpenRegisterForm()
+        // ================= REGISTER =================
+        private DangKyControl CreateDangKyControl()
         {
-            MessageBox.Show("Form đăng ký (chưa làm)");
+            var register = new DangKyControl(_nguoiDungService);
+
+            register.RequestBackToLogin += () =>
+            {
+                HandleNavigate("dangnhap");
+            };
+
+            return register;
         }
 
+        // ================= LOGOUT =================
         private void Logout()
         {
             UserSession.Logout();
-            InitLeftMenu();
-            midControl.Controls.Clear();
+            _leftMenu?.RefreshMenu();       // ⭐ refresh menu
+            HandleNavigate("dangnhap");
         }
     }
 }

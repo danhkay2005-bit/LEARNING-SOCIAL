@@ -8,13 +8,17 @@ namespace WinForms.UserControls.MainControl
     public partial class LeftMenuControl : UserControl
     {
         public event Action<string>? OnNavigate;
-        public event Action? OnLoginClick;
-        public event Action? OnRegisterClick;
         public event Action? OnLogoutClick;
 
         public LeftMenuControl()
         {
             InitializeComponent();
+            BuildMenu();
+        }
+
+        // ⭐ QUAN TRỌNG: cho phép rebuild menu
+        public void RefreshMenu()
+        {
             BuildMenu();
         }
 
@@ -36,8 +40,8 @@ namespace WinForms.UserControls.MainControl
 
             if (!UserSession.IsLoggedIn)
             {
-                layout.Controls.Add(CreateActionButton(" Đăng nhập", () => OnLoginClick?.Invoke()));
-                layout.Controls.Add(CreateActionButton("Đăng ký", () => OnRegisterClick?.Invoke()));
+                layout.Controls.Add(CreateNavButton("🔑  Đăng nhập", "dangnhap"));
+                layout.Controls.Add(CreateNavButton("📝  Đăng ký", "dangky"));
             }
             else
             {

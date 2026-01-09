@@ -5,12 +5,14 @@ using StudyApp.DTO;
 using StudyApp.DTO.Requests.NguoiDung;
 using System;
 using System.Windows.Forms;
+using WinForms.UserControls.Author;
 
 namespace WinForms.Forms
 {
     public partial class frmDangNhap : Form
     {
         private readonly INguoiDungService _nguoiDungService;
+        public event Action? RequestRegister;
 
         public frmDangNhap(INguoiDungService nguoiDungService)
         {
@@ -136,29 +138,7 @@ namespace WinForms.Forms
 
         private void btnDangKy_Click(object sender, EventArgs e)
         {
-            try
-            {
-                Hide();
-
-                using (var formDangKy = new frmDangKy())
-                {
-                    var result = formDangKy.ShowDialog();
-
-                    Show();
-
-                    if (result == DialogResult.OK)
-                    {
-                        txtTenDangNhap.Clear();
-                        txtMatKhau.Clear();
-                        txtTenDangNhap.Focus();
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Show();
-                MessageBox.Show($"⚠️ Lỗi:\n\n{ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            RequestRegister?.Invoke();
         }
 
         private void btnQuenMatKhau_Click(object sender, EventArgs e)
