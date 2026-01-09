@@ -1,11 +1,6 @@
-﻿using StudyApp.DAL.Repositories;
+﻿using Microsoft.Extensions.DependencyInjection;
+using StudyApp.BLL.Services.Interfaces.User;
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Security.Cryptography;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
 
@@ -13,11 +8,13 @@ namespace WinForms.Forms
 {
     public partial class frmQuenMatKhau : Form
     {
-        private readonly NguoiDungRepository _nguoiDungRepo;
+        private readonly INguoiDungService _nguoiDungService;
+
         public frmQuenMatKhau()
         {
             InitializeComponent();
-            _nguoiDungRepo = new NguoiDungRepository();
+            _nguoiDungService = Program.ServiceProvider.GetRequiredService<INguoiDungService>();
+
             ConfigureForm();
             RegisterEvents();
         }
@@ -59,12 +56,11 @@ namespace WinForms.Forms
             {
                 if (e.KeyChar == (char)Keys.Enter)
                 {
-                    btnDatLaiMatKhau_Click(sender: btnDatLaiMatKhau, e: EventArgs.Empty);
+                    btnDatLaiMatKhau_Click(btnDatLaiMatKhau, EventArgs.Empty);
                     e.Handled = true;
                 }
             };
         }
-
 
         private void btnDatLaiMatKhau_Click(object sender, EventArgs e)
         {
@@ -80,42 +76,28 @@ namespace WinForms.Forms
                 Cursor = Cursors.WaitCursor;
 
                 string email = txtEmail.Text.Trim();
-                var user = _nguoiDungRepo.GetUserByEmail(email);
+                string newPassword = txtMatKhauMoi.Text;
 
-                if (user == null)
+                var result = _nguoiDungService.ResetPassword(email, newPassword);
+
+                switch (result)
                 {
-                    MessageBox.Show(
-                        "❌ Email không tồn tại trong hệ thống!\n\nVui lòng kiểm tra lại.",
-                        "Lỗi",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Error);
+                    case ResetPasswordResult.Success:
+                        MessageBox.Show("✅ Đặt lại mật khẩu thành công!", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        DialogResult = DialogResult.OK;
+                        Close();
+                        break;
 
-                    txtEmail.Focus();
-                    txtEmail.SelectAll();
-                    return;
+                    case ResetPasswordResult.EmailNotFound:
+                        MessageBox.Show("❌ Email không tồn tại trong hệ thống!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        txtEmail.Focus();
+                        txtEmail.SelectAll();
+                        break;
+
+                    default:
+                        MessageBox.Show("❌ Không thể đặt lại mật khẩu. Vui lòng thử lại sau.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        break;
                 }
-
-                string hashedPassword = HashPasswordSha256(txtMatKhauMoi.Text);
-
-                bool changed = _nguoiDungRepo.ChangePassword(email, hashedPassword);
-                if (!changed)
-                {
-                    MessageBox.Show(
-                        "❌ Không thể đặt lại mật khẩu.\n\nVui lòng thử lại sau.",
-                        "Lỗi",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Error);
-                    return;
-                }
-
-                MessageBox.Show(
-                    "✅ Đặt lại mật khẩu thành công!",
-                    "Thành công",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information);
-
-                DialogResult = DialogResult.OK;
-                Close();
             }
             catch (Exception ex)
             {
@@ -146,7 +128,7 @@ namespace WinForms.Forms
                 return false;
             }
 
-            if (!IsValidEmail(email))
+            if (!Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
             {
                 MessageBox.Show("⚠️ Email không hợp lệ!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 txtEmail.Focus();
@@ -168,13 +150,6 @@ namespace WinForms.Forms
                 return false;
             }
 
-            if (string.IsNullOrWhiteSpace(txtXacNhanMatKhau.Text))
-            {
-                MessageBox.Show("⚠️ Vui lòng xác nhận mật khẩu!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                txtXacNhanMatKhau.Focus();
-                return false;
-            }
-
             if (!string.Equals(txtMatKhauMoi.Text, txtXacNhanMatKhau.Text, StringComparison.Ordinal))
             {
                 MessageBox.Show("⚠️ Mật khẩu xác nhận không khớp!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -184,23 +159,6 @@ namespace WinForms.Forms
             }
 
             return true;
-        }
-
-        private static bool IsValidEmail(string email)
-        {
-            return Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$");
-        }
-
-        private static string HashPasswordSha256(string password)
-        {
-            using var sha256 = SHA256.Create();
-            byte[] bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
-            var builder = new StringBuilder(bytes.Length * 2);
-            foreach (byte b in bytes)
-            {
-                builder.Append(b.ToString("x2"));
-            }
-            return builder.ToString();
         }
     }
 }

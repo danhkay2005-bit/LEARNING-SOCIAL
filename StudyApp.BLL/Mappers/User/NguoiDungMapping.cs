@@ -22,7 +22,6 @@ namespace StudyApp.BLL.Mappers.User
 
         private void MapEntityToResponse()
         {
-            // ===== CƠ BẢN =====
             CreateMap<NguoiDung, NguoiDungResponse>()
                 .ForMember(d => d.GioiTinh,
                     o => o.MapFrom(s =>
@@ -32,16 +31,13 @@ namespace StudyApp.BLL.Mappers.User
                 .ForMember(d => d.CapDo,
                     o => o.MapFrom(s => s.MaCapDoNavigation));
 
-            // ===== CHI TIẾT =====
             CreateMap<NguoiDung, NguoiDungChiTietResponse>()
                 .IncludeBase<NguoiDung, NguoiDungResponse>();
 
-            // ===== TÓM TẮT =====
             CreateMap<NguoiDung, NguoiDungTomTatResponse>()
                 .ForMember(d => d.TenCapDo,
                     o => o.MapFrom(s => s.MaCapDoNavigation!.TenCapDo));
 
-            // ===== BẢNG XẾP HẠNG =====
             CreateMap<NguoiDung, BangXepHangNguoiDungResponse>()
                 .ForMember(d => d.TenCapDo,
                     o => o.MapFrom(s => s.MaCapDoNavigation!.TenCapDo));
@@ -53,6 +49,21 @@ namespace StudyApp.BLL.Mappers.User
 
         private void MapRequestToEntity()
         {
+            // ===== ĐĂNG KÝ =====
+            CreateMap<DangKyNguoiDungRequest, NguoiDung>()
+                .ForMember(d => d.TenDangNhap, o => o.MapFrom(s => s.TenDangNhap))
+                .ForMember(d => d.Email, o => o.MapFrom(s => s.Email))
+                .ForMember(d => d.SoDienThoai, o => o.MapFrom(s => s.SoDienThoai))
+                .ForMember(d => d.HoVaTen, o => o.MapFrom(s => s.HoVaTen))
+                // MatKhauMaHoa sẽ set ở Service (SHA256)
+                .ForMember(d => d.MatKhauMaHoa, o => o.Ignore())
+                // để DB default xử lý
+                .ForMember(d => d.MaVaiTro, o => o.Ignore())
+                .ForMember(d => d.MaCapDo, o => o.Ignore())
+                .ForMember(d => d.Vang, o => o.Ignore())
+                .ForMember(d => d.KimCuong, o => o.Ignore())
+                .ForAllMembers(o => o.Condition((src, dest, srcMember) => srcMember != null));
+
             // ===== CẬP NHẬT PROFILE =====
             CreateMap<CapNhatThongTinCaNhanRequest, NguoiDung>()
                 .ForAllMembers(o =>

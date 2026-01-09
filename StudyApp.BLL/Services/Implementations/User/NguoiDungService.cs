@@ -1,56 +1,127 @@
-﻿using System.Security.Cryptography;
-using System.Text;
+﻿using AutoMapper;
 using StudyApp.BLL.Services.Interfaces.User;
-using StudyApp.DAL.Repositories;
+using StudyApp.DAL.Data;
+using StudyApp.DAL.Entities.User;
 using StudyApp.DTO;
 using StudyApp.DTO.Requests.NguoiDung;
+using System;
+using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
+using StudyApp.DTO.Enums;
 
 namespace StudyApp.BLL.Services.Implementations.User
 {
     public class NguoiDungService : INguoiDungService
     {
-        private readonly NguoiDungRepository _repo;
+        private readonly UserDbContext _db;
+        private readonly IMapper _mapper;
 
-        public NguoiDungService()
+        public NguoiDungService(UserDbContext db, IMapper mapper)
         {
-            _repo = new NguoiDungRepository();
+            _db = db;
+            _mapper = mapper;
         }
 
         public LoginResult Login(DangNhapRequest request)
         {
-            var user = _repo.GetUserByUsername(request.TenDangNhap);
-            if (user == null) return LoginResult.UserNotFound;
+            string username = request.TenDangNhap.Trim();
 
-            string inputHash = HashPassword(request.MatKhau);
-
-            if (user.MatKhauMaHoa == inputHash)
+            var user = _db.NguoiDungs.FirstOrDefault(x => x.TenDangNhap == username && x.DaXoa == false);
+            if (user == null)
             {
-                UserSession.CurrentUser = user;
-                return LoginResult.Success;
+                return LoginResult.UserNotFound;
             }
 
-            return LoginResult.InvalidCredentials;
+            string inputHash = HashPassword(request.MatKhau);
+            if (!string.Equals(user.MatKhauMaHoa, inputHash, StringComparison.Ordinal))
+            {
+                return LoginResult.InvalidCredentials;
+            }
+
+            UserSession.CurrentUser = new NguoiDungDTO
+            {
+                MaNguoiDung = user.MaNguoiDung,
+                TenDangNhap = user.TenDangNhap,
+                MatKhauMaHoa = user.MatKhauMaHoa,
+                HoVaTen = user.HoVaTen,
+                Email = user.Email,
+                SoDienThoai = user.SoDienThoai,
+                MaVaiTro = user.MaVaiTro ?? (int)VaiTroEnum.Member,
+                Vang = user.Vang ?? 0,
+                KimCuong = user.KimCuong ?? 0
+            };    
+
+            return LoginResult.Success;
         }
 
         public RegisterResult Register(DangKyNguoiDungRequest request)
         {
-            if (_repo.CheckExists(request.TenDangNhap, request.Email))
+            string username = request.TenDangNhap.Trim();
+            string? email = string.IsNullOrWhiteSpace(request.Email) ? null : request.Email.Trim();
+
+            bool exists = _db.NguoiDungs.Any(x =>
+                x.DaXoa == false &&
+                (x.TenDangNhap == username || (email != null && x.Email == email)));
+
+            if (exists)
             {
                 return RegisterResult.UsernameExists;
             }
 
-            NguoiDungDTO newUser = new NguoiDungDTO
-            {
-                TenDangNhap = request.TenDangNhap,
-                MatKhauMaHoa = HashPassword(request.MatKhau),
-                HoVaTen = request.HoVaTen,
-                Email = request.Email
-            };
+            // Map Request -> Entity (theo NguoiDungMapping)
+            NguoiDung entity = _mapper.Map<NguoiDung>(request);
 
-            return _repo.CreateUser(newUser) ? RegisterResult.Success : RegisterResult.Fail;
+            // Normalize + hash (SHA256)
+            entity.TenDangNhap = username;
+            entity.Email = email;
+            entity.MatKhauMaHoa = HashPassword(request.MatKhau);
+
+            // Ensure MaVaiTro is valid (avoid FK violation when DB isn't seeded with expected default)
+            if (entity.MaVaiTro == null)
+            {
+                const int preferredDefaultRoleId = 3;
+
+                int? roleId = _db.VaiTros
+                    .Where(v => v.MaVaiTro == preferredDefaultRoleId)
+                    .Select(v => (int?)v.MaVaiTro)
+                    .FirstOrDefault();
+
+                roleId ??= _db.VaiTros
+                    .OrderBy(v => v.MaVaiTro)
+                    .Select(v => (int?)v.MaVaiTro)
+                    .FirstOrDefault();
+
+                if (roleId == null)
+                {
+                    return RegisterResult.Fail;
+                }
+
+                entity.MaVaiTro = roleId;
+            }
+
+            // MaCapDo / Vang / KimCuong sẽ lấy default từ DB (DbContext mapping đã HasDefaultValue)
+            _db.NguoiDungs.Add(entity);
+
+            return _db.SaveChanges() > 0 ? RegisterResult.Success : RegisterResult.Fail;
         }
 
-        private string HashPassword(string password)
+        public ResetPasswordResult ResetPassword(string email, string newPassword)
+        {
+            string normalizedEmail = email.Trim();
+
+            var user = _db.NguoiDungs.FirstOrDefault(x => x.Email == normalizedEmail && x.DaXoa == false);
+            if (user == null)
+            {
+                return ResetPasswordResult.EmailNotFound;
+            }
+
+            user.MatKhauMaHoa = HashPassword(newPassword);
+
+            return _db.SaveChanges() > 0 ? ResetPasswordResult.Success : ResetPasswordResult.Fail;
+        }
+
+        private static string HashPassword(string password)
         {
             using var sha256 = SHA256.Create();
             byte[] bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));

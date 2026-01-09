@@ -1,7 +1,10 @@
 using System;
 using System.Windows.Forms;
 using Microsoft.Extensions.DependencyInjection;
-using AutoMapper;
+using StudyApp.BLL.Services.Interfaces.User;
+using StudyApp.BLL.Services.Implementations.User;
+using StudyApp.DAL.Data;
+using WinForms.Forms;
 
 namespace WinForms
 {
@@ -20,27 +23,18 @@ namespace WinForms
 
             ServiceProvider = services.BuildServiceProvider();
 
-            Application.Run(new Forms.frmDangNhap());
+            Application.Run(ServiceProvider.GetRequiredService<frmDangNhap>());
         }
 
         private static void ConfigureServices(IServiceCollection services)
         {
-            // ===============================
-            // AUTO MAPPER (GIỮ LẠI)
-            // ===============================
-            services.AddAutoMapper(
-                typeof(StudyApp.BLL.Mappers.Learning.TheFlashcardMapping).Assembly
-            );
+            Microsoft.Extensions.DependencyInjection.ServiceCollectionExtensions.AddAutoMapper(
+                services,
+                typeof(StudyApp.BLL.Mappers.User.NguoiDungMapping).Assembly);
 
-            // ===============================
-            // FORM (TẠM THỜI ẨN)
-            // ===============================
-            // services.AddTransient<MainForm>();
+            services.AddTransient<frmDangNhap>();
 
-            // ===============================
-            // SERVICES (SAU NÀY)
-            // ===============================
-            // services.AddScoped<IHocTapService, HocTapService>();
+            services.AddTransient<INguoiDungService, NguoiDungService>();
         }
     }
 }

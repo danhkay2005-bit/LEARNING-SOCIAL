@@ -1,19 +1,20 @@
-﻿using StudyApp.BLL.Services.Implementations.User;
+﻿using Microsoft.Extensions.DependencyInjection;
 using StudyApp.BLL.Services.Interfaces.User;
 using StudyApp.DTO.Requests.NguoiDung;
 using System;
 using System.Windows.Forms;
 
+
 namespace WinForms.Forms
 {
     public partial class frmDangKy : Form
     {
-        private readonly NguoiDungService _nguoiDungService;
+        private readonly INguoiDungService _nguoiDungService;
 
         public frmDangKy()
         {
             InitializeComponent();
-            _nguoiDungService = new NguoiDungService();
+            _nguoiDungService = Program.ServiceProvider.GetRequiredService<INguoiDungService>();
 
             ConfigureForm();
             RegisterEvents();
@@ -157,7 +158,7 @@ namespace WinForms.Forms
             catch (Exception ex)
             {
                 MessageBox.Show(
-                    $"⚠️ Lỗi hệ thống:\n\n{ex.Message}",
+                    $"⚠️ Lỗi hệ thống:\n\n{BuildExceptionText(ex)}",
                     "Lỗi",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error);
@@ -168,6 +169,25 @@ namespace WinForms.Forms
                 btnDangKy.Text = "ĐĂNG KÝ";
                 Cursor = Cursors.Default;
             }
+        }
+
+        private static string BuildExceptionText(Exception ex)
+        {
+            var result = ex.ToString();
+
+            // Show the deepest message first (EF Core usually hides real cause in InnerException)
+            Exception? inner = ex;
+            while (inner?.InnerException != null)
+            {
+                inner = inner.InnerException;
+            }
+
+            if (inner != null && !ReferenceEquals(inner, ex))
+            {
+                result = $"{inner.GetType().Name}: {inner.Message}\n\n--- Full exception ---\n{ex}";
+            }
+
+            return result;
         }
 
         private bool ValidateInput()

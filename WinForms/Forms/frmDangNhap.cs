@@ -1,20 +1,22 @@
-﻿using StudyApp.DAL.Repositories;
+﻿using Microsoft.Extensions.DependencyInjection;
+using StudyApp.BLL.Services.Implementations.User;
+using StudyApp.BLL.Services.Interfaces.User;
 using StudyApp.DTO;
+using StudyApp.DTO.Requests.NguoiDung;
 using System;
-using System.Security.Cryptography;
-using System.Text;
 using System.Windows.Forms;
 
 namespace WinForms.Forms
 {
     public partial class frmDangNhap : Form
     {
-        private readonly NguoiDungRepository _nguoiDungRepo;
+        private readonly INguoiDungService _nguoiDungService;
 
-        public frmDangNhap()
+        public frmDangNhap(INguoiDungService nguoiDungService)
         {
             InitializeComponent();
-            _nguoiDungRepo = new NguoiDungRepository();
+            _nguoiDungService = nguoiDungService;
+
 
             ConfigureForm();
             RegisterEvents();
@@ -51,7 +53,7 @@ namespace WinForms.Forms
                     TryLogin();
                     e.Handled = true;
                 }
-            };  
+            };
         }
 
         private void btnDangNhap_Click(object sender, EventArgs e)
@@ -72,16 +74,18 @@ namespace WinForms.Forms
                 btnDangNhap.Text = "Đang xử lý...";
                 Cursor = Cursors.WaitCursor;
 
-                string username = txtTenDangNhap.Text.Trim();
-                string password = txtMatKhau.Text;
+                var request = new DangNhapRequest
+                {
+                    TenDangNhap = txtTenDangNhap.Text.Trim(),
+                    MatKhau = txtMatKhau.Text
+                };
 
-                var user = _nguoiDungRepo.GetUserByUsername(username);
+                var result = _nguoiDungService.Login(request);
 
-                if (user == null)
+                if (result == LoginResult.UserNotFound)
                 {
                     MessageBox.Show(
-                        "❌ Tên đăng nhập không tồn tại!\n\n" +
-                        "Vui lòng kiểm tra lại hoặc đăng ký tài khoản mới.",
+                        "❌ Tên đăng nhập không tồn tại!\n\nVui lòng kiểm tra lại hoặc đăng ký tài khoản mới.",
                         "Lỗi đăng nhập",
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Error);
@@ -91,13 +95,10 @@ namespace WinForms.Forms
                     return;
                 }
 
-                string hashedPassword = HashPassword(password);
-
-                if (user.MatKhauMaHoa != hashedPassword)
+                if (result == LoginResult.InvalidCredentials)
                 {
                     MessageBox.Show(
-                        "❌ Mật khẩu không chính xác!\n\n" +
-                        "Vui lòng thử lại hoặc click 'Quên Mật Khẩu'.",
+                        "❌ Mật khẩu không chính xác!\n\nVui lòng thử lại hoặc click 'Quên Mật Khẩu'.",
                         "Lỗi đăng nhập",
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Error);
@@ -107,16 +108,13 @@ namespace WinForms.Forms
                     return;
                 }
 
-                UserSession.CurrentUser = user;
-
-                // Nếu repo chưa có method này thì comment lại hoặc thêm method trong repository
-                // _nguoiDungRepo.UpdateOnlineStatus(user.MaNguoiDung, true);
+                var user = UserSession.CurrentUser;
 
                 MessageBox.Show(
                     $"✅ Đăng nhập thành công!\n\n" +
-                    $"Chào mừng {user.HoVaTen ?? user.TenDangNhap}!\n\n" +
-                    $"💰 Vàng: {user.Vang:N0}\n" +
-                    $"💎 Kim cương: {user.KimCuong:N0}",
+                    $"Chào mừng {user?.HoVaTen ?? user?.TenDangNhap}!\n\n" +
+                    $"💰 Vàng: {user?.Vang ?? 0:N0}\n" +
+                    $"💎 Kim cương: {user?.KimCuong ?? 0:N0}",
                     "Thành công",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information);
@@ -126,11 +124,7 @@ namespace WinForms.Forms
             }
             catch (Exception ex)
             {
-                MessageBox.Show(
-                    $"⚠️ Lỗi hệ thống:\n\n{ex.Message}",
-                    "Lỗi",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
+                MessageBox.Show($"⚠️ Lỗi hệ thống:\n\n{ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {
@@ -182,17 +176,12 @@ namespace WinForms.Forms
                     if (result == DialogResult.OK)
                     {
                         MessageBox.Show(
-                            "✅ Đặt lại mật khẩu thành công!\n\n" +
-                            "Vui lòng đăng nhập lại với mật khẩu mới.",
+                            "✅ Đặt lại mật khẩu thành công!\n\nVui lòng đăng nhập lại với mật khẩu mới.",
                             "Thành công",
                             MessageBoxButtons.OK,
                             MessageBoxIcon.Information);
 
                         txtMatKhau.Clear();
-                        txtTenDangNhap.Focus();
-                    }
-                    else
-                    {
                         txtTenDangNhap.Focus();
                     }
                 }
@@ -206,8 +195,7 @@ namespace WinForms.Forms
         private void btnGoogleLogin_Click(object sender, EventArgs e)
         {
             MessageBox.Show(
-                "🔑 Chức năng đăng nhập Google đang được phát triển!\n\n" +
-                "Vui lòng sử dụng tài khoản thường.",
+                "🔑 Chức năng đăng nhập Google đang được phát triển!\n\nVui lòng sử dụng tài khoản thường.",
                 "Thông báo",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Information);
@@ -230,20 +218,6 @@ namespace WinForms.Forms
             }
 
             return true;
-        }
-
-        private string HashPassword(string password)
-        {
-            using (var sha256 = SHA256.Create())
-            {
-                byte[] bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
-                var builder = new StringBuilder();
-                foreach (byte b in bytes)
-                {
-                    builder.Append(b.ToString("x2"));
-                }
-                return builder.ToString();
-            }
         }
 
         protected override void OnFormClosing(FormClosingEventArgs e)
