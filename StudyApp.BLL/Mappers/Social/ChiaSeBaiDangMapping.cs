@@ -2,7 +2,7 @@
 using StudyApp.DAL.Entities.Social;
 using StudyApp.DTO.Responses.Social;
 
-namespace StudyApp.BLL.Mappers
+namespace StudyApp.BLL.Mappers.Social
 {
     /// <summary>
     /// AutoMapper cho Chia Sẻ Bài Đăng

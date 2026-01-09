@@ -3,7 +3,7 @@ using StudyApp.DAL.Entities.User;
 using StudyApp.DTO.Enums;
 using StudyApp.DTO.Responses.NguoiDung;
 
-namespace StudyApp.BLL.Mappers
+namespace StudyApp.BLL.Mappers.User
 {
     /// <summary>
     /// Mapping cho Bảo Vệ Chuỗi Ngày (Streak)

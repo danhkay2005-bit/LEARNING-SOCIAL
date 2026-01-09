@@ -3,7 +3,7 @@ using StudyApp.DAL.Entities.Social;
 using StudyApp.DTO.Enums;
 using StudyApp.DTO.Responses.Social;
 
-namespace StudyApp.BLL.Mappers
+namespace StudyApp.BLL.Mappers.Social
 {
     /// <summary>
     /// Mapping cho Thành Viên Cuộc Trò Chuyện

@@ -3,10 +3,9 @@ using StudyApp.DAL.Entities.Social;
 using StudyApp.DTO.Enums;
 using StudyApp.DTO.Requests.Social;
 using StudyApp.DTO.Responses.Social;
-using StudyApp.BLL.Mappers;
 using System;
 
-namespace StudyApp.BLL.Mappers
+namespace StudyApp.BLL.Mappers.Social
 {
     /// <summary>
     /// Mapping cho Tin Nhắn

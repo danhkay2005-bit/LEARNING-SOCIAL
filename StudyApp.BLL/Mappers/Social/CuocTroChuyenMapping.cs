@@ -1,10 +1,9 @@
 ﻿using AutoMapper;
-using StudyApp.BLL.Mappers;
 using StudyApp.DAL.Entities.Social;
 using StudyApp.DTO.Enums;
 using StudyApp.DTO.Responses.Social;
 
-namespace StudyApp.BLL.Mappers
+namespace StudyApp.BLL.Mappers.Social
 {
     /// <summary>
     /// AutoMapper cho Cuộc Trò Chuyện (Chat)

@@ -1,11 +1,10 @@
 ﻿using AutoMapper;
-using StudyApp.BLL.Mappers;
 using StudyApp.DAL.Entities.Social;
 using StudyApp.DTO.Responses.Social;
 using StudyApp.DTO.Requests.Social;
 using System;
 
-namespace StudyApp.BLL.Mappers
+namespace StudyApp.BLL.Mappers.Social
 {
     /// <summary>
     /// AutoMapper cho Bình Luận Bài Đăng

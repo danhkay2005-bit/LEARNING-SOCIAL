@@ -1,12 +1,11 @@
 ﻿using AutoMapper;
-using StudyApp.BLL.Mappers;
 using StudyApp.DAL.Entities.Social;
 using StudyApp.DTO.Enums;
 using StudyApp.DTO.Requests.Social;
 using StudyApp.DTO.Responses.Social;
 using System;
 
-namespace StudyApp.BLL.Mappers
+namespace StudyApp.BLL.Mappers.Social
 {
     /// <summary>
     /// Mapping cho Reaction (Bài đăng & Tin nhắn)
