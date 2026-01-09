@@ -39,18 +39,17 @@ namespace StudyApp.BLL.Services.Implementations.User
                 return LoginResult.InvalidCredentials;
             }
 
-            UserSession.CurrentUser = new NguoiDungDTO
+            UserSession.Login(new NguoiDungDTO
             {
                 MaNguoiDung = user.MaNguoiDung,
                 TenDangNhap = user.TenDangNhap,
-                MatKhauMaHoa = user.MatKhauMaHoa,
                 HoVaTen = user.HoVaTen,
                 Email = user.Email,
                 SoDienThoai = user.SoDienThoai,
                 MaVaiTro = user.MaVaiTro ?? (int)VaiTroEnum.Member,
                 Vang = user.Vang ?? 0,
                 KimCuong = user.KimCuong ?? 0
-            };    
+            });
 
             return LoginResult.Success;
         }
@@ -80,7 +79,7 @@ namespace StudyApp.BLL.Services.Implementations.User
             // Ensure MaVaiTro is valid (avoid FK violation when DB isn't seeded with expected default)
             if (entity.MaVaiTro == null)
             {
-                const int preferredDefaultRoleId = 3;
+                const int preferredDefaultRoleId = 2;
 
                 int? roleId = _db.VaiTros
                     .Where(v => v.MaVaiTro == preferredDefaultRoleId)

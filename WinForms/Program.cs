@@ -24,7 +24,7 @@ namespace WinForms
 
             ServiceProvider = services.BuildServiceProvider();
 
-            Application.Run(ServiceProvider.GetRequiredService<frmDangNhap>());
+            Application.Run(ServiceProvider.GetRequiredService<mainForm>());
         }
 
         private static void ConfigureServices(IServiceCollection services)
@@ -68,7 +68,7 @@ namespace WinForms
             // ===============================
             // FORMS
             // ===============================
-            services.AddTransient<frmDangNhap>();
+            services.AddTransient<mainForm>();
         }
 
     }
