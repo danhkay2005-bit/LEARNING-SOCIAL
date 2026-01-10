@@ -6,6 +6,7 @@
 
         private Panel pnlHeader;
         private Label lblAppName;
+        private FlowLayoutPanel pnlMenu;
 
         protected override void Dispose(bool disposing)
         {
@@ -18,52 +19,39 @@
         {
             pnlHeader = new Panel();
             lblAppName = new Label();
+            pnlMenu = new FlowLayoutPanel();
+
             pnlHeader.SuspendLayout();
             SuspendLayout();
-            // 
-            // pnlHeader
-            // 
+
+            // ================= HEADER =================
+            pnlHeader.Dock = DockStyle.Top;
+            pnlHeader.Height = 80;
             pnlHeader.BackColor = Color.White;
             pnlHeader.Controls.Add(lblAppName);
-            pnlHeader.Dock = DockStyle.Top;
-            pnlHeader.Location = new Point(0, 0);
-            pnlHeader.Name = "pnlHeader";
-            pnlHeader.Size = new Size(1193, 80);
-            pnlHeader.TabIndex = 5;
-            // 
-            // lblAppName
-            // 
+
             lblAppName.Dock = DockStyle.Fill;
-            lblAppName.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
-            lblAppName.Location = new Point(0, 0);
-            lblAppName.Name = "lblAppName";
-            lblAppName.Size = new Size(1193, 80);
-            lblAppName.TabIndex = 0;
-            lblAppName.Text = "LEARNING SOCIAL";
+            lblAppName.Text = "📘 LEARNING SOCIAL";
+            lblAppName.Font = new Font("Segoe UI", 13F, FontStyle.Bold);
             lblAppName.TextAlign = ContentAlignment.MiddleCenter;
-            // 
-            // LeftMenuControl
-            // 
+
+            // ================= MENU =================
+            pnlMenu.Dock = DockStyle.Fill;
+            pnlMenu.FlowDirection = FlowDirection.TopDown;
+            pnlMenu.WrapContents = false;
+            pnlMenu.AutoScroll = true;
+            pnlMenu.Padding = new Padding(10);
+            pnlMenu.BackColor = Color.WhiteSmoke;
+
+            // ================= CONTROL =================
             BackColor = Color.WhiteSmoke;
+            Controls.Add(pnlMenu);
             Controls.Add(pnlHeader);
             Name = "LeftMenuControl";
-            Size = new Size(1193, 578);
+            Width = 240;
+
             pnlHeader.ResumeLayout(false);
             ResumeLayout(false);
-        }
-
-        private void InitButton(Button btn, string text)
-        {
-            btn.Text = text;
-            btn.Dock = DockStyle.Top;
-            btn.Height = 45;
-            btn.FlatStyle = FlatStyle.Flat;
-            btn.FlatAppearance.BorderSize = 0;
-            btn.TextAlign = ContentAlignment.MiddleLeft;
-            btn.Padding = new Padding(20, 0, 0, 0);
-            btn.Font = new Font("Segoe UI", 10);
-            btn.BackColor = Color.WhiteSmoke;
-            btn.Cursor = Cursors.Hand;
         }
     }
 }

@@ -4,131 +4,179 @@
     {
         private System.ComponentModel.IContainer components = null;
 
+        private Panel pnlCard;
+        private Label lblTitle;
+        private Label lblSubTitle;
+
+        private Label lblTenDangNhap;
+        private TextBox txtTenDangNhap;
+
+        private Label lblMatKhau;
+        private TextBox txtMatKhau;
+
+        private Button btnDangNhap;
+        private Button btnQuenMatKhau;
+        private Label lblFooter;
+        private Button btnDangKy;
+
         protected override void Dispose(bool disposing)
         {
             if (disposing && (components != null))
-            {
                 components.Dispose();
-            }
             base.Dispose(disposing);
         }
 
-        #region Component Designer generated code
-
         private void InitializeComponent()
         {
-            System.ComponentModel.ComponentResourceManager resources =
-                new System.ComponentModel.ComponentResourceManager(typeof(DangNhapControl));
-
-            lblDangNhapVoiTaiKhoan = new Label();
+            pnlCard = new Panel();
+            lblTitle = new Label();
+            lblSubTitle = new Label();
             lblTenDangNhap = new Label();
             txtTenDangNhap = new TextBox();
             lblMatKhau = new Label();
             txtMatKhau = new TextBox();
-            btnDangNhap = new Button();
             btnQuenMatKhau = new Button();
-            btnGoogleLogin = new Button();
-            lblDangNhapVoi = new Label();
-            lblBanCoTaiKhoanChua = new Label();
+            btnDangNhap = new Button();
+            lblFooter = new Label();
             btnDangKy = new Button();
-
+            pnlCard.SuspendLayout();
             SuspendLayout();
-
-            // lblDangNhapVoiTaiKhoan
-            lblDangNhapVoiTaiKhoan.AutoSize = true;
-            lblDangNhapVoiTaiKhoan.Font = new Font("Times New Roman", 15.75F, FontStyle.Bold);
-            lblDangNhapVoiTaiKhoan.Location = new Point(43, 93);
-            lblDangNhapVoiTaiKhoan.Text = "ĐĂNG NHẬP VỚI TÀI KHOẢN";
-
+            // 
+            // pnlCard
+            // 
+            pnlCard.Anchor = AnchorStyles.None;
+            pnlCard.BackColor = Color.White;
+            pnlCard.Controls.Add(lblTitle);
+            pnlCard.Controls.Add(lblSubTitle);
+            pnlCard.Controls.Add(lblTenDangNhap);
+            pnlCard.Controls.Add(txtTenDangNhap);
+            pnlCard.Controls.Add(lblMatKhau);
+            pnlCard.Controls.Add(txtMatKhau);
+            pnlCard.Controls.Add(btnQuenMatKhau);
+            pnlCard.Controls.Add(btnDangNhap);
+            pnlCard.Controls.Add(lblFooter);
+            pnlCard.Controls.Add(btnDangKy);
+            pnlCard.Location = new Point(301, 0);
+            pnlCard.Name = "pnlCard";
+            pnlCard.Size = new Size(370, 420);
+            pnlCard.TabIndex = 0;
+            // 
+            // lblTitle
+            // 
+            lblTitle.Dock = DockStyle.Top;
+            lblTitle.Font = new Font("Segoe UI", 14F, FontStyle.Bold);
+            lblTitle.Location = new Point(0, 30);
+            lblTitle.Name = "lblTitle";
+            lblTitle.Size = new Size(370, 60);
+            lblTitle.TabIndex = 0;
+            lblTitle.Text = "📘 LEARNING SOCIAL";
+            lblTitle.TextAlign = ContentAlignment.MiddleCenter;
+            // 
+            // lblSubTitle
+            // 
+            lblSubTitle.Dock = DockStyle.Top;
+            lblSubTitle.Font = new Font("Segoe UI", 9.5F);
+            lblSubTitle.ForeColor = Color.Gray;
+            lblSubTitle.Location = new Point(0, 0);
+            lblSubTitle.Name = "lblSubTitle";
+            lblSubTitle.Size = new Size(370, 30);
+            lblSubTitle.TabIndex = 1;
+            lblSubTitle.Text = "Đăng nhập để tiếp tục học tập";
+            lblSubTitle.TextAlign = ContentAlignment.MiddleCenter;
+            // 
             // lblTenDangNhap
-            lblTenDangNhap.AutoSize = true;
-            lblTenDangNhap.Font = new Font("Times New Roman", 14.25F);
-            lblTenDangNhap.Location = new Point(30, 163);
-            lblTenDangNhap.Text = "Tên Đăng Nhập:";
-
+            // 
+            lblTenDangNhap.Font = new Font("Segoe UI", 9.5F);
+            lblTenDangNhap.Location = new Point(30, 110);
+            lblTenDangNhap.Name = "lblTenDangNhap";
+            lblTenDangNhap.Size = new Size(100, 23);
+            lblTenDangNhap.TabIndex = 2;
+            lblTenDangNhap.Text = "Email hoặc Username";
+            // 
             // txtTenDangNhap
-            txtTenDangNhap.Location = new Point(30, 187);
-            txtTenDangNhap.PlaceholderText = "Nhập username hoặc email";
-            txtTenDangNhap.Size = new Size(315, 23);
-
+            // 
+            txtTenDangNhap.Location = new Point(30, 135);
+            txtTenDangNhap.Name = "txtTenDangNhap";
+            txtTenDangNhap.PlaceholderText = "vd: nguyenvana@gmail.com";
+            txtTenDangNhap.Size = new Size(300, 27);
+            txtTenDangNhap.TabIndex = 3;
+            // 
             // lblMatKhau
-            lblMatKhau.AutoSize = true;
-            lblMatKhau.Font = new Font("Times New Roman", 14.25F);
-            lblMatKhau.Location = new Point(30, 223);
-            lblMatKhau.Text = "Mật Khẩu:";
-
+            // 
+            lblMatKhau.Font = new Font("Segoe UI", 9.5F);
+            lblMatKhau.Location = new Point(30, 180);
+            lblMatKhau.Name = "lblMatKhau";
+            lblMatKhau.Size = new Size(100, 23);
+            lblMatKhau.TabIndex = 4;
+            lblMatKhau.Text = "Mật khẩu";
+            // 
             // txtMatKhau
-            txtMatKhau.Location = new Point(30, 247);
-            txtMatKhau.Size = new Size(315, 23);
+            // 
+            txtMatKhau.Location = new Point(30, 205);
+            txtMatKhau.Name = "txtMatKhau";
+            txtMatKhau.Size = new Size(300, 27);
+            txtMatKhau.TabIndex = 5;
             txtMatKhau.UseSystemPasswordChar = true;
-
+            // 
+            // btnQuenMatKhau
+            // 
+            btnQuenMatKhau.FlatAppearance.BorderSize = 0;
+            btnQuenMatKhau.FlatStyle = FlatStyle.Flat;
+            btnQuenMatKhau.Font = new Font("Segoe UI", 9F);
+            btnQuenMatKhau.ForeColor = Color.FromArgb(70, 130, 180);
+            btnQuenMatKhau.Location = new Point(190, 240);
+            btnQuenMatKhau.Name = "btnQuenMatKhau";
+            btnQuenMatKhau.Size = new Size(140, 34);
+            btnQuenMatKhau.TabIndex = 6;
+            btnQuenMatKhau.Text = "Quên mật khẩu?";
+            btnQuenMatKhau.Click += btnQuenMatKhau_Click;
+            // 
             // btnDangNhap
-            btnDangNhap.BackColor = Color.FromArgb(255, 128, 0);
-            btnDangNhap.Font = new Font("Times New Roman", 15.75F, FontStyle.Bold);
+            // 
+            btnDangNhap.BackColor = Color.FromArgb(70, 130, 180);
+            btnDangNhap.FlatAppearance.BorderSize = 0;
+            btnDangNhap.FlatStyle = FlatStyle.Flat;
+            btnDangNhap.Font = new Font("Segoe UI", 10.5F, FontStyle.Bold);
             btnDangNhap.ForeColor = Color.White;
-            btnDangNhap.Location = new Point(30, 327);
-            btnDangNhap.Size = new Size(315, 37);
+            btnDangNhap.Location = new Point(30, 280);
+            btnDangNhap.Name = "btnDangNhap";
+            btnDangNhap.Size = new Size(300, 40);
+            btnDangNhap.TabIndex = 7;
             btnDangNhap.Text = "ĐĂNG NHẬP";
             btnDangNhap.UseVisualStyleBackColor = false;
             btnDangNhap.Click += btnDangNhap_Click;
-
-            // btnQuenMatKhau
-            btnQuenMatKhau.Location = new Point(242, 276);
-            btnQuenMatKhau.Size = new Size(103, 23);
-            btnQuenMatKhau.Text = "Quên Mật Khẩu";
-            btnQuenMatKhau.Click += btnQuenMatKhau_Click;
-
-            // lblBanCoTaiKhoanChua
-            lblBanCoTaiKhoanChua.AutoSize = true;
-            lblBanCoTaiKhoanChua.Location = new Point(116, 401);
-            lblBanCoTaiKhoanChua.Text = "Bạn chưa có tài khoản?";
-
+            // 
+            // lblFooter
+            // 
+            lblFooter.Font = new Font("Segoe UI", 9F);
+            lblFooter.Location = new Point(70, 340);
+            lblFooter.Name = "lblFooter";
+            lblFooter.Size = new Size(100, 23);
+            lblFooter.TabIndex = 8;
+            lblFooter.Text = "Chưa có tài khoản?";
+            // 
             // btnDangKy
-            btnDangKy.Location = new Point(270, 393);
-            btnDangKy.Size = new Size(75, 30);
-            btnDangKy.Text = "Đăng Ký";
+            // 
+            btnDangKy.FlatAppearance.BorderSize = 0;
+            btnDangKy.FlatStyle = FlatStyle.Flat;
+            btnDangKy.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            btnDangKy.ForeColor = Color.FromArgb(70, 130, 180);
+            btnDangKy.Location = new Point(190, 335);
+            btnDangKy.Name = "btnDangKy";
+            btnDangKy.Size = new Size(85, 28);
+            btnDangKy.TabIndex = 9;
+            btnDangKy.Text = "Đăng ký";
             btnDangKy.Click += btnDangKy_Click;
-
-            // lblDangNhapVoi
-            lblDangNhapVoi.AutoSize = true;
-            lblDangNhapVoi.Location = new Point(-9, 425);
-            lblDangNhapVoi.Text =
-                "-----------------------------Đăng Nhập Với-----------------------------";
-
-            Controls.AddRange(new Control[]
-            {
-                lblDangNhapVoiTaiKhoan,
-                lblTenDangNhap,
-                txtTenDangNhap,
-                lblMatKhau,
-                txtMatKhau,
-                btnQuenMatKhau,
-                btnDangNhap,
-                lblBanCoTaiKhoanChua,
-                btnDangKy,
-                lblDangNhapVoi,
-                btnGoogleLogin
-            });
-
+            // 
+            // DangNhapControl
+            // 
+            BackColor = Color.FromArgb(245, 247, 250);
+            Controls.Add(pnlCard);
             Name = "DangNhapControl";
-            Size = new Size(380, 509);
-
+            Size = new Size(1202, 520);
+            pnlCard.ResumeLayout(false);
+            pnlCard.PerformLayout();
             ResumeLayout(false);
-            PerformLayout();
         }
-
-        #endregion
-
-        private Label lblDangNhapVoiTaiKhoan;
-        private Label lblTenDangNhap;
-        private TextBox txtTenDangNhap;
-        private Label lblMatKhau;
-        private TextBox txtMatKhau;
-        private Button btnDangNhap;
-        private Button btnQuenMatKhau;
-        private Button btnGoogleLogin;
-        private Label lblDangNhapVoi;
-        private Label lblBanCoTaiKhoanChua;
-        private Button btnDangKy;
     }
 }

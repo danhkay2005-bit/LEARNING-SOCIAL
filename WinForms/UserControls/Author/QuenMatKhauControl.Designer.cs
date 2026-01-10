@@ -1,12 +1,23 @@
-﻿using System;
-using System.Drawing;
-using System.Windows.Forms;
-
-namespace WinForms.UserControls.Author
+﻿namespace WinForms.UserControls.Author
 {
     partial class QuenMatKhauControl
     {
         private System.ComponentModel.IContainer components = null;
+
+        private Panel pnlCard;
+        private Label lblTitle;
+
+        private Label lblEmail;
+        private TextBox txtEmail;
+
+        private Label lblMatKhauMoi;
+        private TextBox txtMatKhauMoi;
+
+        private Label lblXacNhanMatKhau;
+        private TextBox txtXacNhanMatKhau;
+
+        private Button btnDatLaiMatKhau;
+        private Button btnHuy;
 
         protected override void Dispose(bool disposing)
         {
@@ -16,77 +27,88 @@ namespace WinForms.UserControls.Author
             base.Dispose(disposing);
         }
 
-        #region Component Designer generated code
-
         private void InitializeComponent()
         {
-            labelTitle = new Label();
+            pnlCard = new Panel();
+            lblTitle = new Label();
+
             lblEmail = new Label();
             txtEmail = new TextBox();
+
             lblMatKhauMoi = new Label();
             txtMatKhauMoi = new TextBox();
+
             lblXacNhanMatKhau = new Label();
             txtXacNhanMatKhau = new TextBox();
+
             btnDatLaiMatKhau = new Button();
             btnHuy = new Button();
 
             SuspendLayout();
 
-            // labelTitle
-            labelTitle.AutoSize = true;
-            labelTitle.Font = new Font("Segoe UI", 18F, FontStyle.Bold);
-            labelTitle.Location = new Point(60, 20);
-            labelTitle.Text = "Quên Mật Khẩu";
+            // ================= ROOT =================
+            BackColor = Color.FromArgb(245, 247, 250);
+            Size = new Size(600, 520);
 
-            // lblEmail
-            lblEmail.AutoSize = true;
-            lblEmail.Location = new Point(12, 95);
-            lblEmail.Text = "Email:";
+            // ================= CARD =================
+            pnlCard.BackColor = Color.White;
+            pnlCard.Size = new Size(360, 400);
+            pnlCard.Anchor = AnchorStyles.None;
 
-            // txtEmail
-            txtEmail.Location = new Point(155, 92);
-            txtEmail.Size = new Size(161, 23);
+            // ================= TITLE =================
+            lblTitle.Text = "🔒 QUÊN MẬT KHẨU";
+            lblTitle.Font = new Font("Segoe UI", 14F, FontStyle.Bold);
+            lblTitle.TextAlign = ContentAlignment.MiddleCenter;
+            lblTitle.Dock = DockStyle.Top;
+            lblTitle.Height = 60;
 
-            // lblMatKhauMoi
-            lblMatKhauMoi.AutoSize = true;
-            lblMatKhauMoi.Location = new Point(12, 148);
-            lblMatKhauMoi.Text = "Mật Khẩu Mới(*):";
+            // ================= EMAIL =================
+            lblEmail.Text = "Email";
+            lblEmail.Location = new Point(30, 90);
 
-            // txtMatKhauMoi
-            txtMatKhauMoi.Location = new Point(155, 140);
-            txtMatKhauMoi.Size = new Size(161, 23);
+            txtEmail.Location = new Point(30, 115);
+            txtEmail.Size = new Size(300, 27);
+            txtEmail.PlaceholderText = "abc@gmail.com";
+
+            // ================= NEW PASSWORD =================
+            lblMatKhauMoi.Text = "Mật khẩu mới (*)";
+            lblMatKhauMoi.Location = new Point(30, 155);
+
+            txtMatKhauMoi.Location = new Point(30, 180);
+            txtMatKhauMoi.Size = new Size(300, 27);
             txtMatKhauMoi.UseSystemPasswordChar = true;
 
-            // lblXacNhanMatKhau
-            lblXacNhanMatKhau.AutoSize = true;
-            lblXacNhanMatKhau.Location = new Point(12, 198);
-            lblXacNhanMatKhau.Text = "Xác Nhận Mật Khẩu(*):";
+            // ================= CONFIRM =================
+            lblXacNhanMatKhau.Text = "Xác nhận mật khẩu (*)";
+            lblXacNhanMatKhau.Location = new Point(30, 220);
 
-            // txtXacNhanMatKhau
-            txtXacNhanMatKhau.Location = new Point(155, 190);
-            txtXacNhanMatKhau.Size = new Size(161, 23);
+            txtXacNhanMatKhau.Location = new Point(30, 245);
+            txtXacNhanMatKhau.Size = new Size(300, 27);
             txtXacNhanMatKhau.UseSystemPasswordChar = true;
 
-            // btnDatLaiMatKhau
-            btnDatLaiMatKhau.BackColor = Color.FromArgb(255, 128, 0);
-            btnDatLaiMatKhau.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
-            btnDatLaiMatKhau.ForeColor = Color.White;
-            btnDatLaiMatKhau.Location = new Point(50, 250);
-            btnDatLaiMatKhau.Size = new Size(220, 45);
+            // ================= RESET =================
             btnDatLaiMatKhau.Text = "ĐẶT LẠI MẬT KHẨU";
-            btnDatLaiMatKhau.UseVisualStyleBackColor = false;
+            btnDatLaiMatKhau.Size = new Size(300, 42);
+            btnDatLaiMatKhau.Location = new Point(30, 295);
+            btnDatLaiMatKhau.BackColor = Color.FromArgb(70, 130, 180);
+            btnDatLaiMatKhau.ForeColor = Color.White;
+            btnDatLaiMatKhau.FlatStyle = FlatStyle.Flat;
+            btnDatLaiMatKhau.FlatAppearance.BorderSize = 0;
+            btnDatLaiMatKhau.Font = new Font("Segoe UI", 10.5F, FontStyle.Bold);
             btnDatLaiMatKhau.Click += btnDatLaiMatKhau_Click;
 
-            // btnHuy
-            btnHuy.Location = new Point(241, 320);
-            btnHuy.Size = new Size(75, 23);
+            // ================= CANCEL =================
             btnHuy.Text = "Hủy";
+            btnHuy.FlatStyle = FlatStyle.Flat;
+            btnHuy.FlatAppearance.BorderSize = 0;
+            btnHuy.ForeColor = Color.Gray;
+            btnHuy.Location = new Point(260, 345);
             btnHuy.Click += btnHuy_Click;
 
-            // UserControl
-            Controls.AddRange(new Control[]
+            // ================= ADD =================
+            pnlCard.Controls.AddRange(new Control[]
             {
-                labelTitle,
+                lblTitle,
                 lblEmail, txtEmail,
                 lblMatKhauMoi, txtMatKhauMoi,
                 lblXacNhanMatKhau, txtXacNhanMatKhau,
@@ -94,23 +116,9 @@ namespace WinForms.UserControls.Author
                 btnHuy
             });
 
-            Name = "QuenMatKhauControl";
-            Size = new Size(328, 380);
+            Controls.Add(pnlCard);
 
             ResumeLayout(false);
-            PerformLayout();
         }
-
-        #endregion
-
-        private Label labelTitle;
-        private Label lblEmail;
-        private TextBox txtEmail;
-        private Label lblMatKhauMoi;
-        private TextBox txtMatKhauMoi;
-        private Label lblXacNhanMatKhau;
-        private TextBox txtXacNhanMatKhau;
-        private Button btnDatLaiMatKhau;
-        private Button btnHuy;
     }
 }
