@@ -1,14 +1,5 @@
-﻿using System;
-
-namespace StudyApp.DTO.Enums
+﻿namespace StudyApp.DTO.Enums
 {
-    // =========================
-    // BỘ ĐỀ & FLASHCARD
-    // =========================
-
-    /// <summary>
-    /// Mức độ khó của bộ đề / thẻ (BoDeHoc.MucDoKho, TheFlashcard.DoKho)
-    /// </summary>
     public enum MucDoKhoEnum : byte
     {
         RatDe = 1,
@@ -18,9 +9,6 @@ namespace StudyApp.DTO.Enums
         RatKho = 5
     }
 
-    /// <summary>
-    /// Loại thẻ flashcard (TheFlashcard.LoaiThe)
-    /// </summary>
     public enum LoaiTheEnum
     {
         CoBan,
@@ -32,24 +20,6 @@ namespace StudyApp.DTO.Enums
         HinhAnh
     }
 
-    // =========================
-    // HỌC TẬP & SRS
-    // =========================
-
-    /// <summary>
-    /// Trạng thái học của thẻ (TienDoHocTap.TrangThai)
-    /// </summary>
-    public enum TrangThaiHocEnum : byte
-    {
-        New = 0,
-        Learning = 1,
-        Review = 2,
-        Mastered = 3
-    }
-
-    /// <summary>
-    /// Loại phiên học (PhienHoc.LoaiPhien)
-    /// </summary>
     public enum LoaiPhienHocEnum
     {
         HocMoi,
@@ -59,24 +29,20 @@ namespace StudyApp.DTO.Enums
         TuyChon
     }
 
-    // =========================
-    // THÁCH ĐẤU
-    // =========================
-
-    /// <summary>
-    /// Trạng thái thách đấu (ThachDau.TrangThai)
-    /// </summary>
-    public enum TrangThaiThachDauEnum
+    public enum TrangThaiHocEnum : byte
     {
-        ChoNguoiChoi,
-        DangDau,
-        DaKetThuc,
-        Huy
+        New = 0,
+        Learning = 1,
+        Review = 2,
+        Mastered = 3
     }
 
-    // =========================
-    // LOGIC ĐÚNG / SAI
-    // =========================
+    public enum TrangThaiAIEnum
+    {
+        ThanhCong,
+        ThatBai,
+        DangXuLy
+    }
 
     /// <summary>
     /// Kết quả trả lời (ChiTietTraLoi.TraLoiDung)
@@ -87,17 +53,14 @@ namespace StudyApp.DTO.Enums
         Dung = 1
     }
 
-    // =========================
-    // AI & SYSTEM LOG
-    // =========================
-
     /// <summary>
-    /// Trạng thái sinh dữ liệu AI (LogsGenerateAI.TrangThai)
+    /// Trạng thái thách đấu (ThachDau.TrangThai)
     /// </summary>
-    public enum TrangThaiAIEnum
+    public enum TrangThaiThachDauEnum
     {
-        ThanhCong,
-        ThatBai,
-        DangXuLy
+        ChoNguoiChoi,
+        DangDau,
+        DaKetThuc,
+        Huy
     }
 }

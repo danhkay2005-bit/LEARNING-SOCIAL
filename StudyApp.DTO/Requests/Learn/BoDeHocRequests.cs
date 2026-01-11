@@ -1,5 +1,6 @@
-﻿using System;
-using StudyApp.DTO.Enums;
+﻿using StudyApp.DTO.Enums;
+using System;
+using System.ComponentModel.DataAnnotations;
 
 namespace StudyApp.DTO.Requests.Learn
 {
@@ -8,6 +9,7 @@ namespace StudyApp.DTO.Requests.Learn
     /// </summary>
     public class TaoBoDeHocRequest
     {
+        [Required]
         public Guid MaNguoiDung { get; set; }
 
         public int? MaChuDe { get; set; }
