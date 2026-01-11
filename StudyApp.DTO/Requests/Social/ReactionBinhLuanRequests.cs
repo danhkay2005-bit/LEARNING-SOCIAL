@@ -5,13 +5,13 @@ using StudyApp.DTO.Enums;
 namespace StudyApp.DTO.Requests.Social
 {
     /// <summary>
-    /// Request thêm hoặc cập nhật reaction cho bài đăng
-    /// (1 người dùng – 1 reaction trên 1 bài đăng)
+    /// Request thêm hoặc cập nhật reaction cho bình luận
+    /// (1 user – 1 reaction trên 1 bình luận)
     /// </summary>
-    public class TaoHoacCapNhatReactionBaiDangRequest
+    public class TaoHoacCapNhatReactionBinhLuanRequest
     {
         [Required]
-        public int MaBaiDang { get; set; }
+        public int MaBinhLuan { get; set; }
 
         [Required]
         public Guid MaNguoiDung { get; set; }
@@ -21,12 +21,12 @@ namespace StudyApp.DTO.Requests.Social
     }
 
     /// <summary>
-    /// Request xóa reaction khỏi bài đăng
+    /// Request xóa reaction khỏi bình luận
     /// </summary>
-    public class XoaReactionBaiDangRequest
+    public class XoaReactionBinhLuanRequest
     {
         [Required]
-        public int MaBaiDang { get; set; }
+        public int MaBinhLuan { get; set; }
 
         [Required]
         public Guid MaNguoiDung { get; set; }

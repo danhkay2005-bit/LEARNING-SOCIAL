@@ -1,20 +1,22 @@
 ﻿using System;
+using StudyApp.DTO.Enums;
 
 namespace StudyApp.DTO.Responses.Social
 {
     /// <summary>
-    /// Response thông tin theo dõi người dùng
+    /// Response thông tin reaction bình luận
     /// </summary>
     public class TheoDoiNguoiDungResponse
     {
         public Guid MaNguoiTheoDoi { get; set; }
+
         public Guid MaNguoiDuocTheoDoi { get; set; }
 
         public DateTime? ThoiGian { get; set; }
     }
 
     /// <summary>
-    /// Response trạng thái theo dõi
+    /// Response kiểm tra trạng thái theo dõi
     /// </summary>
     public class TrangThaiTheoDoiResponse
     {

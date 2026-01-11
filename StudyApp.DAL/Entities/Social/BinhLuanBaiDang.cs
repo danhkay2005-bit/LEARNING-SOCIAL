@@ -17,7 +17,7 @@ public partial class BinhLuanBaiDang
 
     public int? MaBinhLuanCha { get; set; }
 
-    public int? SoLuotThich { get; set; }
+    public int? SoLuotReaction { get; set; }
 
     public bool? DaChinhSua { get; set; }
 
@@ -35,5 +35,5 @@ public partial class BinhLuanBaiDang
 
     public virtual ICollection<MentionBinhLuan> MentionBinhLuans { get; set; } = new List<MentionBinhLuan>();
 
-    public virtual ICollection<ThichBinhLuan> ThichBinhLuans { get; set; } = new List<ThichBinhLuan>();
+    public virtual ICollection<ReactionBinhLuan> ReactionBinhLuans { get; set; } = new List<ReactionBinhLuan>();
 }

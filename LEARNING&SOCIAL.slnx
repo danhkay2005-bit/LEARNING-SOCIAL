@@ -1,14 +1,17 @@
 <Solution>
-  <Folder Name="/01.Presentation/">
+  <Folder Name="/src/">
+    <File Path=".editorconfig" />
+  </Folder>
+  <Folder Name="/src/01.Presentation/">
     <Project Path="WinForms/WinForms.csproj" Id="01b6b17c-3047-493b-adcf-129a2e8dffbb" />
   </Folder>
-  <Folder Name="/02.BusinessLogic/">
+  <Folder Name="/src/02.BusinessLogic/">
     <Project Path="StudyApp.BLL/StudyApp.BLL.csproj" Id="a8e51237-1582-4da7-b4df-3fc75aaa30c5" />
   </Folder>
-  <Folder Name="/03.DataAccess/">
+  <Folder Name="/src/03.DataAccess/">
     <Project Path="StudyApp.DAL/StudyApp.DAL.csproj" Id="cb49ed29-b74c-4167-9c43-cd677221d2c4" />
   </Folder>
-  <Folder Name="/04.Shared/">
+  <Folder Name="/src/04.Shared/">
     <Project Path="StudyApp.DTO/StudyApp.DTO.csproj" Id="a2dd375e-6e1e-44ef-bebb-ab4ee0df074d" />
   </Folder>
 </Solution>

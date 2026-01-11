@@ -16,7 +16,7 @@ namespace StudyApp.DTO.Responses.Social
 
         public int? MaBinhLuanCha { get; set; }
 
-        public int SoLuotThich { get; set; }
+        public int SoLuotReactions { get; set; }
 
         public bool DaChinhSua { get; set; }
         public bool DaXoa { get; set; }

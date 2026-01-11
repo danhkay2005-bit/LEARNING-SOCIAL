@@ -30,15 +30,18 @@ public partial class SocialDbContext : DbContext
 
     public virtual DbSet<ReactionBaiDang> ReactionBaiDangs { get; set; }
 
+    public virtual DbSet<ReactionBinhLuan> ReactionBinhLuans { get; set; }
+
     public virtual DbSet<TheoDoiNguoiDung> TheoDoiNguoiDungs { get; set; }
 
-    public virtual DbSet<ThichBinhLuan> ThichBinhLuans { get; set; }
+    public virtual DbSet<ThongBao> ThongBaos { get; set; }
+
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<BaiDang>(entity =>
         {
-            entity.HasKey(e => e.MaBaiDang).HasName("PK__BaiDang__BF5D50C59AA54CF4");
+            entity.HasKey(e => e.MaBaiDang).HasName("PK__BaiDang__BF5D50C52CE22EC7");
 
             entity.ToTable("BaiDang");
 
@@ -77,14 +80,14 @@ public partial class SocialDbContext : DbContext
                         .HasConstraintName("FK_HashtagBD_BaiDang"),
                     j =>
                     {
-                        j.HasKey("MaBaiDang", "MaHashtag").HasName("PK__HashtagB__A9686E99BABE66A5");
+                        j.HasKey("MaBaiDang", "MaHashtag").HasName("PK__HashtagB__A9686E996B2ADCA0");
                         j.ToTable("HashtagBaiDang");
                     });
         });
 
         modelBuilder.Entity<BinhLuanBaiDang>(entity =>
         {
-            entity.HasKey(e => e.MaBinhLuan).HasName("PK__BinhLuan__87CB66A0F6F2862B");
+            entity.HasKey(e => e.MaBinhLuan).HasName("PK__BinhLuan__87CB66A035B9F53B");
 
             entity.ToTable("BinhLuanBaiDang");
 
@@ -94,7 +97,7 @@ public partial class SocialDbContext : DbContext
 
             entity.Property(e => e.DaChinhSua).HasDefaultValue(false);
             entity.Property(e => e.DaXoa).HasDefaultValue(false);
-            entity.Property(e => e.SoLuotThich).HasDefaultValue(0);
+            entity.Property(e => e.SoLuotReaction).HasDefaultValue(0);
             entity.Property(e => e.ThoiGianSua).HasColumnType("datetime");
             entity.Property(e => e.ThoiGianTao)
                 .HasDefaultValueSql("(getdate())")
@@ -111,7 +114,7 @@ public partial class SocialDbContext : DbContext
 
         modelBuilder.Entity<ChiaSeBaiDang>(entity =>
         {
-            entity.HasKey(e => e.MaChiaSe).HasName("PK__ChiaSeBa__54AE718FACB13C6D");
+            entity.HasKey(e => e.MaChiaSe).HasName("PK__ChiaSeBa__54AE718F4D1D49F6");
 
             entity.ToTable("ChiaSeBaiDang");
 
@@ -132,7 +135,7 @@ public partial class SocialDbContext : DbContext
 
         modelBuilder.Entity<Hashtag>(entity =>
         {
-            entity.HasKey(e => e.MaHashtag).HasName("PK__Hashtag__6353E5C099A5532A");
+            entity.HasKey(e => e.MaHashtag).HasName("PK__Hashtag__6353E5C07543AD5A");
 
             entity.ToTable("Hashtag");
 
@@ -140,7 +143,7 @@ public partial class SocialDbContext : DbContext
 
             entity.HasIndex(e => new { e.DangThinhHanh, e.SoLuotDung }, "IX_Hashtag_ThinhHanh").IsDescending(false, true);
 
-            entity.HasIndex(e => e.TenHashtag, "UQ__Hashtag__275D80E69727309F").IsUnique();
+            entity.HasIndex(e => e.TenHashtag, "UQ__Hashtag__275D80E6AF21DC7D").IsUnique();
 
             entity.Property(e => e.DangThinhHanh).HasDefaultValue(false);
             entity.Property(e => e.SoLuotDung).HasDefaultValue(0);
@@ -152,7 +155,7 @@ public partial class SocialDbContext : DbContext
 
         modelBuilder.Entity<MentionBaiDang>(entity =>
         {
-            entity.HasKey(e => new { e.MaBaiDang, e.MaNguoiDuocMention }).HasName("PK__MentionB__121549D010211CEA");
+            entity.HasKey(e => new { e.MaBaiDang, e.MaNguoiDuocMention }).HasName("PK__MentionB__121549D0AF720B94");
 
             entity.ToTable("MentionBaiDang");
 
@@ -167,7 +170,7 @@ public partial class SocialDbContext : DbContext
 
         modelBuilder.Entity<MentionBinhLuan>(entity =>
         {
-            entity.HasKey(e => new { e.MaBinhLuan, e.MaNguoiDuocMention }).HasName("PK__MentionB__2A837FB537E4DC40");
+            entity.HasKey(e => new { e.MaBinhLuan, e.MaNguoiDuocMention }).HasName("PK__MentionB__2A837FB53EB3A88F");
 
             entity.ToTable("MentionBinhLuan");
 
@@ -182,7 +185,7 @@ public partial class SocialDbContext : DbContext
 
         modelBuilder.Entity<ReactionBaiDang>(entity =>
         {
-            entity.HasKey(e => new { e.MaBaiDang, e.MaNguoiDung }).HasName("PK__Reaction__830ECDB3A0723868");
+            entity.HasKey(e => new { e.MaBaiDang, e.MaNguoiDung }).HasName("PK__Reaction__830ECDB384603D4A");
 
             entity.ToTable("ReactionBaiDang");
 
@@ -201,9 +204,30 @@ public partial class SocialDbContext : DbContext
                 .HasConstraintName("FK_Reaction_BaiDang");
         });
 
+        modelBuilder.Entity<ReactionBinhLuan>(entity =>
+        {
+            entity.HasKey(e => new { e.MaBinhLuan, e.MaNguoiDung }).HasName("PK__Reaction__BB98FBD6ED3D9CED");
+
+            entity.ToTable("ReactionBinhLuan");
+
+            entity.HasIndex(e => e.MaNguoiDung, "IX_ReactionBL_NguoiDung");
+
+            entity.Property(e => e.LoaiReaction)
+                .HasMaxLength(20)
+                .IsUnicode(false)
+                .HasDefaultValue("Thich");
+            entity.Property(e => e.ThoiGian)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+
+            entity.HasOne(d => d.MaBinhLuanNavigation).WithMany(p => p.ReactionBinhLuans)
+                .HasForeignKey(d => d.MaBinhLuan)
+                .HasConstraintName("FK_ReactionBL_BinhLuan");
+        });
+
         modelBuilder.Entity<TheoDoiNguoiDung>(entity =>
         {
-            entity.HasKey(e => new { e.MaNguoiTheoDoi, e.MaNguoiDuocTheoDoi }).HasName("PK__TheoDoiN__1DBD570D88413D03");
+            entity.HasKey(e => new { e.MaNguoiTheoDoi, e.MaNguoiDuocTheoDoi }).HasName("PK__TheoDoiN__1DBD570DD0EC919A");
 
             entity.ToTable("TheoDoiNguoiDung");
 
@@ -216,19 +240,20 @@ public partial class SocialDbContext : DbContext
                 .HasColumnType("datetime");
         });
 
-        modelBuilder.Entity<ThichBinhLuan>(entity =>
+        modelBuilder.Entity<ThongBao>(entity =>
         {
-            entity.HasKey(e => new { e.MaBinhLuan, e.MaNguoiDung }).HasName("PK__ThichBin__BB98FBD6C39CA831");
+            entity.HasKey(e => e.MaThongBao).HasName("PK__ThongBao__04DEB54E554C2F69");
 
-            entity.ToTable("ThichBinhLuan");
+            entity.ToTable("ThongBao");
 
-            entity.Property(e => e.ThoiGian)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime");
+            entity.HasIndex(e => e.DaDoc, "IX_ThongBao_DaDoc");
 
-            entity.HasOne(d => d.MaBinhLuanNavigation).WithMany(p => p.ThichBinhLuans)
-                .HasForeignKey(d => d.MaBinhLuan)
-                .HasConstraintName("FK_ThichBL_BinhLuan");
+            entity.HasIndex(e => e.LoaiThongBao, "IX_ThongBao_LoaiThongBao");
+
+            entity.HasIndex(e => e.MaNguoiNhan, "IX_ThongBao_MaNguoiNhan");
+
+            entity.Property(e => e.NoiDung).HasMaxLength(500);
+            entity.Property(e => e.ThoiGian).HasDefaultValueSql("(sysdatetime())");
         });
 
         OnModelCreatingPartial(modelBuilder);

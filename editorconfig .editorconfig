@@ -1,0 +1,2 @@
+# Disable "Collection initialization can be simplified"
+dotnet_diagnostic.IDE0028.severity = none

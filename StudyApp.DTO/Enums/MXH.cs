@@ -38,12 +38,12 @@
     /// </summary>
     public enum LoaiReactionEnum
     {
-        Thich,
-        Tim,
-        HaHa,
-        Wow,
-        Buon,
-        TucGian
+        Thich = 1,
+        YeuThich = 2,
+        Haha = 3,
+        Wow = 4,
+        Buon = 5,
+        TucGian = 6
     }
 
     /// <summary>
@@ -81,4 +81,26 @@
         BaiDang,
         BinhLuan
     }
+    namespace StudyApp.DTO.Enums
+    {
+        public enum LoaiThongBaoEnum
+        {
+            MentionBaiDang = 1,
+            MentionBinhLuan = 2,
+            BinhLuanBaiDang = 3,
+            TraLoiBinhLuan = 4,
+            ThichBaiDang = 5,
+            ThichBinhLuan = 6,
+            ChiaSeBaiDang = 7,
+            TheoDoi = 8,
+
+            DenHanOnTap = 20,
+            HoanThanhBoDe = 21,
+            MoiThachDau = 22,
+            KetQuaThachDau = 23,
+
+            HeThong = 99
+        }
+    }
+
 }
