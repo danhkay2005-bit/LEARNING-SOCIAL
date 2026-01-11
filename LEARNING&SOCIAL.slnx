@@ -1,8 +1,10 @@
 <Solution>
   <Folder Name="/src/">
     <File Path=".editorconfig" />
+    <File Path="WinForms/appsettings.json" />
   </Folder>
   <Folder Name="/src/01.Presentation/">
+    <File Path="WinForms/appsettings.json" />
     <Project Path="WinForms/WinForms.csproj" Id="01b6b17c-3047-493b-adcf-129a2e8dffbb" />
   </Folder>
   <Folder Name="/src/02.BusinessLogic/">
