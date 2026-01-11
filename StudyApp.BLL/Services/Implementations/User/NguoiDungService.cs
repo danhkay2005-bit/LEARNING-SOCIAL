@@ -3,12 +3,14 @@ using StudyApp.BLL.Services.Interfaces.User;
 using StudyApp.DAL.Data;
 using StudyApp.DAL.Entities.User;
 using StudyApp.DTO;
+using StudyApp.DTO.Enums;
 using StudyApp.DTO.Requests.NguoiDung;
+using StudyApp.DTO.Responses;
+using StudyApp.DTO.Responses.NguoiDung;
 using System;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using StudyApp.DTO.Enums;
 
 namespace StudyApp.BLL.Services.Implementations.User
 {
@@ -21,6 +23,26 @@ namespace StudyApp.BLL.Services.Implementations.User
         {
             _db = db;
             _mapper = mapper;
+        }
+        public string? GetUserNameById(Guid userId)
+        {
+            return _db.Set<NguoiDung>()
+                .Where(x => x.MaNguoiDung == userId)
+                .Select(x => x.HoVaTen)
+                .FirstOrDefault();
+        }
+        public NguoiDungInfo? GetUserInfoById(Guid userId)
+        {
+            return _db.Set<NguoiDung>()
+                .Where(x => x.MaNguoiDung == userId)
+                .Select(x => new NguoiDungInfo
+                {
+                    MaNguoiDung = x.MaNguoiDung,
+                    HoTen = x.HoVaTen,
+                    Email = x.Email,
+                    AnhDaiDien = x.HinhDaiDien
+                })
+                .FirstOrDefault();
         }
 
         public LoginResult Login(DangNhapRequest request)

@@ -76,7 +76,7 @@ namespace StudyApp.DTO.Responses.Social
     // Response danh sách bài đăng có phân trang
     public class DanhSachBaiDangResponse
     {
-        public List<BaiDangResponse> BaiDangs { get; set; } = [];
+        public List<BaiDangResponse> BaiDangs { get; set; } = new List<BaiDangResponse>();
         public int TongSo { get; set; }
         public int TrangHienTai { get; set; }
         public int TongSoTrang { get; set; }

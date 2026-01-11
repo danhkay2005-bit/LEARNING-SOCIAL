@@ -1,11 +1,15 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using StudyApp.BLL.Services.Implementations.User;
+using StudyApp.BLL.Services.Interfaces.Social;
 using StudyApp.BLL.Services.Interfaces.User;
+using StudyApp.BLL.Services.Social;
 using StudyApp.DAL.Data;
 using System;
 using System.Windows.Forms;
 using WinForms.Forms;
+using WinForms.UserControls.Pages;
+using Scrutor;
 
 namespace WinForms
 {
@@ -63,12 +67,19 @@ namespace WinForms
             // ===============================
             // SERVICES
             // ===============================
-            services.AddScoped<INguoiDungService, NguoiDungService>();
+            services.Scan(scan => scan
+                .FromAssemblyOf<IBaiDangService>() // assembly BLL
+                .AddClasses(classes => classes.Where(type =>
+                    type.Name.EndsWith("Service")))
+                .AsImplementedInterfaces()
+                .WithScopedLifetime()
+            );
 
             // ===============================
             // FORMS
             // ===============================
             services.AddTransient<mainForm>();
+            services.AddTransient<FeedPageControl>();
         }
 
     }

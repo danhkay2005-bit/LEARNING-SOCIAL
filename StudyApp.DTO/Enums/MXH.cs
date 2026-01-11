@@ -58,4 +58,14 @@ namespace StudyApp.DTO.Enums
         QuanTri,
         ThanhVien
     }
+    public enum LoaiThongBao
+    {
+        MentionBaiDang,
+        MentionBinhLuan,
+        BinhLuanMoi,
+        TraLoiBinhLuan,
+        ReactionBaiDang,
+        ThichBinhLuan,
+        ChiaSeBaiDang
+    }
 }

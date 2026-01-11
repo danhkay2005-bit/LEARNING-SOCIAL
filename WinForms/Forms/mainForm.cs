@@ -1,4 +1,6 @@
-﻿using StudyApp.BLL.Services.Interfaces.User;
+﻿using StudyApp.BLL.Services.Interfaces.Social;
+using StudyApp.BLL.Services.Interfaces.User;
+using StudyApp.BLL.Services.Social;
 using StudyApp.DTO;
 using System;
 using System.Windows.Forms;
@@ -12,10 +14,12 @@ namespace WinForms.Forms
     {
         private readonly INguoiDungService _nguoiDungService;
         private LeftMenuControl? _leftMenu;
+        private readonly IBaiDangService _baiDangService;
 
-        public mainForm(INguoiDungService nguoiDungService)
+        public mainForm(INguoiDungService nguoiDungService, IBaiDangService baiDangService)
         {
             InitializeComponent();
+            _baiDangService = baiDangService;
             _nguoiDungService = nguoiDungService;
 
             InitLeftMenu();
@@ -54,13 +58,13 @@ namespace WinForms.Forms
                 "dangky" => CreateDangKyControl(),
                 "quenmatkhau" => CreateQuenMatKhauControl(),
 
-                "feed" => new FeedPageControl(),
+                "feed" => new FeedPageControl(_baiDangService),
                 "study" => new StudyPageControl(),
                 "library" => new LibraryPageControl(),
                 "profile" => new ProfilePageControl(),
                 "settings" => new SettingPageControl(),
 
-                _ => new FeedPageControl()
+                _ => new FeedPageControl(_baiDangService)
             };
 
             page.Dock = DockStyle.Fill;

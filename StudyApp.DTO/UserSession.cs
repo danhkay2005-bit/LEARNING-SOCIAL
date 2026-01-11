@@ -24,6 +24,7 @@
         public string? HoVaTen { get; set; }
         public string? Email { get; set; }
         public string? SoDienThoai { get; set; }
+        public string? HinhDaiDien { get; set; }    
 
         public int MaVaiTro { get; set; }
         public int Vang { get; set; }
