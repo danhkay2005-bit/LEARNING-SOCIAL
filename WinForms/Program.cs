@@ -1,86 +1,42 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using StudyApp.BLL.Services.Implementations.User;
-using StudyApp.BLL.Services.Interfaces.Social;
-using StudyApp.BLL.Services.Interfaces.User;
-using StudyApp.BLL.Services.Social;
 using StudyApp.DAL.Data;
 using System;
 using System.Windows.Forms;
 using WinForms.Forms;
-using WinForms.UserControls.Pages;
-using Scrutor;
 
 namespace WinForms
 {
     internal static class Program
     {
-        public static IServiceProvider ServiceProvider { get; private set; } = null!;
-
         [STAThread]
         static void Main()
         {
-            ApplicationConfiguration.Initialize();
+            // 1. Load cấu hình từ appsettings.json
+            var configuration = new ConfigurationBuilder()
+                .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
+                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+                .Build();
 
+            // 2. Tạo DI container và cấu hình các DbContext
             var services = new ServiceCollection();
 
-            ConfigureServices(services);
-
-            ServiceProvider = services.BuildServiceProvider();
-
-            Application.Run(ServiceProvider.GetRequiredService<mainForm>());
-        }
-
-        private static void ConfigureServices(IServiceCollection services)
-        {
-            // ===============================
-            // AUTO MAPPER
-            // ===============================
-            services.AddAutoMapper(
-                typeof(StudyApp.BLL.Mappers.User.NguoiDungMapping).Assembly
-            );
-
-            // ===============================
-            // DB CONTEXT (BẮT BUỘC)
-            // ===============================
+            // Đăng ký từng DbContext
             services.AddDbContext<UserDbContext>(options =>
-            {
-                options.UseSqlServer(
-                    System.Configuration.ConfigurationManager
-                        .ConnectionStrings["UserDb"].ConnectionString
-                );
-            });
-            services.AddDbContext<SocialDbContext>(options =>
-            {
-                options.UseSqlServer(
-                    System.Configuration.ConfigurationManager
-                        .ConnectionStrings["SocialDb"].ConnectionString
-                );
-            });
+                options.UseSqlServer(configuration.GetConnectionString("UserDb")));
             services.AddDbContext<LearningDbContext>(options =>
-            {
-                options.UseSqlServer(
-                    System.Configuration.ConfigurationManager
-                        .ConnectionStrings["LearningDb"].ConnectionString
-                );
-            });
-            // ===============================
-            // SERVICES
-            // ===============================
-            services.Scan(scan => scan
-                .FromAssemblyOf<IBaiDangService>() // assembly BLL
-                .AddClasses(classes => classes.Where(type =>
-                    type.Name.EndsWith("Service")))
-                .AsImplementedInterfaces()
-                .WithScopedLifetime()
-            );
+                options.UseSqlServer(configuration.GetConnectionString("LearningDb")));
+            services.AddDbContext<SocialDbContext>(options =>
+                options.UseSqlServer(configuration.GetConnectionString("SocialDb")));
 
-            // ===============================
-            // FORMS
-            // ===============================
-            services.AddTransient<mainForm>();
-            services.AddTransient<FeedPageControl>();
+            // 3. Tạo provider
+            var serviceProvider = services.BuildServiceProvider();
+
+            // 4. Khởi động chương trình như bình thường
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
+            Application.Run(new MainForm()); // Truyền serviceProvider vào form chính nếu muốn DI bên trong
         }
-
     }
 }

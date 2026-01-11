@@ -15,8 +15,6 @@ public partial class BinhLuanBaiDang
 
     public string? HinhAnh { get; set; }
 
-    public int? MaStickerDung { get; set; }
-
     public int? MaBinhLuanCha { get; set; }
 
     public int? SoLuotThich { get; set; }

@@ -27,8 +27,6 @@ public partial class NguoiDung
 
     public string? HinhDaiDien { get; set; }
 
-    public string? AnhBia { get; set; }
-
     public string? TieuSu { get; set; }
 
     public int? Vang { get; set; }
@@ -71,17 +69,11 @@ public partial class NguoiDung
 
     public virtual ICollection<BaoVeChuoiNgay> BaoVeChuoiNgays { get; set; } = new List<BaoVeChuoiNgay>();
 
-    public virtual ICollection<BoostDangHoatDong> BoostDangHoatDongs { get; set; } = new List<BoostDangHoatDong>();
-
-    public virtual CaiDatNguoiDung? CaiDatNguoiDung { get; set; }
-
     public virtual ICollection<DiemDanhHangNgay> DiemDanhHangNgays { get; set; } = new List<DiemDanhHangNgay>();
 
     public virtual ICollection<KhoNguoiDung> KhoNguoiDungs { get; set; } = new List<KhoNguoiDung>();
 
     public virtual ICollection<LichSuGiaoDich> LichSuGiaoDiches { get; set; } = new List<LichSuGiaoDich>();
-
-    public virtual ICollection<LichSuHoatDong> LichSuHoatDongs { get; set; } = new List<LichSuHoatDong>();
 
     public virtual CapDo? MaCapDoNavigation { get; set; }
 
@@ -90,6 +82,4 @@ public partial class NguoiDung
     public virtual ICollection<ThanhTuuDatDuoc> ThanhTuuDatDuocs { get; set; } = new List<ThanhTuuDatDuoc>();
 
     public virtual ICollection<TienDoNhiemVu> TienDoNhiemVus { get; set; } = new List<TienDoNhiemVu>();
-
-    public virtual TuyChinhProfile? TuyChinhProfile { get; set; }
 }

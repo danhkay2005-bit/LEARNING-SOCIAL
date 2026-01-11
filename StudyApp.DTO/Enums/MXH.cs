@@ -1,9 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace StudyApp.DTO.Enums
+﻿namespace StudyApp.DTO.Enums
 {
+    // =========================
+    // BÀI ĐĂNG
+    // =========================
+
+    /// <summary>
+    /// Loại bài đăng MXH
+    /// </summary>
     public enum LoaiBaiDangEnum
     {
         VanBan,
@@ -15,11 +18,24 @@ namespace StudyApp.DTO.Enums
         ChuoiNgay,
         KetQuaThachDau
     }
-    public enum LoaiCuocTroChuyenEnum
+
+    /// <summary>
+    /// Quyền riêng tư bài đăng
+    /// </summary>
+    public enum QuyenRiengTuEnum : byte
     {
-        Nhom,
-        CaNhan
+        RiengTu = 0,
+        CongKhai = 1,
+        ChiFollower = 2
     }
+
+    // =========================
+    // REACTION & TƯƠNG TÁC
+    // =========================
+
+    /// <summary>
+    /// Loại reaction bài đăng
+    /// </summary>
     public enum LoaiReactionEnum
     {
         Thich,
@@ -29,43 +45,40 @@ namespace StudyApp.DTO.Enums
         Buon,
         TucGian
     }
-    public enum LoaiTinNhanEnum
+
+    /// <summary>
+    /// Trạng thái logic chung cho bài đăng / bình luận
+    /// </summary>
+    public enum TrangThaiNoiDungEnum
     {
-        VanBan,
-        HinhAnh,
-        Video,
-        File,
-        Sticker,
-        GhiAm,
-        ChiaSeBoDe,
-        ThachDau,
-        HeThong
+        BinhThuong = 0,
+        DaChinhSua = 1,
+        DaXoa = 2
     }
-    public enum QuyenRiengTuEnum
+
+    // =========================
+    // HASHTAG
+    // =========================
+
+    /// <summary>
+    /// Trạng thái hashtag
+    /// </summary>
+    public enum TrangThaiHashtagEnum
     {
-        RiengTu = 0,
-        CongKhai = 1,
-        ChiFollower = 2
+        BinhThuong = 0,
+        ThinhHanh = 1
     }
-    public enum TrangThaiBanBeEnum
+
+    // =========================
+    // MENTION (OPTIONAL)
+    // =========================
+
+    /// <summary>
+    /// Loại mention (dùng cho logic xử lý thông báo)
+    /// </summary>
+    public enum LoaiMentionEnum
     {
-        ChoDuyet,
-        DaKetBan,
-        TuChoi
-    }
-    public enum VaiTroThanhVienChatEnum
-    {
-        QuanTri,
-        ThanhVien
-    }
-    public enum LoaiThongBao
-    {
-        MentionBaiDang,
-        MentionBinhLuan,
-        BinhLuanMoi,
-        TraLoiBinhLuan,
-        ReactionBaiDang,
-        ThichBinhLuan,
-        ChiaSeBaiDang
+        BaiDang,
+        BinhLuan
     }
 }

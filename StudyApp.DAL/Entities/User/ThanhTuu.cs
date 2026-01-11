@@ -34,6 +34,4 @@ public partial class ThanhTuu
     public DateTime? ThoiGianTao { get; set; }
 
     public virtual ICollection<ThanhTuuDatDuoc> ThanhTuuDatDuocs { get; set; } = new List<ThanhTuuDatDuoc>();
-
-    public virtual ICollection<TuyChinhProfile> TuyChinhProfiles { get; set; } = new List<TuyChinhProfile>();
 }

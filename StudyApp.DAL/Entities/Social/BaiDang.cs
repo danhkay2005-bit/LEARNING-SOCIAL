@@ -31,10 +31,6 @@ public partial class BaiDang
 
     public int? SoBinhLuan { get; set; }
 
-    public int? SoLuotXem { get; set; }
-
-    public int? SoLuotChiaSe { get; set; }
-
     public bool? GhimBaiDang { get; set; }
 
     public bool? TatBinhLuan { get; set; }

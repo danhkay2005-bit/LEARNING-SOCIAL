@@ -29,25 +29,9 @@ public partial class VatPham
 
     public DateTime? ThoiGianTao { get; set; }
 
-    public virtual ICollection<BoostDangHoatDong> BoostDangHoatDongs { get; set; } = new List<BoostDangHoatDong>();
-
     public virtual ICollection<KhoNguoiDung> KhoNguoiDungs { get; set; } = new List<KhoNguoiDung>();
 
     public virtual ICollection<LichSuGiaoDich> LichSuGiaoDiches { get; set; } = new List<LichSuGiaoDich>();
 
     public virtual DanhMucSanPham MaDanhMucNavigation { get; set; } = null!;
-
-    public virtual ICollection<TuyChinhProfile> TuyChinhProfileMaAvatarDangDungNavigations { get; set; } = new List<TuyChinhProfile>();
-
-    public virtual ICollection<TuyChinhProfile> TuyChinhProfileMaBadgeDangDungNavigations { get; set; } = new List<TuyChinhProfile>();
-
-    public virtual ICollection<TuyChinhProfile> TuyChinhProfileMaHieuUngDangDungNavigations { get; set; } = new List<TuyChinhProfile>();
-
-    public virtual ICollection<TuyChinhProfile> TuyChinhProfileMaHinhNenDangDungNavigations { get; set; } = new List<TuyChinhProfile>();
-
-    public virtual ICollection<TuyChinhProfile> TuyChinhProfileMaKhungDangDungNavigations { get; set; } = new List<TuyChinhProfile>();
-
-    public virtual ICollection<TuyChinhProfile> TuyChinhProfileMaNhacNenDangDungNavigations { get; set; } = new List<TuyChinhProfile>();
-
-    public virtual ICollection<TuyChinhProfile> TuyChinhProfileMaThemeDangDungNavigations { get; set; } = new List<TuyChinhProfile>();
 }

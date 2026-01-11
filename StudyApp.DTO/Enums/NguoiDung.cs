@@ -1,36 +1,104 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace StudyApp.DTO.Enums
+﻿namespace StudyApp.DTO.Enums
 {
-    public enum GioiTinhEnum { Khac = 0, Nam = 1, Nu = 2 }
+    // =========================
+    // USER & AUTH
+    // =========================
 
-    public enum VaiTroEnum { Admin = 1, Member = 2 }
+    public enum VaiTroEnum
+    {
+        Admin = 1,
+        Member = 2
+    }
 
-    public enum LoaiTienTeEnum { Vang, KimCuong, XP }
+    public enum GioiTinhEnum : byte
+    {
+        Khac = 0,
+        Nam = 1,
+        Nu = 2
+    }
 
-    public enum LoaiBaoVeStreakEnum { Freeze, HoiSinh }
+    // =========================
+    // CURRENCY & TRANSACTION
+    // =========================
 
-    public enum LoaiBoostEnum { XP, Vang }
+    // Dùng cho VatPham.LoaiTienTe (INT)
+    public enum LoaiTienTeEnum
+    {
+        Vang = 1,
+        KimCuong = 2
+    }
 
-    public enum LoaiNhiemVuEnum { HangNgay, HangTuan, ThanhTuu, SuKien }
-
-    public enum LoaiThanhTuuEnum { HocTap, ChuoiNgay, XaHoi, SangTao, ThachDau, KhamPha, AnDanh }
+    // Dùng cho LichSuGiaoDich.LoaiTien (VARCHAR)
+    public enum LoaiTienGiaoDichEnum
+    {
+        Vang,
+        KimCuong,
+        XP
+    }
 
     public enum LoaiGiaoDichEnum
     {
-        MuaVatPham, NhanThuong, HoanThanhNhiemVu, DiemDanh,
-        ThachDau, SuDungBoost
+        MuaVatPham,
+        NhanThuong,
+        HoanThanhNhiemVu,
+        DiemDanh,
+        ThachDau,
+        SuDungBoost
     }
 
-    public enum LoaiHoatDongEnum
+    // =========================
+    // SHOP & STREAK
+    // =========================
+
+    public enum LoaiBaoVeChuoiEnum
     {
-        DangNhap, DangXuat, HocThe, TaoBoDe, DatThanhTuu,
-        LenLevel, ThachDau, ChuoiNgay, DiemDanh, MuaVatPham,
-        NhanThuong, ChiaSeBoDe, DangKy
+        Freeze,
+        HoiSinh
     }
 
-    public enum LoaiTienTeGiaoDichEnum { Vang, KimCuong }   
-    public enum LoaiDieuKienEnum { HocThe, ThachDau, DiemDanh, MuaVatPham, TuongTac, ChiaSeBoDe, LenLevel }
+    public enum DoHiemEnum : byte
+    {
+        PhoBien = 1,
+        ItGap = 2,
+        Hiem = 3,
+        SuThi = 4,
+        HuyenThoai = 5
+    }
+
+    // =========================
+    // GAMIFICATION
+    // =========================
+
+    public enum LoaiThanhTuuEnum
+    {
+        HocTap,
+        ChuoiNgay,
+        XaHoi,
+        SangTao,
+        ThachDau,
+        KhamPha,
+        AnDanh
+    }
+
+    public enum LoaiNhiemVuEnum
+    {
+        HangNgay,
+        HangTuan,
+        ThanhTuu,
+        SuKien
+    }
+
+    // =========================
+    // CONDITIONS (khuyến nghị)
+    // =========================
+
+    public enum LoaiDieuKienEnum
+    {
+        TongSoTheHoc,
+        ChuoiNgayLienTiep,
+        TongDiemXP,
+        SoTranThang,
+        SoLanDangNhap,
+        ThoiGianHoc
+    }
 }
