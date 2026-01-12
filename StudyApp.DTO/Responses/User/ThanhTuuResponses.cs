@@ -24,6 +24,8 @@ namespace StudyApp.DTO.Responses.User
         public int? ThuongXp { get; set; }
         public int? ThuongVang { get; set; }
         public int? ThuongKimCuong { get; set; }
+        public bool DaDatDuoc { get; set; }
+        public DateTime? NgayDat { get; set; }
 
         public DoHiemEnum DoHiem { get; set; }
         public bool BiAn { get; set; }

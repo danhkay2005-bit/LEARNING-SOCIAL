@@ -17,7 +17,7 @@
 
   <ItemGroup>
     <Folder Include="Interfaces\" />
-    <Folder Include="Services\" />
+    <Folder Include="Services\Implementations\Social\" />
   </ItemGroup>
 
 </Project>

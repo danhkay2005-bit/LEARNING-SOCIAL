@@ -13,26 +13,44 @@ namespace WinForms.UserControls.Pages
             lblTitle = new Label();
             txtUsername = new TextBox();
             btnLogin = new Button();
-
-            lblTitle.Text = "🔑 Đăng nhập";
+            SuspendLayout();
+            // 
+            // lblTitle
+            // 
             lblTitle.Dock = DockStyle.Top;
-            lblTitle.Height = 60;
-            lblTitle.Font = new System.Drawing.Font("Segoe UI", 16, System.Drawing.FontStyle.Bold);
-            lblTitle.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-
+            lblTitle.Font = new Font("Segoe UI", 16F, FontStyle.Bold);
+            lblTitle.Location = new Point(0, 0);
+            lblTitle.Name = "lblTitle";
+            lblTitle.Size = new Size(1077, 60);
+            lblTitle.TabIndex = 2;
+            lblTitle.Text = "🔑 Đăng nhập";
+            lblTitle.TextAlign = ContentAlignment.MiddleCenter;
+            // 
+            // txtUsername
+            // 
+            txtUsername.Location = new Point(100, 100);
+            txtUsername.Name = "txtUsername";
             txtUsername.PlaceholderText = "Tên đăng nhập";
-            txtUsername.Width = 250;
-            txtUsername.Top = 100;
-            txtUsername.Left = 100;
-
+            txtUsername.Size = new Size(250, 23);
+            txtUsername.TabIndex = 1;
+            // 
+            // btnLogin
+            // 
+            btnLogin.Location = new Point(100, 150);
+            btnLogin.Name = "btnLogin";
+            btnLogin.Size = new Size(250, 23);
+            btnLogin.TabIndex = 0;
             btnLogin.Text = "Đăng nhập";
-            btnLogin.Width = 250;
-            btnLogin.Top = 150;
-            btnLogin.Left = 100;
-
+            // 
+            // LoginPage
+            // 
             Controls.Add(btnLogin);
             Controls.Add(txtUsername);
             Controls.Add(lblTitle);
+            Name = "LoginPage";
+            Size = new Size(1077, 647);
+            ResumeLayout(false);
+            PerformLayout();
         }
     }
 }
