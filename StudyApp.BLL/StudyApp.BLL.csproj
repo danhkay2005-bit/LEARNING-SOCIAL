@@ -15,4 +15,9 @@
     <ProjectReference Include="..\StudyApp.DTO\StudyApp.DTO.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Interfaces\" />
+    <Folder Include="Services\Implementations\Social\" />
+  </ItemGroup>
+
 </Project>

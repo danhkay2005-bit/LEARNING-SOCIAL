@@ -101,4 +101,25 @@
         SoLanDangNhap,
         ThoiGianHoc
     }
+    public enum ResetPasswordResult
+    {
+        Success,
+        EmailNotFound,
+        Fail
+    }
+    public enum LoginResult
+    {
+        Success,
+        UserNotFound,
+        InvalidCredentials,
+        AccountLocked
+    }
+
+    public enum RegisterResult
+    {
+        Success,
+        UsernameExists,
+        EmailExists,
+        Fail
+    }
 }

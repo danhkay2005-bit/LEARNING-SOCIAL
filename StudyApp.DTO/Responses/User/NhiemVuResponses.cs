@@ -22,6 +22,9 @@ namespace StudyApp.DTO.Responses.User
         public int? ThuongVang { get; set; }
         public int? ThuongKimCuong { get; set; }
         public int? ThuongXp { get; set; }
+        public int TienDoHienTai { get; set; }
+        public bool DaHoanThanh { get; set; }
+        public bool DaNhanThuong { get; set; }
 
         public DateOnly? NgayBatDau { get; set; }
         public DateOnly? NgayKetThuc { get; set; }
