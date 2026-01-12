@@ -4,11 +4,16 @@ namespace StudyApp.DTO.Responses.User
 {
     public class UserStatsResponses
     {
+
+
         public int ChuoiNgayHoc { get; set; }
         public int TongSoTheDaHoc { get; set; }
         public int TongThoiGianHocPhut { get; set; }
         public double TyLeChinhXac { get; set; }
 
-        
+        public int TongDiemXP { get; set; }
+        public int CapDoHienTai { get; set; }
+        public int ChuoiNgay { get; set; }
+        public int SoStreakFreeze { get; set; }
     }
 }

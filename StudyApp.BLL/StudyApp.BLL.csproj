@@ -21,8 +21,4 @@
     <ProjectReference Include="..\StudyApp.DTO\StudyApp.DTO.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Interfaces\" />
-  </ItemGroup>
-
 </Project>
