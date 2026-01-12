@@ -19,8 +19,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Utilities\" />
     <Folder Include="Resources\" />
+    <Folder Include="UserControls\Quiz\" />
+    <Folder Include="Utilities\Helpers\" />
   </ItemGroup>
 
   <ItemGroup>

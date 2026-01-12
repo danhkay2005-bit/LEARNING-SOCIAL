@@ -1,4 +1,23 @@
 root = true
 
 [*.cs]
+# --- Ngăn chặn đơn giản hóa kiểm tra Null (IDE0016, IDE0029, IDE0030) ---
+dotnet_diagnostic.IDE0016.severity = none
+dotnet_diagnostic.IDE0029.severity = none
+dotnet_diagnostic.IDE0030.severity = none
+
+# --- Ngăn chặn đơn giản hóa khởi tạo Collection (IDE0028, IDE0300) ---
 dotnet_diagnostic.IDE0028.severity = none
+dotnet_diagnostic.IDE0300.severity = none
+
+# --- Một số gợi ý khác bạn có thể muốn tắt nếu thấy phiền ---
+# dotnet_diagnostic.IDE0005.severity = none  # Tắt cảnh báo using dư thừa
+# dotnet_diagnostic.IDE0090.severity = none  # Tắt gợi ý 'new()' thay cho 'new List<T>()'
+
+[*.cs]
+# Tắt tất cả các analyzer thuộc danh mục IDE (Internal Diagnostics)
+dotnet_analyzer_diagnostic.category-Style.severity = none
+dotnet_analyzer_diagnostic.category-CodeQuality.severity = none
+
+# Tắt toàn bộ các quy tắc analyzer mặc định
+dotnet_analyzer_diagnostic.severity = none
