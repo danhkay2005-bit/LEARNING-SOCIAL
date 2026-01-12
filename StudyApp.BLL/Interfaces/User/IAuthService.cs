@@ -6,14 +6,13 @@ namespace StudyApp.BLL.Interfaces.User;
 
 public interface IAuthService
 {
-    // Đăng nhập / Đăng ký
     Task<(LoginResult Result, NguoiDungDTO? User)> LoginAsync(DangNhapRequest request);
     Task<RegisterResult> RegisterAsync(DangKyNguoiDungRequest request);
 
-    // --- QUÊN MẬT KHẨU ---
-    // Bước 1: Gửi yêu cầu (Kiểm tra email tồn tại)
-    Task<ResetPasswordResult> ForgotPasswordAsync(string email);
+    Task<ResetPasswordResult> ResetPasswordAsync(string email, string newPassword);
 
-    // Bước 2: Đặt lại mật khẩu (Cần Token xác thực - Ở đây giả lập)
-    Task<ResetPasswordResult> ResetPasswordAsync(DoiMatKhauRequest request);
+    Task<string?> GetTieuSuAsync(Guid maNguoiDung, CancellationToken cancellationToken = default);
+    Task<bool> UpdateTieuSuAsync(Guid maNguoiDung, string? tieuSu, CancellationToken cancellationToken = default);
+    Task<string?> GetAvatarPathAsync(Guid maNguoiDung, CancellationToken cancellationToken = default);
+    Task<bool> UpdateAvatarPathAsync(Guid maNguoiDung, string? avatarPath, CancellationToken cancellationToken = default);
 }

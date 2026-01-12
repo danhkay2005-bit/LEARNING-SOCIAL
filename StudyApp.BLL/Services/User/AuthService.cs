@@ -21,7 +21,7 @@ public class AuthService(UserDbContext _context, IMapper _mapper) : IAuthService
 
         if (user == null)
         {
-            return (LoginResult.InvalidCredentials, null);
+            return (LoginResult.UserNotFound, null);
         }
 
         // TODO: Hash password check (BCrypt)
@@ -65,7 +65,8 @@ public class AuthService(UserDbContext _context, IMapper _mapper) : IAuthService
             KimCuong = 5,
             ChuoiNgayHocLienTiep = 0,
             SoStreakFreeze = 2,
-            ThoiGianTao = DateTime.Now
+            ThoiGianTao = DateTime.Now,
+            DaXoa = false
         };
 
         _context.NguoiDungs.Add(newUser);
@@ -74,7 +75,7 @@ public class AuthService(UserDbContext _context, IMapper _mapper) : IAuthService
         return RegisterResult.Success;
     }
 
-    public async Task<ResetPasswordResult> ForgotPasswordAsync(string email)
+    public async Task<ResetPasswordResult> ResetPasswordAsync(string email, string newPassword)
     {
         var user = await _context.NguoiDungs.FirstOrDefaultAsync(u => u.Email == email);
         if (user == null)
@@ -82,11 +83,52 @@ public class AuthService(UserDbContext _context, IMapper _mapper) : IAuthService
             return ResetPasswordResult.EmailNotFound;
         }
 
+        // TODO: Hash new password
+        user.MatKhauMaHoa = newPassword;
+
+        await _context.SaveChangesAsync();
         return ResetPasswordResult.Success;
     }
 
-    public async Task<ResetPasswordResult> ResetPasswordAsync(DoiMatKhauRequest request)
+    public async Task<string?> GetTieuSuAsync(Guid maNguoiDung, CancellationToken cancellationToken = default)
     {
-        return ResetPasswordResult.Fail;
+        return await _context.NguoiDungs
+            .AsNoTracking()
+            .Where(x => x.MaNguoiDung == maNguoiDung)
+            .Select(x => x.TieuSu)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public async Task<bool> UpdateTieuSuAsync(Guid maNguoiDung, string? tieuSu, CancellationToken cancellationToken = default)
+    {
+        var user = await _context.NguoiDungs.FirstOrDefaultAsync(x => x.MaNguoiDung == maNguoiDung, cancellationToken);
+        if (user == null)
+        {
+            return false;
+        }
+
+        user.TieuSu = tieuSu;
+        return await _context.SaveChangesAsync(cancellationToken) > 0;
+    }
+
+    public async Task<string?> GetAvatarPathAsync(Guid maNguoiDung, CancellationToken cancellationToken = default)
+    {
+        return await _context.NguoiDungs
+            .AsNoTracking()
+            .Where(x => x.MaNguoiDung == maNguoiDung)
+            .Select(x => x.HinhDaiDien)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public async Task<bool> UpdateAvatarPathAsync(Guid maNguoiDung, string? avatarPath, CancellationToken cancellationToken = default)
+    {
+        var user = await _context.NguoiDungs.FirstOrDefaultAsync(x => x.MaNguoiDung == maNguoiDung, cancellationToken);
+        if (user == null)
+        {
+            return false;
+        }
+
+        user.HinhDaiDien = avatarPath;
+        return await _context.SaveChangesAsync(cancellationToken) > 0;
     }
 }

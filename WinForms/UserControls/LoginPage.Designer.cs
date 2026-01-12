@@ -28,7 +28,7 @@ namespace WinForms.UserControls.Pages
             // 
             // txtUsername
             // 
-            txtUsername.Location = new Point(100, 100);
+            txtUsername.Location = new Point(409, 75);
             txtUsername.Name = "txtUsername";
             txtUsername.PlaceholderText = "Tên đăng nhập";
             txtUsername.Size = new Size(250, 23);
@@ -36,7 +36,7 @@ namespace WinForms.UserControls.Pages
             // 
             // btnLogin
             // 
-            btnLogin.Location = new Point(100, 150);
+            btnLogin.Location = new Point(409, 382);
             btnLogin.Name = "btnLogin";
             btnLogin.Size = new Size(250, 23);
             btnLogin.TabIndex = 0;

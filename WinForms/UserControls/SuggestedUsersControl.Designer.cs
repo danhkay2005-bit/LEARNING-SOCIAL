@@ -42,7 +42,7 @@
             lblTitle.Location = new Point(0, 0);
             lblTitle.Name = "lblTitle";
             lblTitle.Padding = new Padding(10);
-            lblTitle.Size = new Size(375, 45);
+            lblTitle.Size = new Size(377, 45);
             lblTitle.TabIndex = 1;
             lblTitle.Text = "👥 Gợi ý theo dõi";
             // 
@@ -54,7 +54,7 @@
             flpUsers.FlowDirection = FlowDirection.TopDown;
             flpUsers.Location = new Point(0, 45);
             flpUsers.Name = "flpUsers";
-            flpUsers.Size = new Size(375, 249);
+            flpUsers.Size = new Size(377, 290);
             flpUsers.TabIndex = 0;
             flpUsers.WrapContents = false;
             // 
@@ -63,7 +63,7 @@
             Controls.Add(flpUsers);
             Controls.Add(lblTitle);
             Name = "SuggestedUsersControl";
-            Size = new Size(375, 294);
+            Size = new Size(377, 335);
             ResumeLayout(false);
         }
 
