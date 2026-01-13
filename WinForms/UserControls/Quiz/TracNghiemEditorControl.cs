@@ -10,6 +10,7 @@ namespace WinForms.UserControls.Quiz
 {
     public partial class TracNghiemEditorControl : UserControl, IQuestionEditor
     {
+        private static readonly Random _random = new Random();
         public TracNghiemEditorControl()
         {
             InitializeComponent();
@@ -39,61 +40,77 @@ namespace WinForms.UserControls.Quiz
         /// </summary>
         public ChiTietTheRequest GetQuestionData()
         {
-            // Xác định nội dung đáp án đúng để lưu vào MatSau
+            // 1. Xác định nội dung đáp án đúng để lưu vào MatSau (Flashcard)
             string dapAnDung = "";
             if (rbA.Checked) dapAnDung = txtDapAnA.Text.Trim();
             else if (rbB.Checked) dapAnDung = txtDapAnB.Text.Trim();
             else if (rbC.Checked) dapAnDung = txtDapAnC.Text.Trim();
             else if (rbD.Checked) dapAnDung = txtDapAnD.Text.Trim();
 
+            // 2. Tạo danh sách tạm thời chứa 4 đáp án từ UI
+            var danhSachTam = new List<TaoDapAnTracNghiemRequest>
+    {
+        new TaoDapAnTracNghiemRequest { NoiDung = txtDapAnA.Text.Trim(), LaDapAnDung = rbA.Checked },
+        new TaoDapAnTracNghiemRequest { NoiDung = txtDapAnB.Text.Trim(), LaDapAnDung = rbB.Checked },
+        new TaoDapAnTracNghiemRequest { NoiDung = txtDapAnC.Text.Trim(), LaDapAnDung = rbC.Checked },
+        new TaoDapAnTracNghiemRequest { NoiDung = txtDapAnD.Text.Trim(), LaDapAnDung = rbD.Checked }
+    };
+
+            // 3. THỰC HIỆN TRỘN NGẪU NHIÊN (SHUFFLE)
+            // OrderBy theo một số ngẫu nhiên để thay đổi vị trí các phần tử
+            var danhSachDaTron = danhSachTam.OrderBy(x => _random.Next()).ToList();
+
+            // 4. GÁN THỨ TỰ (ThuTu) SAU KHI TRỘN
+            for (int i = 0; i < danhSachDaTron.Count; i++)
+            {
+                danhSachDaTron[i].ThuTu = i + 1; // Gán thứ tự 1, 2, 3, 4
+            }
+
+            // 5. Trả về object Request hoàn chỉnh
             return new ChiTietTheRequest
             {
                 TheChinh = new TaoTheFlashcardRequest
                 {
                     LoaiThe = LoaiTheEnum.TracNghiem,
-                    MatTruoc = txtCauHoi.Text.Trim(), // Lưu câu hỏi vào mặt trước
-                    MatSau = dapAnDung,             // Lưu đáp án đúng vào mặt sau
-                    HinhAnhTruoc = picCauHoi.Tag?.ToString(), // Ảnh đi kèm câu hỏi
-                    ThuTu = 0 // Bạn có thể lấy từ index nếu cần
+                    MatTruoc = txtCauHoi.Text.Trim(),
+                    MatSau = dapAnDung,
+                    HinhAnhTruoc = picCauHoi.Tag?.ToString(),
+                    ThuTu = 0 // Thứ tự của câu hỏi trong bộ đề (sẽ do TaoQuizPage quản lý)
                 },
-                DapAnTracNghiem = new List<TaoDapAnTracNghiemRequest>
-        {
-            new TaoDapAnTracNghiemRequest { NoiDung = txtDapAnA.Text.Trim(), LaDapAnDung = rbA.Checked },
-            new TaoDapAnTracNghiemRequest { NoiDung = txtDapAnB.Text.Trim(), LaDapAnDung = rbB.Checked },
-            new TaoDapAnTracNghiemRequest { NoiDung = txtDapAnC.Text.Trim(), LaDapAnDung = rbC.Checked },
-            new TaoDapAnTracNghiemRequest { NoiDung = txtDapAnD.Text.Trim(), LaDapAnDung = rbD.Checked }
-        }
+                DapAnTracNghiem = danhSachDaTron
             };
         }
-
         public void SetQuestionData(ChiTietTheRequest data)
         {
             if (data == null || data.TheChinh == null) return;
 
-            // Đổ dữ liệu vào mặt trước (Câu hỏi)
+            // 1. Đổ dữ liệu câu hỏi
             txtCauHoi.Text = data.TheChinh.MatTruoc;
 
-            // Hiển thị ảnh nếu có
+            // 2. Hiển thị ảnh nếu có
             if (!string.IsNullOrEmpty(data.TheChinh.HinhAnhTruoc) && System.IO.File.Exists(data.TheChinh.HinhAnhTruoc))
             {
                 picCauHoi.Image = Image.FromFile(data.TheChinh.HinhAnhTruoc);
                 picCauHoi.Tag = data.TheChinh.HinhAnhTruoc;
             }
 
-            // Đổ dữ liệu 4 đáp án
+            // 3. Đổ dữ liệu đáp án (Dựa trên flag LaDapAnDung)
             if (data.DapAnTracNghiem != null && data.DapAnTracNghiem.Count >= 4)
             {
-                txtDapAnA.Text = data.DapAnTracNghiem[0].NoiDung;
-                rbA.Checked = data.DapAnTracNghiem[0].LaDapAnDung;
+                // Sắp xếp lại theo thứ tự cũ để đổ vào đúng ô A, B, C, D trên UI
+                var sortedList = data.DapAnTracNghiem.OrderBy(x => x.ThuTu).ToList();
 
-                txtDapAnB.Text = data.DapAnTracNghiem[1].NoiDung;
-                rbB.Checked = data.DapAnTracNghiem[1].LaDapAnDung;
+                txtDapAnA.Text = sortedList[0].NoiDung;
+                rbA.Checked = sortedList[0].LaDapAnDung;
 
-                txtDapAnC.Text = data.DapAnTracNghiem[2].NoiDung;
-                rbC.Checked = data.DapAnTracNghiem[2].LaDapAnDung;
+                txtDapAnB.Text = sortedList[1].NoiDung;
+                rbB.Checked = sortedList[1].LaDapAnDung;
 
-                txtDapAnD.Text = data.DapAnTracNghiem[3].NoiDung;
-                rbD.Checked = data.DapAnTracNghiem[3].LaDapAnDung;
+                txtDapAnC.Text = sortedList[2].NoiDung;
+                rbC.Checked = sortedList[2].LaDapAnDung;
+
+                txtDapAnD.Text = sortedList[3].NoiDung;
+                rbD.Checked = sortedList[3].LaDapAnDung;
             }
         }
     }

@@ -1,4 +1,5 @@
 ﻿using StudyApp.BLL.Interfaces.Learn;
+using StudyApp.DTO;
 using StudyApp.DTO.Enums;
 using StudyApp.DTO.Requests.Learn;
 using StudyApp.DTO.Responses.Learn;
@@ -70,21 +71,35 @@ namespace WinForms.UserControls
 
         private async void btnTaoQuiz_Click(object? sender, EventArgs e)
         {
+            // 1. Lưu dữ liệu từ giao diện hiện tại vào object request
             SaveCurrentData();
 
-            if (string.IsNullOrWhiteSpace(_fullRequest.ThongTinChung.TieuDe))
+            // 2. Kiểm tra đăng nhập (Bảo mật phía Client)
+            if (!UserSession.IsLoggedIn || UserSession.CurrentUser == null)
             {
-                MessageBox.Show("Vui lòng nhập tiêu đề bộ đề tại phần Setting!", "Thông báo");
-                btnSetting.PerformClick(); // Tự động quay về trang Setting
+                MessageBox.Show("Vui lòng đăng nhập để thực hiện chức năng này!", "Thông báo");
                 return;
             }
 
+            // 3. Kiểm tra tính hợp lệ của tiêu đề
+            if (string.IsNullOrWhiteSpace(_fullRequest.ThongTinChung.TieuDe))
+            {
+                MessageBox.Show("Vui lòng nhập tiêu đề bộ đề tại phần Setting!", "Thông báo");
+                btnSetting.PerformClick();
+                return;
+            }
+
+            // 4. GÁN ID NGƯỜI DÙNG VÀO REQUEST
+            _fullRequest.ThongTinChung.MaNguoiDung = UserSession.CurrentUser.MaNguoiDung;
+
             try
             {
+                // 5. Gửi request đã có đầy đủ MaNguoiDung xuống Backend
                 var result = await _boDeHocService.CreateFullAsync(_fullRequest);
                 if (result != null)
                 {
                     MessageBox.Show("Lưu bộ đề thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    // Có thể thêm lệnh đóng trang hoặc quay về trang chủ tại đây
                 }
             }
             catch (Exception ex)
