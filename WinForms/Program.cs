@@ -1,8 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using StudyApp.BLL;
+using StudyApp.BLL.Mappings.Learn;
 using StudyApp.DAL.Data;
 using System;
+using System.IO;
 using System.Windows.Forms;
 using WinForms.Forms;
 
@@ -10,33 +13,52 @@ namespace WinForms
 {
     internal static class Program
     {
+        public static IServiceProvider? ServiceProvider { get; private set; }
+
         [STAThread]
         static void Main()
         {
-            // 1. Load cấu hình từ appsettings.json
+            // 1. Cấu hình appsettings.json
             var configuration = new ConfigurationBuilder()
-                .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
+                .SetBasePath(Directory.GetCurrentDirectory())
                 .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
                 .Build();
 
-            // 2. Tạo DI container và cấu hình các DbContext
+            // 2. Thiết lập DI Container
             var services = new ServiceCollection();
 
-            // Đăng ký từng DbContext
-            services.AddDbContext<UserDbContext>(options =>
-                options.UseSqlServer(configuration.GetConnectionString("UserDb")));
+            // --- Đăng ký DbContext ---
             services.AddDbContext<LearningDbContext>(options =>
                 options.UseSqlServer(configuration.GetConnectionString("LearningDb")));
+            services.AddDbContext<UserDbContext>(options =>
+                options.UseSqlServer(configuration.GetConnectionString("UserDb")));
             services.AddDbContext<SocialDbContext>(options =>
                 options.UseSqlServer(configuration.GetConnectionString("SocialDb")));
 
-            // 3. Tạo provider
-            var serviceProvider = services.BuildServiceProvider();
+            // --- Đăng ký AutoMapper (Quét tự động các Profile) ---
+            services.AddAutoMapper(typeof(BoDeHocProfile).Assembly);
 
-            // 4. Khởi động chương trình như bình thường
+            // --- Đăng ký BLL Services (Sử dụng Scrutor trong Extension Method) ---
+            services.AddBusinessServices();
+
+            // --- Tự động đăng ký tất cả các Form có trong Project WinForms ---
+            // Thay vì gõ từng cái, Scrutor sẽ đăng ký tất cả lớp kế thừa từ 'Form'
+            services.Scan(scan => scan
+                .FromAssemblyOf<MainForm>()
+                .AddClasses(classes => classes.AssignableTo<Form>())
+                .AsSelf() // Đăng ký chính lớp đó (VD: services.AddTransient<MainForm>())
+                .WithTransientLifetime()); // Mỗi lần gọi là tạo mới Form
+
+            // 3. Build Provider
+            ServiceProvider = services.BuildServiceProvider();
+
+            // 4. Khởi chạy ứng dụng
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new MainForm()); // Truyền serviceProvider vào form chính nếu muốn DI bên trong
+
+            // Lấy MainForm ra từ DI và chạy
+            var mainForm = ServiceProvider.GetRequiredService<MainForm>();
+            Application.Run(mainForm);
         }
     }
 }

@@ -17,8 +17,6 @@ namespace StudyApp.BLL.Services.Learn
             _context = context;
             _mapper = mapper;
         }
-
-        // BỔ SUNG PHƯƠNG THỨC NÀY ĐỂ HẾT LỖI
         public async Task<IEnumerable<TagResponse>> GetAllAsync()
         {
             var tags = await _context.Tags

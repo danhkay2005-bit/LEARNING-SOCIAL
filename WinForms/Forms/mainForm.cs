@@ -64,11 +64,16 @@ namespace WinForms.Forms
         }
 
         // ================= PAGE LOAD =================
-        private void LoadPage(UserControl page)
+        public void LoadPage(UserControl page)
         {
+            contentPanel.SuspendLayout(); // Tạm dừng vẽ để tránh giật hình
             contentPanel.Controls.Clear();
+
             page.Dock = DockStyle.Fill;
             contentPanel.Controls.Add(page);
+
+            contentPanel.ResumeLayout(true);
+            page.PerformLayout(); // Ép trang con tính toán lại vị trí các nút
         }
         private void ShowSuggestedUsers()
         {

@@ -4,6 +4,21 @@ using System.ComponentModel.DataAnnotations;
 
 namespace StudyApp.DTO.Requests.Learn
 {
+    public class LuuToanBoBoDeRequest
+    {
+        public TaoBoDeHocRequest ThongTinChung { get; set; } = null!;
+        public List<ChiTietTheRequest> DanhSachThe { get; set; } = new List<ChiTietTheRequest>();
+    }
+
+    public class ChiTietTheRequest
+    {
+        public TaoTheFlashcardRequest TheChinh { get; set; } = null!;
+        // Dựa trên LoaiThe, một trong các list dưới đây sẽ có dữ liệu
+        public List<TaoDapAnTracNghiemRequest>? DapAnTracNghiem { get; set; }
+        public List<TaoPhanTuSapXepRequest>? PhanTuSapXeps { get; set; }
+        public List<TaoTuDienKhuyetRequest>? TuDienKhuyets { get; set; }
+        public List<CapGhepRequest>? CapGheps { get; set; }
+    }
     /// <summary>
     /// Request tạo bộ đề học
     /// </summary>
@@ -22,7 +37,6 @@ namespace StudyApp.DTO.Requests.Learn
         public MucDoKhoEnum MucDoKho { get; set; } = MucDoKhoEnum.TrungBinh;
 
         public bool LaCongKhai { get; set; } = true;
-        public bool ChoPhepBinhLuan { get; set; } = true;
     }
 
     /// <summary>

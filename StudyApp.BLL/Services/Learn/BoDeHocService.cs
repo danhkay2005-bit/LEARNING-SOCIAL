@@ -140,5 +140,76 @@ namespace StudyApp.BLL.Services.Learn
                 throw;
             }
         }
+        // Thêm phương thức này vào trong class BoDeHocService
+        public async Task<BoDeHocResponse> CreateFullAsync(LuuToanBoBoDeRequest request)
+        {
+            // 1. Khởi tạo Transaction để đảm bảo tính toàn vẹn (Atomic)
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                // 2. Lưu thông tin chung của Bộ Đề (Header)
+                var boDe = _mapper.Map<BoDeHoc>(request.ThongTinChung);
+                boDe.ThoiGianTao = DateTime.Now;
+                boDe.DaXoa = false;
+                boDe.SoLuongThe = request.DanhSachThe.Count;
+
+                _context.BoDeHocs.Add(boDe);
+                await _context.SaveChangesAsync(); // Lưu để lấy MaBoDe (Primary Key) tự tăng
+
+                // 3. Duyệt danh sách thẻ (Slides) để lưu
+                foreach (var item in request.DanhSachThe)
+                {
+                    // A. Map thông tin thẻ chính (Flashcard)
+                    var theEntity = _mapper.Map<TheFlashcard>(item.TheChinh);
+                    theEntity.MaBoDe = boDe.MaBoDe; // Gán khóa ngoại link tới bộ đề vừa tạo
+                    theEntity.ThoiGianTao = DateTime.Now;
+
+                    _context.TheFlashcards.Add(theEntity);
+                    await _context.SaveChangesAsync(); // Lưu để lấy MaThe (Primary Key) cho các bảng con
+
+                    // B. Lưu chi tiết dựa trên loại thẻ (LoaiThe)
+                    if (item.DapAnTracNghiem != null && item.DapAnTracNghiem.Any())
+                    {
+                        var listDapAn = _mapper.Map<List<DapAnTracNghiem>>(item.DapAnTracNghiem);
+                        listDapAn.ForEach(x => x.MaThe = theEntity.MaThe);
+                        _context.DapAnTracNghiems.AddRange(listDapAn);
+                    }
+
+                    if (item.PhanTuSapXeps != null && item.PhanTuSapXeps.Any())
+                    {
+                        var listSapXep = _mapper.Map<List<PhanTuSapXep>>(item.PhanTuSapXeps);
+                        listSapXep.ForEach(x => x.MaThe = theEntity.MaThe);
+                        _context.PhanTuSapXeps.AddRange(listSapXep);
+                    }
+
+                    if (item.TuDienKhuyets != null && item.TuDienKhuyets.Any())
+                    {
+                        var listDienKhuyet = _mapper.Map<List<TuDienKhuyet>>(item.TuDienKhuyets);
+                        listDienKhuyet.ForEach(x => x.MaThe = theEntity.MaThe);
+                        _context.TuDienKhuyets.AddRange(listDienKhuyet);
+                    }
+
+                    if (item.CapGheps != null && item.CapGheps.Any())
+                    {
+                        var listCapGhep = _mapper.Map<List<CapGhep>>(item.CapGheps);
+                        // Giả sử bảng CapGhep cũng có MaThe hoặc MaCap tương ứng
+                        // listCapGhep.ForEach(x => x.MaThe = theEntity.MaThe); 
+                        _context.CapGheps.AddRange(listCapGhep);
+                    }
+                }
+
+                // 4. Lưu tất cả chi tiết và Commit Transaction
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return _mapper.Map<BoDeHocResponse>(boDe);
+            }
+            catch (Exception ex)
+            {
+                // Nếu có bất kỳ lỗi nào, hủy bỏ toàn bộ thao tác trước đó
+                await transaction.RollbackAsync();
+                throw new Exception("Lỗi khi tạo bộ đề đồng loạt: " + ex.Message);
+            }
+        }
     }
 }
