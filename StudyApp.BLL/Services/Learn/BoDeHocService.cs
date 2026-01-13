@@ -5,6 +5,7 @@ using StudyApp.DAL.Data;
 using StudyApp.DAL.Entities.Learn;
 using StudyApp.DTO.Requests.Learn;
 using StudyApp.DTO.Responses.Learn;
+using System.Text.RegularExpressions;
 
 namespace StudyApp.BLL.Services.Learn
 {
@@ -19,6 +20,51 @@ namespace StudyApp.BLL.Services.Learn
             _mapper = mapper;
         }
 
+        #region Helper Methods (Xử lý Hashtag)
+        /// <summary>
+        /// Tự động tách hashtag từ mô tả, cập nhật bảng Tags và bảng trung gian TagBoDes
+        /// </summary>
+        private async Task HandleHashtagsAsync(int boDeId, string? moTa)
+        {
+            if (string.IsNullOrWhiteSpace(moTa)) return;
+
+            // Regex lấy các từ sau dấu #, hỗ trợ Unicode (tiếng Việt có dấu)
+            // [\p{L}\p{N}_] bao gồm chữ cái, chữ số và dấu gạch dưới
+            var hashtagMatches = Regex.Matches(moTa, @"#([\p{L}\p{N}_]+)");
+            var hashtagNames = hashtagMatches.Cast<Match>()
+                                             .Select(m => m.Groups[1].Value.ToLower().Trim())
+                                             .Distinct()
+                                             .ToList();
+
+            if (!hashtagNames.Any()) return;
+
+            // 1. Xóa các liên kết Tag cũ của bộ đề này để làm mới (cho trường hợp Update)
+            var currentLinks = _context.TagBoDes.Where(x => x.MaBoDe == boDeId);
+            _context.TagBoDes.RemoveRange(currentLinks);
+            await _context.SaveChangesAsync();
+
+            foreach (var name in hashtagNames)
+            {
+                // 2. Tìm Tag trong DB (Nếu chưa có thì thêm mới)
+                var tag = await _context.Tags.FirstOrDefaultAsync(t => t.TenTag.ToLower() == name);
+                if (tag == null)
+                {
+                    tag = new Tag { TenTag = name };
+                    _context.Tags.Add(tag);
+                    await _context.SaveChangesAsync(); // Lưu để lấy MaTag
+                }
+
+                // 3. Tạo bản ghi bảng trung gian
+                _context.TagBoDes.Add(new TagBoDe
+                {
+                    MaBoDe = boDeId,
+                    MaTag = tag.MaTag
+                });
+            }
+            await _context.SaveChangesAsync();
+        }
+        #endregion
+
         public async Task<BoDeHocResponse?> GetByIdAsync(int id)
         {
             var item = await _context.BoDeHocs
@@ -31,6 +77,7 @@ namespace StudyApp.BLL.Services.Learn
         public async Task<IEnumerable<BoDeHocResponse>> GetByUserAsync(Guid userId)
         {
             var list = await _context.BoDeHocs
+                .Include(x => x.TagBoDes).ThenInclude(t => t.MaTagNavigation)
                 .Where(x => x.MaNguoiDung == userId && x.DaXoa != true)
                 .OrderByDescending(x => x.ThoiGianTao)
                 .ToListAsync();
@@ -40,13 +87,27 @@ namespace StudyApp.BLL.Services.Learn
 
         public async Task<BoDeHocResponse> CreateAsync(TaoBoDeHocRequest request)
         {
-            var boDe = _mapper.Map<BoDeHoc>(request);
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var boDe = _mapper.Map<BoDeHoc>(request);
+                boDe.ThoiGianTao = DateTime.Now;
+                boDe.DaXoa = false;
 
-            // Các trường mặc định đã được cấu hình trong MappingProfile (DaXoa, ThoiGianTao)
-            _context.BoDeHocs.Add(boDe);
-            await _context.SaveChangesAsync();
+                _context.BoDeHocs.Add(boDe);
+                await _context.SaveChangesAsync();
 
-            return _mapper.Map<BoDeHocResponse>(boDe);
+                // Xử lý Hashtags
+                await HandleHashtagsAsync(boDe.MaBoDe, request.MoTa);
+
+                await transaction.CommitAsync();
+                return _mapper.Map<BoDeHocResponse>(boDe);
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
 
         public async Task<BoDeHocResponse> UpdateAsync(int id, CapNhatBoDeHocRequest request)
@@ -55,13 +116,26 @@ namespace StudyApp.BLL.Services.Learn
             if (existing == null || existing.DaXoa == true)
                 throw new KeyNotFoundException("Bộ đề không tồn tại.");
 
-            _mapper.Map(request, existing);
-            existing.ThoiGianCapNhat = DateTime.Now;
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                _mapper.Map(request, existing);
+                existing.ThoiGianCapNhat = DateTime.Now;
 
-            _context.BoDeHocs.Update(existing);
-            await _context.SaveChangesAsync();
+                _context.BoDeHocs.Update(existing);
+                await _context.SaveChangesAsync();
 
-            return _mapper.Map<BoDeHocResponse>(existing);
+                // Cập nhật lại Hashtags
+                await HandleHashtagsAsync(id, request.MoTa);
+
+                await transaction.CommitAsync();
+                return _mapper.Map<BoDeHocResponse>(existing);
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
 
         public async Task<bool> DeleteAsync(int id)
@@ -69,19 +143,14 @@ namespace StudyApp.BLL.Services.Learn
             var existing = await _context.BoDeHocs.FindAsync(id);
             if (existing == null) return false;
 
-            // Soft Delete (Xóa mềm)
             existing.DaXoa = true;
             existing.ThoiGianCapNhat = DateTime.Now;
 
             return await _context.SaveChangesAsync() > 0;
         }
 
-        /// <summary>
-        /// Logic Fork (Sao chép sâu): Nhân bản Bộ đề + Toàn bộ Flashcards + Dữ liệu liên quan
-        /// </summary>
         public async Task<BoDeHocResponse> ForkAsync(SaoChepBoDeHocRequest request)
         {
-            // 1. Lấy bộ đề gốc kèm tất cả "họ hàng"
             var origin = await _context.BoDeHocs
                 .Include(x => x.TheFlashcards).ThenInclude(f => f.CapGheps)
                 .Include(x => x.TheFlashcards).ThenInclude(f => f.DapAnTracNghiems)
@@ -94,7 +163,6 @@ namespace StudyApp.BLL.Services.Learn
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                // 2. Tạo Bộ đề mới (Bản sao)
                 var newBoDe = new BoDeHoc
                 {
                     MaNguoiDung = request.MaNguoiDungMoi,
@@ -104,24 +172,24 @@ namespace StudyApp.BLL.Services.Learn
                     AnhBia = origin.AnhBia,
                     MucDoKho = origin.MucDoKho,
                     MaBoDeGoc = origin.MaBoDe,
-                    LaCongKhai = false, // Luôn để riêng tư khi mới fork
+                    LaCongKhai = false,
                     SoLuongThe = origin.SoLuongThe,
                     DaXoa = false,
                     ThoiGianTao = DateTime.Now
                 };
 
                 _context.BoDeHocs.Add(newBoDe);
-                await _context.SaveChangesAsync(); // Lấy MaBoDe mới
+                await _context.SaveChangesAsync();
 
-                // 3. Sao chép danh sách thẻ
+                // Xử lý Hashtag cho bản sao (Vì mô tả được copy sang)
+                await HandleHashtagsAsync(newBoDe.MaBoDe, newBoDe.MoTa);
+
                 foreach (var oldCard in origin.TheFlashcards)
                 {
                     var newCard = _mapper.Map<TheFlashcard>(oldCard);
-                    newCard.MaThe = 0; // Reset PK để DB tự tăng
-                    newCard.MaBoDe = newBoDe.MaBoDe; // Gán vào bộ đề mới
+                    newCard.MaThe = 0;
+                    newCard.MaBoDe = newBoDe.MaBoDe;
                     newCard.ThoiGianTao = DateTime.Now;
-
-                    // Reset các thống kê
                     newCard.SoLuongHoc = 0;
                     newCard.SoLanDung = 0;
                     newCard.SoLanSai = 0;
@@ -134,71 +202,66 @@ namespace StudyApp.BLL.Services.Learn
 
                 return _mapper.Map<BoDeHocResponse>(newBoDe);
             }
-            catch (Exception)
+            catch
             {
                 await transaction.RollbackAsync();
                 throw;
             }
         }
-        // Thêm phương thức này vào trong class BoDeHocService
+
         public async Task<BoDeHocResponse> CreateFullAsync(LuuToanBoBoDeRequest request)
         {
-            // 1. Khởi tạo Transaction để đảm bảo tính toàn vẹn (Atomic)
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                // 2. Lưu thông tin chung của Bộ Đề (Header)
                 var boDe = _mapper.Map<BoDeHoc>(request.ThongTinChung);
                 boDe.ThoiGianTao = DateTime.Now;
                 boDe.DaXoa = false;
                 boDe.SoLuongThe = request.DanhSachThe.Count;
 
                 _context.BoDeHocs.Add(boDe);
-                await _context.SaveChangesAsync(); // Lưu để lấy MaBoDe (Primary Key) tự tăng
+                await _context.SaveChangesAsync();
 
-                // 3. Duyệt danh sách thẻ (Slides) để lưu
+                // Xử lý Hashtag cho bộ đề tạo hàng loạt
+                await HandleHashtagsAsync(boDe.MaBoDe, request.ThongTinChung.MoTa);
+
                 foreach (var item in request.DanhSachThe)
                 {
-                    // A. Map thông tin thẻ chính (Flashcard)
                     var theEntity = _mapper.Map<TheFlashcard>(item.TheChinh);
-                    theEntity.MaBoDe = boDe.MaBoDe; // Gán khóa ngoại link tới bộ đề vừa tạo
+                    theEntity.MaBoDe = boDe.MaBoDe;
                     theEntity.ThoiGianTao = DateTime.Now;
 
                     _context.TheFlashcards.Add(theEntity);
-                    await _context.SaveChangesAsync(); // Lưu để lấy MaThe (Primary Key) cho các bảng con
+                    await _context.SaveChangesAsync();
 
-                    // B. Lưu chi tiết dựa trên loại thẻ (LoaiThe)
-                    if (item.DapAnTracNghiem != null && item.DapAnTracNghiem.Any())
+                    if (item.DapAnTracNghiem?.Any() == true)
                     {
                         var listDapAn = _mapper.Map<List<DapAnTracNghiem>>(item.DapAnTracNghiem);
                         listDapAn.ForEach(x => x.MaThe = theEntity.MaThe);
                         _context.DapAnTracNghiems.AddRange(listDapAn);
                     }
 
-                    if (item.PhanTuSapXeps != null && item.PhanTuSapXeps.Any())
+                    if (item.PhanTuSapXeps?.Any() == true)
                     {
                         var listSapXep = _mapper.Map<List<PhanTuSapXep>>(item.PhanTuSapXeps);
                         listSapXep.ForEach(x => x.MaThe = theEntity.MaThe);
                         _context.PhanTuSapXeps.AddRange(listSapXep);
                     }
 
-                    if (item.TuDienKhuyets != null && item.TuDienKhuyets.Any())
+                    if (item.TuDienKhuyets?.Any() == true)
                     {
                         var listDienKhuyet = _mapper.Map<List<TuDienKhuyet>>(item.TuDienKhuyets);
                         listDienKhuyet.ForEach(x => x.MaThe = theEntity.MaThe);
                         _context.TuDienKhuyets.AddRange(listDienKhuyet);
                     }
 
-                    if (item.CapGheps != null && item.CapGheps.Any())
+                    if (item.CapGheps?.Any() == true)
                     {
                         var listCapGhep = _mapper.Map<List<CapGhep>>(item.CapGheps);
-                        // Giả sử bảng CapGhep cũng có MaThe hoặc MaCap tương ứng
-                        // listCapGhep.ForEach(x => x.MaThe = theEntity.MaThe); 
                         _context.CapGheps.AddRange(listCapGhep);
                     }
                 }
 
-                // 4. Lưu tất cả chi tiết và Commit Transaction
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
@@ -206,7 +269,6 @@ namespace StudyApp.BLL.Services.Learn
             }
             catch (Exception ex)
             {
-                // Nếu có bất kỳ lỗi nào, hủy bỏ toàn bộ thao tác trước đó
                 await transaction.RollbackAsync();
                 throw new Exception("Lỗi khi tạo bộ đề đồng loạt: " + ex.Message);
             }

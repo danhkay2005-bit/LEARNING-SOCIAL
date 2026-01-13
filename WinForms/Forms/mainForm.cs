@@ -1,4 +1,5 @@
-﻿using StudyApp.DTO;
+﻿using Microsoft.Extensions.DependencyInjection;
+using StudyApp.DTO;
 using System;
 using System.Drawing;
 using System.Windows.Forms;
@@ -88,16 +89,44 @@ namespace WinForms.Forms
         // ================= EVENTS =================
         private void BtnDangNhap_Click(object? sender, EventArgs e)
         {
-            var loginPage = new LoginPage();
+            if (Program.ServiceProvider == null)
+                throw new InvalidOperationException("ServiceProvider is not initialized.");
+            var loginPage = Program.ServiceProvider.GetRequiredService<DangNhapControl>();
 
-            loginPage.LoginSuccess += user =>
+            // Xóa tham số 'user' ở đây vì Action không có tham số
+            loginPage.DangNhapThanhCong += () =>
             {
-                UserSession.Login(user);
-
+                // Không cần dòng UserSession.Login(user) nữa vì Control đã làm rồi
                 RenderMenu();
-                LoadPage(new TrangChuPage());
                 ShowSuggestedUsers();
+
+                LoadPage(Program.ServiceProvider.GetRequiredService<TrangChuPage>());
             };
+
+            loginPage.YeuCauDangKy += () =>
+            {
+                var dangKyPage = Program.ServiceProvider.GetRequiredService<DangKyControl>();
+                // Bạn có thể đăng ký sự kiện quay lại từ trang đăng ký tại đây nếu cần
+                LoadPage(dangKyPage);
+                dangKyPage.QuayVeDangNhap += () =>
+                {
+                    LoadPage(loginPage);
+                };
+            };
+
+            // 3. Xử lý khi nhấn nút Quên mật khẩu
+            loginPage.QuenMatKhau += () =>
+            {
+                var quenMKPage = Program.ServiceProvider.GetRequiredService<QuenMatKhauControl>();
+                LoadPage(quenMKPage);
+
+                quenMKPage.QuayVeDangNhap += () =>
+                {
+                    LoadPage(loginPage);
+                };
+            };
+            
+            
 
             LoadPage(loginPage);
         }

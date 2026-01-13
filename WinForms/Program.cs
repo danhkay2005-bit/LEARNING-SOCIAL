@@ -45,9 +45,9 @@ namespace WinForms
             // Thay vì gõ từng cái, Scrutor sẽ đăng ký tất cả lớp kế thừa từ 'Form'
             services.Scan(scan => scan
                 .FromAssemblyOf<MainForm>()
-                .AddClasses(classes => classes.AssignableTo<Form>())
-                .AsSelf() // Đăng ký chính lớp đó (VD: services.AddTransient<MainForm>())
-                .WithTransientLifetime()); // Mỗi lần gọi là tạo mới Form
+                .AddClasses(classes => classes.AssignableToAny(typeof(Form), typeof(UserControl))) // Quét cả Form và UserControl
+                .AsSelf()
+                .WithTransientLifetime());
 
             // 3. Build Provider
             ServiceProvider = services.BuildServiceProvider();

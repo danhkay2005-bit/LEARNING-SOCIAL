@@ -39,7 +39,6 @@
             lbl3 = new Label();
             comboBox2 = new ComboBox();
             lbl4 = new Label();
-            dateTimePicker1 = new DateTimePicker();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             SuspendLayout();
             // 
@@ -167,18 +166,10 @@
             lbl4.Text = "Chọn chế độ";
             lbl4.TextAlign = ContentAlignment.MiddleCenter;
             // 
-            // dateTimePicker1
-            // 
-            dateTimePicker1.Location = new Point(621, 475);
-            dateTimePicker1.Name = "dateTimePicker1";
-            dateTimePicker1.Size = new Size(250, 27);
-            dateTimePicker1.TabIndex = 16;
-            // 
             // HeaderEditorControl
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
-            Controls.Add(dateTimePicker1);
             Controls.Add(lbl4);
             Controls.Add(comboBox2);
             Controls.Add(lbl3);
@@ -210,6 +201,5 @@
         private Label lbl3;
         private ComboBox comboBox2;
         private Label lbl4;
-        private DateTimePicker dateTimePicker1;
     }
 }
