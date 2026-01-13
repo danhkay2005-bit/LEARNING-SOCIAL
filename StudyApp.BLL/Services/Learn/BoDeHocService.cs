@@ -26,40 +26,63 @@ namespace StudyApp.BLL.Services.Learn
         /// </summary>
         private async Task HandleHashtagsAsync(int boDeId, string? moTa)
         {
-            if (string.IsNullOrWhiteSpace(moTa)) return;
-
-            // Regex lấy các từ sau dấu #, hỗ trợ Unicode (Tiếng Việt)
-            var hashtagMatches = Regex.Matches(moTa, @"#([\p{L}\p{N}_]+)");
+            // Regex lấy danh sách hashtag mới từ mô tả
+            var hashtagMatches = Regex.Matches(moTa ?? "", @"#([\p{L}\p{N}_]+)");
             var hashtagNames = hashtagMatches.Cast<Match>()
                                              .Select(m => m.Groups[1].Value.ToLower().Trim())
                                              .Distinct()
                                              .ToList();
 
-            if (!hashtagNames.Any()) return;
+            // 1. LẤY LIÊN KẾT CŨ VÀ GIẢM SỐ LƯỢT DÙNG
+            // Sử dụng MaTagNavigation như trong Profile AutoMapper của bạn
+            var oldLinks = await _context.TagBoDes
+                                         .Include(x => x.MaTagNavigation)
+                                         .Where(x => x.MaBoDe == boDeId)
+                                         .ToListAsync();
 
-            // 1. Xóa các liên kết Tag cũ của bộ đề này để làm mới
-            var currentLinks = _context.TagBoDes.Where(x => x.MaBoDe == boDeId);
-            _context.TagBoDes.RemoveRange(currentLinks);
+            foreach (var link in oldLinks)
+            {
+                if (link.MaTagNavigation != null && link.MaTagNavigation.SoLuotDung > 0)
+                {
+                    link.MaTagNavigation.SoLuotDung--;
+                }
+            }
+
+            // Xóa các liên kết cũ
+            _context.TagBoDes.RemoveRange(oldLinks);
             await _context.SaveChangesAsync();
 
+            if (!hashtagNames.Any()) return;
+
+            // 2. XỬ LÝ HASHTAG MỚI VÀ CỘNG SỐ LƯỢT DÙNG
             foreach (var name in hashtagNames)
             {
-                // 2. Tìm Tag trong DB (Nếu chưa có thì thêm mới)
+                // Tìm Tag đã tồn tại
                 var tag = await _context.Tags.FirstOrDefaultAsync(t => t.TenTag.ToLower() == name);
+
                 if (tag == null)
                 {
-                    tag = new Tag { TenTag = name };
+                    // Nếu chưa có thì tạo mới, mặc định lượt dùng là 1
+                    tag = new Tag { TenTag = name, SoLuotDung = 1 };
                     _context.Tags.Add(tag);
-                    await _context.SaveChangesAsync(); // Lưu để lấy MaTag (Identity)
+                }
+                else
+                {
+                    // Nếu đã có thì cộng thêm 1
+                    tag.SoLuotDung++;
                 }
 
-                // 3. Tạo bản ghi bảng trung gian nối Bộ Đề - Tag
+                // Lưu để lấy MaTag cho bản ghi trung gian
+                await _context.SaveChangesAsync();
+
+                // 3. TẠO LIÊN KẾT MỚI
                 _context.TagBoDes.Add(new TagBoDe
                 {
                     MaBoDe = boDeId,
                     MaTag = tag.MaTag
                 });
             }
+
             await _context.SaveChangesAsync();
         }
         #endregion

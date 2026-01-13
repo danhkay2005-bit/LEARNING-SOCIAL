@@ -166,6 +166,32 @@
             lbl4.Text = "Chọn chế độ";
             lbl4.TextAlign = ContentAlignment.MiddleCenter;
             // 
+            // lblDoKho
+            // 
+            this.lblDoKho = new Label();
+            this.lblDoKho.AutoSize = true;
+            this.lblDoKho.Font = new Font("Segoe UI", 13.8F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            this.lblDoKho.ForeColor = Color.Black;
+            this.lblDoKho.Location = new Point(550, 425); // Nằm dưới cbbChuDe
+            this.lblDoKho.Name = "lblDoKho";
+            this.lblDoKho.Size = new Size(100, 31);
+            this.lblDoKho.TabIndex = 16;
+            this.lblDoKho.Text = "Độ khó";
+            // 
+            // cbbDoKho
+            // 
+            this.cbbDoKho = new ComboBox();
+            this.cbbDoKho.DropDownStyle = ComboBoxStyle.DropDownList; // Chỉ cho phép chọn, không cho gõ
+            this.cbbDoKho.FormattingEnabled = true;
+            this.cbbDoKho.Location = new Point(550, 460);
+            this.cbbDoKho.Name = "cbbDoKho";
+            this.cbbDoKho.Size = new Size(155, 28);
+            this.cbbDoKho.TabIndex = 17;
+
+            // Thêm vào danh sách Controls của UserControl
+            this.Controls.Add(this.lblDoKho);
+            this.Controls.Add(this.cbbDoKho);
+            // 
             // HeaderEditorControl
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
@@ -201,5 +227,7 @@
         private Label lbl3;
         private ComboBox cmbRiengTu;
         private Label lbl4;
+        private Label lblDoKho;
+        private ComboBox cbbDoKho;
     }
 }
