@@ -37,7 +37,7 @@
             label2 = new Label();
             cbbChuDe = new ComboBox();
             lbl3 = new Label();
-            comboBox2 = new ComboBox();
+            cmbRiengTu = new ComboBox();
             lbl4 = new Label();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             SuspendLayout();
@@ -146,13 +146,13 @@
             lbl3.Text = "Chọn chủ đề";
             lbl3.TextAlign = ContentAlignment.MiddleCenter;
             // 
-            // comboBox2
+            // cmbRiengTu
             // 
-            comboBox2.FormattingEnabled = true;
-            comboBox2.Location = new Point(777, 387);
-            comboBox2.Name = "comboBox2";
-            comboBox2.Size = new Size(151, 28);
-            comboBox2.TabIndex = 14;
+            cmbRiengTu.FormattingEnabled = true;
+            cmbRiengTu.Location = new Point(777, 387);
+            cmbRiengTu.Name = "cmbRiengTu";
+            cmbRiengTu.Size = new Size(151, 28);
+            cmbRiengTu.TabIndex = 14;
             // 
             // lbl4
             // 
@@ -171,7 +171,7 @@
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             Controls.Add(lbl4);
-            Controls.Add(comboBox2);
+            Controls.Add(cmbRiengTu);
             Controls.Add(lbl3);
             Controls.Add(cbbChuDe);
             Controls.Add(txtMoTa);
@@ -199,7 +199,7 @@
         private Label label2;
         private ComboBox cbbChuDe;
         private Label lbl3;
-        private ComboBox comboBox2;
+        private ComboBox cmbRiengTu;
         private Label lbl4;
     }
 }

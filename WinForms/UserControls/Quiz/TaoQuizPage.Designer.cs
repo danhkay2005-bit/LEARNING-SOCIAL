@@ -1,4 +1,4 @@
-﻿namespace WinForms.UserControls.Quiz
+﻿namespace WinForms.UserControls
 {
     partial class TaoQuizPage
     {

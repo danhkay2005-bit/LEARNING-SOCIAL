@@ -19,13 +19,31 @@ namespace WinForms.UserControls.Pages
 
         private void btnTaoQuiz_Click(object sender, EventArgs e)
         {
-            // Tìm Form chính đang chứa User Control này
+            // 1. Tìm Form chính
             var mainForm = this.ParentForm as MainForm;
 
             if (mainForm != null)
             {
-                // Giả sử bạn đã tạo một UserControl tên là TaoQuizPage
-                mainForm.LoadPage(new TaoQuizPage());
+                // 2. Lấy TaoQuizPage từ DI Container (ServiceProvider)
+                // Việc này đảm bảo TaoQuizPage được nạp sẵn BoDeHocService vào constructor
+                var serviceProvider = Program.ServiceProvider;
+                if (serviceProvider == null)
+                {
+                    MessageBox.Show("Lỗi: ServiceProvider chưa được khởi tạo!", "Thông báo");
+                    return;
+                }
+
+                var taoQuizPage = serviceProvider.GetService(typeof(TaoQuizPage)) as TaoQuizPage;
+
+                if (taoQuizPage != null)
+                {
+                    // 3. Load trang vào vùng hiển thị chính
+                    mainForm.LoadPage(taoQuizPage);
+                }
+                else
+                {
+                    MessageBox.Show("Lỗi: Chưa đăng ký TaoQuizPage trong hệ thống Dependency Injection!", "Thông báo");
+                }
             }
         }
     }

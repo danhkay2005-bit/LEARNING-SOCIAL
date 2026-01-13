@@ -28,8 +28,7 @@ namespace StudyApp.BLL.Services.Learn
         {
             if (string.IsNullOrWhiteSpace(moTa)) return;
 
-            // Regex lấy các từ sau dấu #, hỗ trợ Unicode (tiếng Việt có dấu)
-            // [\p{L}\p{N}_] bao gồm chữ cái, chữ số và dấu gạch dưới
+            // Regex lấy các từ sau dấu #, hỗ trợ Unicode (Tiếng Việt)
             var hashtagMatches = Regex.Matches(moTa, @"#([\p{L}\p{N}_]+)");
             var hashtagNames = hashtagMatches.Cast<Match>()
                                              .Select(m => m.Groups[1].Value.ToLower().Trim())
@@ -38,7 +37,7 @@ namespace StudyApp.BLL.Services.Learn
 
             if (!hashtagNames.Any()) return;
 
-            // 1. Xóa các liên kết Tag cũ của bộ đề này để làm mới (cho trường hợp Update)
+            // 1. Xóa các liên kết Tag cũ của bộ đề này để làm mới
             var currentLinks = _context.TagBoDes.Where(x => x.MaBoDe == boDeId);
             _context.TagBoDes.RemoveRange(currentLinks);
             await _context.SaveChangesAsync();
@@ -51,10 +50,10 @@ namespace StudyApp.BLL.Services.Learn
                 {
                     tag = new Tag { TenTag = name };
                     _context.Tags.Add(tag);
-                    await _context.SaveChangesAsync(); // Lưu để lấy MaTag
+                    await _context.SaveChangesAsync(); // Lưu để lấy MaTag (Identity)
                 }
 
-                // 3. Tạo bản ghi bảng trung gian
+                // 3. Tạo bản ghi bảng trung gian nối Bộ Đề - Tag
                 _context.TagBoDes.Add(new TagBoDe
                 {
                     MaBoDe = boDeId,
@@ -65,6 +64,7 @@ namespace StudyApp.BLL.Services.Learn
         }
         #endregion
 
+        #region Read Operations
         public async Task<BoDeHocResponse?> GetByIdAsync(int id)
         {
             var item = await _context.BoDeHocs
@@ -84,7 +84,9 @@ namespace StudyApp.BLL.Services.Learn
 
             return _mapper.Map<IEnumerable<BoDeHocResponse>>(list);
         }
+        #endregion
 
+        #region CRUD & Specialized Operations
         public async Task<BoDeHocResponse> CreateAsync(TaoBoDeHocRequest request)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
@@ -97,7 +99,6 @@ namespace StudyApp.BLL.Services.Learn
                 _context.BoDeHocs.Add(boDe);
                 await _context.SaveChangesAsync();
 
-                // Xử lý Hashtags
                 await HandleHashtagsAsync(boDe.MaBoDe, request.MoTa);
 
                 await transaction.CommitAsync();
@@ -125,7 +126,6 @@ namespace StudyApp.BLL.Services.Learn
                 _context.BoDeHocs.Update(existing);
                 await _context.SaveChangesAsync();
 
-                // Cập nhật lại Hashtags
                 await HandleHashtagsAsync(id, request.MoTa);
 
                 await transaction.CommitAsync();
@@ -181,13 +181,12 @@ namespace StudyApp.BLL.Services.Learn
                 _context.BoDeHocs.Add(newBoDe);
                 await _context.SaveChangesAsync();
 
-                // Xử lý Hashtag cho bản sao (Vì mô tả được copy sang)
                 await HandleHashtagsAsync(newBoDe.MaBoDe, newBoDe.MoTa);
 
                 foreach (var oldCard in origin.TheFlashcards)
                 {
                     var newCard = _mapper.Map<TheFlashcard>(oldCard);
-                    newCard.MaThe = 0;
+                    newCard.MaThe = 0; // Reset PK để DB tự tăng
                     newCard.MaBoDe = newBoDe.MaBoDe;
                     newCard.ThoiGianTao = DateTime.Now;
                     newCard.SoLuongHoc = 0;
@@ -209,11 +208,15 @@ namespace StudyApp.BLL.Services.Learn
             }
         }
 
+        /// <summary>
+        /// Tạo toàn bộ bộ đề cùng danh sách thẻ trong một lần gọi duy nhất
+        /// </summary>
         public async Task<BoDeHocResponse> CreateFullAsync(LuuToanBoBoDeRequest request)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
+                // 1. Lưu Bộ Đề (Header)
                 var boDe = _mapper.Map<BoDeHoc>(request.ThongTinChung);
                 boDe.ThoiGianTao = DateTime.Now;
                 boDe.DaXoa = false;
@@ -222,9 +225,10 @@ namespace StudyApp.BLL.Services.Learn
                 _context.BoDeHocs.Add(boDe);
                 await _context.SaveChangesAsync();
 
-                // Xử lý Hashtag cho bộ đề tạo hàng loạt
+                // 2. Xử lý Hashtag từ mô tả của bộ đề
                 await HandleHashtagsAsync(boDe.MaBoDe, request.ThongTinChung.MoTa);
 
+                // 3. Duyệt danh sách thẻ để lưu chi tiết
                 foreach (var item in request.DanhSachThe)
                 {
                     var theEntity = _mapper.Map<TheFlashcard>(item.TheChinh);
@@ -232,8 +236,9 @@ namespace StudyApp.BLL.Services.Learn
                     theEntity.ThoiGianTao = DateTime.Now;
 
                     _context.TheFlashcards.Add(theEntity);
-                    await _context.SaveChangesAsync();
+                    await _context.SaveChangesAsync(); // Lưu để lấy MaThe (Identity) cho bảng con
 
+                    // A. Trắc nghiệm
                     if (item.DapAnTracNghiem?.Any() == true)
                     {
                         var listDapAn = _mapper.Map<List<DapAnTracNghiem>>(item.DapAnTracNghiem);
@@ -241,6 +246,7 @@ namespace StudyApp.BLL.Services.Learn
                         _context.DapAnTracNghiems.AddRange(listDapAn);
                     }
 
+                    // B. Sắp xếp
                     if (item.PhanTuSapXeps?.Any() == true)
                     {
                         var listSapXep = _mapper.Map<List<PhanTuSapXep>>(item.PhanTuSapXeps);
@@ -248,6 +254,7 @@ namespace StudyApp.BLL.Services.Learn
                         _context.PhanTuSapXeps.AddRange(listSapXep);
                     }
 
+                    // C. Điền khuyết
                     if (item.TuDienKhuyets?.Any() == true)
                     {
                         var listDienKhuyet = _mapper.Map<List<TuDienKhuyet>>(item.TuDienKhuyets);
@@ -255,9 +262,11 @@ namespace StudyApp.BLL.Services.Learn
                         _context.TuDienKhuyets.AddRange(listDienKhuyet);
                     }
 
+                    // D. Cặp ghép
                     if (item.CapGheps?.Any() == true)
                     {
                         var listCapGhep = _mapper.Map<List<CapGhep>>(item.CapGheps);
+                        listCapGhep.ForEach(x => x.MaThe = theEntity.MaThe); // Đã sửa: Gán khóa ngoại MaThe
                         _context.CapGheps.AddRange(listCapGhep);
                     }
                 }
@@ -270,8 +279,9 @@ namespace StudyApp.BLL.Services.Learn
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                throw new Exception("Lỗi khi tạo bộ đề đồng loạt: " + ex.Message);
+                throw new Exception("Lỗi hệ thống khi lưu bộ đề: " + ex.Message);
             }
         }
+        #endregion
     }
 }
