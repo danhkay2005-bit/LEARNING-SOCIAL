@@ -70,6 +70,8 @@ public partial class NguoiDung
     public virtual ICollection<BaoVeChuoiNgay> BaoVeChuoiNgays { get; set; } = new List<BaoVeChuoiNgay>();
 
     public virtual ICollection<DiemDanhHangNgay> DiemDanhHangNgays { get; set; } = new List<DiemDanhHangNgay>();
+    public bool IsStreakFrozen { get; set; } = false;
+    public int SoNhiemVuTrongNgay { get; set; } = 0;
 
     public virtual ICollection<KhoNguoiDung> KhoNguoiDungs { get; set; } = new List<KhoNguoiDung>();
 

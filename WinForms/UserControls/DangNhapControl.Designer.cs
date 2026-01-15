@@ -89,7 +89,7 @@
             lblTenDangNhap.Font = new Font("Segoe UI", 9.5F);
             lblTenDangNhap.Location = new Point(30, 110);
             lblTenDangNhap.Name = "lblTenDangNhap";
-            lblTenDangNhap.Size = new Size(100, 23);
+            lblTenDangNhap.Size = new Size(154, 23);
             lblTenDangNhap.TabIndex = 2;
             lblTenDangNhap.Text = "Email hoặc Username";
             // 

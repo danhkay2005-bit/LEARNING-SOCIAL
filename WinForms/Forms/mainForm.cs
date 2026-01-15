@@ -39,6 +39,9 @@ namespace WinForms.Forms
                 AddMenuButton("📚 Học tập", (s, e) => LoadPage(new HocTapPage()));
                 AddMenuButton("🛒 Cửa hàng", (s, e) => LoadPage(new CuaHangPage()));
                 AddMenuButton("⚙️ Cài đặt", (s, e) => LoadPage(new CaiDatPage()));
+                AddMenuButton("🏅 Thành Tựu", (s, e) => LoadPage(Program.ServiceProvider!.GetRequiredService <AchievementsPage>()));
+                AddMenuButton("📋 Nhiệm Vụ", (s, e) => LoadPage(Program.ServiceProvider!.GetRequiredService<TaskPage>()));
+                                                                        
                 AddMenuButton("🚪 Đăng xuất", BtnDangXuat_Click);
             }
         }
@@ -76,6 +79,7 @@ namespace WinForms.Forms
             contentPanel.ResumeLayout(true);
             page.PerformLayout(); // Ép trang con tính toán lại vị trí các nút
         }
+        
         private void ShowSuggestedUsers()
         {
             splitContainer2.Panel2.Controls.Clear();
