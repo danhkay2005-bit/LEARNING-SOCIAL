@@ -34,14 +34,14 @@ namespace WinForms.Forms
             }
             else
             {
-                var services = Program.ServiceProvider;
-                if (services == null)
-                    throw new InvalidOperationException("ServiceProvider is not initialized.");
-                AddMenuButton("🏠 Trang chủ", (s, e) => LoadPage(services.GetRequiredService<TrangChuPage>()));
-                AddMenuButton("👤 Thông tin cá nhân", (s, e) => LoadPage(services.GetRequiredService<ThongTinCaNhanPage>()));
-                AddMenuButton("📚 Học tập", (s, e) => LoadPage(services.GetRequiredService<HocTapPage>()));
-                AddMenuButton("🛒 Cửa hàng", (s, e) => LoadPage(services.GetRequiredService<CuaHangPage>()));
-                AddMenuButton("⚙️ Cài đặt", (s, e) => LoadPage(services.GetRequiredService<CaiDatPage>()));
+                AddMenuButton("🏠 Trang chủ", (s, e) => LoadPage(new TrangChuPage()));
+                AddMenuButton("👤 Thông tin cá nhân", (s, e) => LoadPage(new ThongTinCaNhanPage()));
+                AddMenuButton("📚 Học tập", (s, e) => LoadPage(new HocTapPage()));
+                AddMenuButton("🛒 Cửa hàng", (s, e) => LoadPage(new CuaHangPage()));
+                AddMenuButton("⚙️ Cài đặt", (s, e) => LoadPage(new CaiDatPage()));
+                AddMenuButton("🏅 Thành Tựu", (s, e) => LoadPage(Program.ServiceProvider!.GetRequiredService <AchievementsPage>()));
+                AddMenuButton("📋 Nhiệm Vụ", (s, e) => LoadPage(Program.ServiceProvider!.GetRequiredService<TaskPage>()));
+                                                                        
                 AddMenuButton("🚪 Đăng xuất", BtnDangXuat_Click);
             }
         }
@@ -79,6 +79,7 @@ namespace WinForms.Forms
             contentPanel.ResumeLayout(true);
             page.PerformLayout(); // Ép trang con tính toán lại vị trí các nút
         }
+        
         private void ShowSuggestedUsers()
         {
             splitContainer2.Panel2.Controls.Clear();

@@ -12,4 +12,7 @@ public interface IGamificationService
     Task<bool> UpdateQuestProgressAsync(Guid userId, string loaiDieuKien, int giaTriThem);
     Task<string> ClaimQuestRewardAsync(Guid userId, int maNhiemVu);
     Task<List<ThanhTuuResponse>> GetAchievementsAsync(Guid userId);
+ //   Task<List<TienDoNhiemVuResponse>> GetTienDoNhiemVusAsync(Guid MaNguoiDung);
+
 }
+
