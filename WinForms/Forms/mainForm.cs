@@ -36,7 +36,7 @@ namespace WinForms.Forms
             {
                 AddMenuButton("🏠 Trang chủ", (s, e) => LoadPage(new TrangChuPage()));
                 AddMenuButton("👤 Thông tin cá nhân", (s, e) => LoadPage(new ThongTinCaNhanPage()));
-                AddMenuButton("📚 Học tập", (s, e) => LoadPage(new HocTapPage()));
+                AddMenuButton("📚 Học tập", (s, e) => LoadPage(Program.ServiceProvider!.GetRequiredService<HocTapPage>()));
                 AddMenuButton("🛒 Cửa hàng", (s, e) => LoadPage(new CuaHangPage()));
                 AddMenuButton("⚙️ Cài đặt", (s, e) => LoadPage(new CaiDatPage()));
                 AddMenuButton("🏅 Thành Tựu", (s, e) => LoadPage(Program.ServiceProvider!.GetRequiredService <AchievementsPage>()));
