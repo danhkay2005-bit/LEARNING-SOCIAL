@@ -10,13 +10,12 @@ namespace StudyApp.BLL.Mappings.Social
     {
         public TheoDoiNguoiDungProfile()
         {
-            // CREATE (Follow)
-            CreateMap<TheoDoiNguoiDungRequest, TheoDoiNguoiDung>()
-                .ForMember(dest => dest.ThoiGian,
-                    opt => opt.MapFrom(_ => DateTime.Now));
-
-            // ENTITY -> RESPONSE
+            // Entity -> Response
             CreateMap<TheoDoiNguoiDung, TheoDoiNguoiDungResponse>();
+
+            // Request -> Entity
+            CreateMap<TheoDoiNguoiDungRequest, TheoDoiNguoiDung>()
+                .ForMember(dest => dest.ThoiGian, opt => opt.MapFrom(src => DateTime.Now));
         }
     }
 }

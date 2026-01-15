@@ -9,7 +9,6 @@ namespace StudyApp.DTO.Responses.Social
     {
         public int MaBaiDang { get; set; }
         public Guid MaNguoiDuocMention { get; set; }
-
         public DateTime? ThoiGian { get; set; }
     }
 }

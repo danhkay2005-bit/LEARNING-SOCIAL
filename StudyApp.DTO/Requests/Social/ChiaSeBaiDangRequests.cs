@@ -3,20 +3,40 @@
 namespace StudyApp.DTO.Requests.Social
 {
     /// <summary>
-    /// Request chia sẻ bài đăng
+    /// Request để chia sẻ bài đăng
     /// </summary>
-    public class ChiaSeBaiDangRequest
+    public class ChiaSeBaiDangReques
     {
-        /// <summary>
-        /// Bài đăng gốc được chia sẻ
-        /// </summary>
         public int MaBaiDangGoc { get; set; }
-
         public Guid MaNguoiChiaSe { get; set; }
-
-        /// <summary>
-        /// Nội dung thêm khi chia sẻ (optional)
-        /// </summary>
         public string? NoiDungThem { get; set; }
+    }
+
+    /// <summary>
+    /// Request để hủy chia sẻ bài đăng
+    /// </summary>
+    public class HuyChiaSeBaiDangRequest
+    {
+        public int MaChiaSe { get; set; }
+        public Guid MaNguoiChiaSe { get; set; }
+    }
+
+    /// <summary>
+    /// Request để lấy danh sách chia sẻ của bài đăng
+    /// </summary>
+    public class LayDanhSachChiaSeRequest
+    {
+        public int MaBaiDangGoc { get; set; }
+        public int Skip { get; set; } = 0;
+        public int Take { get; set; } = 20;
+    }
+
+    /// <summary>
+    /// Request để kiểm tra đã chia sẻ bài đăng chưa
+    /// </summary>
+    public class KiemTraChiaSeRequest
+    {
+        public int MaBaiDangGoc { get; set; }
+        public Guid MaNguoiDung { get; set; }
     }
 }
