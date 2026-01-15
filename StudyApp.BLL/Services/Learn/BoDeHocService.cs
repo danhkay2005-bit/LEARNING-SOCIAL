@@ -249,6 +249,16 @@ namespace StudyApp.BLL.Services.Learn
                 _context.BoDeHocs.Add(boDe);
                 await _context.SaveChangesAsync();
 
+                if (boDe.MaChuDe > 0) // Kiểm tra nếu bộ đề có gắn mã chủ đề
+                {
+                    var chuDe = await _context.ChuDes.FindAsync(boDe.MaChuDe);
+                    if (chuDe != null)
+                    {
+                        chuDe.SoLuotDung = (chuDe.SoLuotDung ?? 0) + 1;
+                        // Không cần gọi SaveChanges ngay, cuối hàm gọi một lần là đủ
+                    }
+                }
+
                 // 2. Xử lý Hashtag từ mô tả của bộ đề
                 await HandleHashtagsAsync(boDe.MaBoDe, request.ThongTinChung.MoTa);
 
