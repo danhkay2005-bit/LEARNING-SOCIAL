@@ -1,7 +1,6 @@
 ﻿using AutoMapper;
 using StudyApp.DAL.Entities.Social;
-using StudyApp.DTO.Enums;
-using StudyApp.DTO.Enums.StudyApp.DTO.Enums;
+using StudyApp.DTO.Enums;  // ✅ Chỉ cần 1 using này
 using StudyApp.DTO.Responses.Social;
 using System;
 
@@ -17,7 +16,7 @@ namespace StudyApp.BLL.Mappings.Social
             CreateMap<ThongBao, ThongBaoResponse>()
                 .ForMember(dest => dest.LoaiThongBao,
                     opt => opt.MapFrom(src =>
-                        Enum.Parse<LoaiThongBaoEnum>(src.LoaiThongBao.ToString())));
+                        (LoaiThongBaoEnum)src.LoaiThongBao));  // ✅ Cast trực tiếp từ int
 
             // =====================================================
             // ENTITY -> RESPONSE (rút gọn)
@@ -25,7 +24,7 @@ namespace StudyApp.BLL.Mappings.Social
             CreateMap<ThongBao, ThongBaoSummaryResponse>()
                 .ForMember(dest => dest.LoaiThongBao,
                     opt => opt.MapFrom(src =>
-                        Enum.Parse<LoaiThongBaoEnum>(src.LoaiThongBao.ToString())));
+                        (LoaiThongBaoEnum)src.LoaiThongBao));  // ✅ Cast trực tiếp từ int
         }
     }
 }

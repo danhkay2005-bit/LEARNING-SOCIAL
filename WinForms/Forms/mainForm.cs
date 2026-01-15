@@ -1,15 +1,21 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using StudyApp.BLL.Interfaces.Social;
 using StudyApp.DTO;
 using System;
 using System.Drawing;
 using System.Windows.Forms;
 using WinForms.UserControls;
+using WinForms.UserControls.Components.Social;
 using WinForms.UserControls.Pages;
+using WinForms.UserControls.Social;
 
 namespace WinForms.Forms
 {
     public partial class MainForm : Form
     {
+        // ✅ THÊM:  Biến lưu NotificationBadge
+        private NotificationBadge? _notificationBadge;
+
         public MainForm()
         {
             InitializeComponent();
@@ -19,8 +25,11 @@ namespace WinForms.Forms
         private void MainForm_Load(object sender, EventArgs e)
         {
             RenderMenu();
-            if(UserSession.IsLoggedIn)
-                ShowSuggestedUsers();  
+            if (UserSession.IsLoggedIn)
+            {
+                ShowSuggestedUsers();
+                InitializeNotificationBadge(); // ✅ THÊM: Khởi tạo chuông thông báo
+            }
         }
 
         // ================= MENU =================
@@ -34,9 +43,13 @@ namespace WinForms.Forms
             }
             else
             {
-                AddMenuButton("🏠 Trang chủ", (s, e) => LoadPage(new TrangChuPage()));
+                AddMenuButton("🏠 Trang chủ", (s, e) => LoadPage(Program.ServiceProvider.GetRequiredService<TrangChuPage>()));
                 AddMenuButton("👤 Thông tin cá nhân", (s, e) => LoadPage(new ThongTinCaNhanPage()));
                 AddMenuButton("📚 Học tập", (s, e) => LoadPage(new HocTapPage()));
+
+                // ✅ THÊM: Nút Mạng xã hội
+                AddMenuButton("🌐 Mạng xã hội", BtnMangXaHoi_Click);
+
                 AddMenuButton("🛒 Cửa hàng", (s, e) => LoadPage(new CuaHangPage()));
                 AddMenuButton("⚙️ Cài đặt", (s, e) => LoadPage(new CaiDatPage()));
                 AddMenuButton("🚪 Đăng xuất", BtnDangXuat_Click);
@@ -67,15 +80,16 @@ namespace WinForms.Forms
         // ================= PAGE LOAD =================
         public void LoadPage(UserControl page)
         {
-            contentPanel.SuspendLayout(); // Tạm dừng vẽ để tránh giật hình
+            contentPanel.SuspendLayout();
             contentPanel.Controls.Clear();
 
             page.Dock = DockStyle.Fill;
             contentPanel.Controls.Add(page);
 
             contentPanel.ResumeLayout(true);
-            page.PerformLayout(); // Ép trang con tính toán lại vị trí các nút
+            page.PerformLayout();
         }
+
         private void ShowSuggestedUsers()
         {
             splitContainer2.Panel2.Controls.Clear();
@@ -86,6 +100,64 @@ namespace WinForms.Forms
             splitContainer2.Panel2.Controls.Add(suggested);
         }
 
+        // ✅ THÊM:  Khởi tạo NotificationBadge (Icon chuông)
+        private void InitializeNotificationBadge()
+        {
+            if (Program.ServiceProvider == null) return;
+
+            try
+            {
+                var notificationService = Program.ServiceProvider.GetRequiredService<INotificationService>();
+
+                _notificationBadge = new NotificationBadge(
+                    notificationService,
+                    Program.ServiceProvider
+                )
+                {
+                    Location = new Point(this.Width - 80, 10),
+                    Anchor = AnchorStyles.Top | AnchorStyles.Right
+                };
+
+                this.Controls.Add(_notificationBadge);
+                _notificationBadge.BringToFront();
+            }
+            catch
+            {
+                // Nếu chưa đăng ký service thì bỏ qua
+            }
+        }
+
+        // ✅ THÊM:  Sự kiện click nút Mạng xã hội
+        private void BtnMangXaHoi_Click(object? sender, EventArgs e)
+        {
+            if (Program.ServiceProvider == null) return;
+
+            try
+            {
+                var postService = Program.ServiceProvider.GetRequiredService<IPostService>();
+                var reactionService = Program.ServiceProvider.GetRequiredService<IReactionService>();
+                var commentService = Program.ServiceProvider.GetRequiredService<ICommentService>();
+
+                var newsfeedControl = new NewsfeedControl(
+                    postService,
+                    reactionService,
+                    commentService,
+                    Program.ServiceProvider
+                );
+
+                LoadPage(newsfeedControl);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    $"Không thể tải trang mạng xã hội.\n\nChi tiết:  {ex.Message}",
+                    "Lỗi",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error
+                );
+            }
+        }
+
         // ================= EVENTS =================
         private void BtnDangNhap_Click(object? sender, EventArgs e)
         {
@@ -93,12 +165,11 @@ namespace WinForms.Forms
                 throw new InvalidOperationException("ServiceProvider is not initialized.");
             var loginPage = Program.ServiceProvider.GetRequiredService<DangNhapControl>();
 
-            // Xóa tham số 'user' ở đây vì Action không có tham số
             loginPage.DangNhapThanhCong += () =>
             {
-                // Không cần dòng UserSession.Login(user) nữa vì Control đã làm rồi
                 RenderMenu();
                 ShowSuggestedUsers();
+                InitializeNotificationBadge(); // ✅ THÊM: Hiển thị chuông sau khi đăng nhập
 
                 LoadPage(Program.ServiceProvider.GetRequiredService<TrangChuPage>());
             };
@@ -106,7 +177,6 @@ namespace WinForms.Forms
             loginPage.YeuCauDangKy += () =>
             {
                 var dangKyPage = Program.ServiceProvider.GetRequiredService<DangKyControl>();
-                // Bạn có thể đăng ký sự kiện quay lại từ trang đăng ký tại đây nếu cần
                 LoadPage(dangKyPage);
                 dangKyPage.QuayVeDangNhap += () =>
                 {
@@ -114,7 +184,6 @@ namespace WinForms.Forms
                 };
             };
 
-            // 3. Xử lý khi nhấn nút Quên mật khẩu
             loginPage.QuenMatKhau += () =>
             {
                 var quenMKPage = Program.ServiceProvider.GetRequiredService<QuenMatKhauControl>();
@@ -125,8 +194,6 @@ namespace WinForms.Forms
                     LoadPage(loginPage);
                 };
             };
-            
-            
 
             LoadPage(loginPage);
         }
@@ -135,6 +202,15 @@ namespace WinForms.Forms
         {
             UserSession.Logout();
             contentPanel.Controls.Clear();
+
+            // ✅ THÊM: Ẩn chuông thông báo khi đăng xuất
+            if (_notificationBadge != null)
+            {
+                this.Controls.Remove(_notificationBadge);
+                _notificationBadge.Dispose();
+                _notificationBadge = null;
+            }
+
             RenderMenu();
         }
     }

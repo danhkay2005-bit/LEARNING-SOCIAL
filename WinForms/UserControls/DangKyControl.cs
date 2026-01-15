@@ -19,23 +19,36 @@ namespace WinForms.UserControls
 
         private async void btnDangKy_Click(object sender, EventArgs e)
         {
-            var result = await _nguoiDungService.RegisterAsync(new DangKyNguoiDungRequest
+            btnDangKy.Enabled = false;
+            
+            try
             {
-                TenDangNhap = txtTenDangNhap.Text,
-                Email = txtEmail.Text,
-                HoVaTen = txtHoVaTen.Text,
-                MatKhau = txtMatKhau.Text,
-                XacNhanMatKhau = txtXacNhanMatKhau.Text
-            });
-                
-            if (result != RegisterResult.Success)
-            {
-                MessageBox.Show("❌ Đăng ký không thành công!");
-                return;
-            }
+                var result = await _nguoiDungService.RegisterAsync(new DangKyNguoiDungRequest
+                {
+                    TenDangNhap = txtTenDangNhap.Text,
+                    Email = txtEmail.Text,
+                    HoVaTen = txtHoVaTen.Text,
+                    MatKhau = txtMatKhau.Text,
+                    XacNhanMatKhau = txtXacNhanMatKhau.Text
+                });
+                    
+                if (result != RegisterResult.Success)
+                {
+                    MessageBox.Show("❌ Đăng ký không thành công!");
+                    return;
+                }
 
-            MessageBox.Show("✅ Đăng ký thành công!");
-            QuayVeDangNhap?.Invoke();
+                MessageBox.Show("✅ Đăng ký thành công!");
+                QuayVeDangNhap?.Invoke();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"❌ Lỗi: {ex.Message}");
+            }
+            finally
+            {
+                btnDangKy.Enabled = true;
+            }
         }
 
         private void btnDangNhap_Click(object sender, EventArgs e)

@@ -36,14 +36,17 @@ public class AuthService(UserDbContext _context, IMapper _mapper) : IAuthService
 
     public async Task<RegisterResult> RegisterAsync(DangKyNguoiDungRequest request)
     {
-        if (await _context.NguoiDungs.AnyAsync(u => u.TenDangNhap == request.TenDangNhap))
+        // Fix: Check both conditions together to avoid multiple sequential DbContext operations
+        var usernameExists = await _context.NguoiDungs.AnyAsync(u => u.TenDangNhap == request.TenDangNhap);
+        if (usernameExists)
         {
             return RegisterResult.UsernameExists;
         }
 
         if (!string.IsNullOrWhiteSpace(request.Email))
         {
-            if (await _context.NguoiDungs.AnyAsync(u => u.Email == request.Email))
+            var emailExists = await _context.NguoiDungs.AnyAsync(u => u.Email == request.Email);
+            if (emailExists)
             {
                 return RegisterResult.EmailExists;
             }

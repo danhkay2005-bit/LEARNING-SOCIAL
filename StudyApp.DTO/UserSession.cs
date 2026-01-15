@@ -27,7 +27,13 @@
         public string? HinhDaiDien { get; set; }    
 
         public int MaVaiTro { get; set; }
+        
+        // ===== GAMIFICATION PROPERTIES =====
         public int Vang { get; set; }
         public int KimCuong { get; set; }
+        public int TongDiemXp { get; set; }
+        public int ChuoiNgayHocLienTiep { get; set; }
+        public int TongSoTheHoc { get; set; }
+        public int TongSoTheDung { get; set; }
     }
 }
