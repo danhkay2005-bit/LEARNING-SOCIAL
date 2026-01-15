@@ -26,29 +26,17 @@ namespace StudyApp.DTO.Requests.Learn
     /// </summary>
     public class CapNhatTienDoHocTapRequest
     {
-        [Required]
-        public int MaTienDo { get; set; }
+        // Cần thiết để định danh bản ghi (Upsert)
+        public int MaThe { get; set; }
+        public Guid MaNguoiDung { get; set; }
 
-        public TrangThaiHocEnum? TrangThai { get; set; }
+        public int? MaTienDo { get; set; } // Có thể null nếu là thẻ mới
+        public TrangThaiHocEnum? TrangThai { get; set; } // Đóng vai trò là Quality (0-5)
 
-        /// <summary>
-        /// Hệ số dễ (SM-2)
-        /// </summary>
+        // Các trường phục vụ thuật toán SM-2
         public double? HeSoDe { get; set; }
-
-        /// <summary>
-        /// Khoảng cách ôn tập (ngày)
-        /// </summary>
         public int? KhoangCachNgay { get; set; }
-
         public int? SoLanLap { get; set; }
-
         public DateTime? NgayOnTapTiepTheo { get; set; }
-
-        public int? SoLanDung { get; set; }
-
-        public int? SoLanSai { get; set; }
-
-        public DateTime? LanHocCuoi { get; set; }
     }
 }

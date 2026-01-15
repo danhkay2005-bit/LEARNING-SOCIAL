@@ -1,11 +1,15 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using StudyApp.BLL.Interfaces.Learn;
 using StudyApp.DAL.Data;
 using StudyApp.DAL.Entities.Learn;
-using StudyApp.DTO.Enums;
 using StudyApp.DTO.Requests.Learn;
 using StudyApp.DTO.Responses.Learn;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace StudyApp.BLL.Services.Learn
 {
@@ -13,80 +17,122 @@ namespace StudyApp.BLL.Services.Learn
     {
         private readonly LearningDbContext _context;
         private readonly IMapper _mapper;
+        private readonly IThachDauNotifier _notifier;// Tiêm HubContext
 
-        public ThachDauService(LearningDbContext context, IMapper mapper)
+        public ThachDauService(LearningDbContext context, IMapper mapper, IThachDauNotifier notifier)
         {
             _context = context;
             _mapper = mapper;
+            _notifier = notifier;
         }
 
-        // 1. Tạo phòng thách đấu mới
+        // ==========================================
+        // QUẢN LÝ PHÒNG (ROOM)
+        // ==========================================
+
         public async Task<ThachDauResponse> TaoThachDauAsync(TaoThachDauRequest request)
         {
-            var thachDau = _mapper.Map<ThachDau>(request);
-            // TrangThai và ThoiGianTao đã được xử lý trong MappingProfile
+            Random rnd = new Random();
+            int pin;
+            bool isExist;
+
+            // Đảm bảo mã PIN 6 số là duy nhất trong các phòng đang hoạt động
+            do
+            {
+                pin = rnd.Next(100000, 999999);
+                isExist = await _context.ThachDaus.AnyAsync(x => x.MaThachDau == pin);
+            } while (isExist);
+
+            var thachDau = new ThachDau
+            {
+                MaThachDau = pin,
+                MaBoDe = request.MaBoDe,
+                NguoiTao = request.NguoiTao,
+                TrangThai = "ChoNguoiChoi",
+                ThoiGianTao = DateTime.Now
+            };
 
             _context.ThachDaus.Add(thachDau);
-            await _context.SaveChangesAsync();
 
-            // Tự động thêm người tạo vào danh sách người chơi
-            var chuPhong = new ThachDauNguoiChoi
+            // Thêm ngay Người tạo (User A) vào danh sách người chơi
+            _context.ThachDauNguoiChois.Add(new ThachDauNguoiChoi
             {
-                MaThachDau = thachDau.MaThachDau,
+                MaThachDau = pin,
                 MaNguoiDung = request.NguoiTao,
                 Diem = 0
-            };
-            _context.ThachDauNguoiChois.Add(chuPhong);
-            await _context.SaveChangesAsync();
+            });
 
+            await _context.SaveChangesAsync();
             return _mapper.Map<ThachDauResponse>(thachDau);
         }
 
-        // 2. Tham gia phòng (dành cho đối thủ)
-        public async Task<bool> ThamGiaThachDauAsync(ThamGiaThachDauRequest request)
-        {
-            var room = await _context.ThachDaus.FindAsync(request.MaThachDau);
-            if (room == null || room.TrangThai != TrangThaiThachDauEnum.ChoNguoiChoi.ToString())
-                return false;
-
-            var isJoined = await _context.ThachDauNguoiChois
-                .AnyAsync(x => x.MaThachDau == request.MaThachDau && x.MaNguoiDung == request.MaNguoiDung);
-
-            if (isJoined) return true;
-
-            var player = _mapper.Map<ThachDauNguoiChoi>(request);
-            _context.ThachDauNguoiChois.Add(player);
-
-            return await _context.SaveChangesAsync() > 0;
-        }
-
-        // 3. Bắt đầu thách đấu (Khóa phòng, không cho join thêm)
         public async Task<bool> BatDauThachDauAsync(int maThachDau)
         {
             var room = await _context.ThachDaus.FindAsync(maThachDau);
             if (room == null) return false;
 
-            room.TrangThai = TrangThaiThachDauEnum.DangDau.ToString();
+            room.TrangThai = "DangDau";
             room.ThoiGianBatDau = DateTime.Now;
 
             return await _context.SaveChangesAsync() > 0;
         }
 
-        // 4. Cập nhật kết quả sau khi người chơi hoàn thành bài học
-        public async Task<bool> CapNhatKetQuaNguoiChoiAsync(CapNhatKetQuaThachDauRequest request)
+        public async Task<bool> HoanThanhVaCleanupAsync(int maThachDau)
         {
-            var playerRecord = await _context.ThachDauNguoiChois
-                .FirstOrDefaultAsync(x => x.MaThachDau == request.MaThachDau && x.MaNguoiDung == request.MaNguoiDung);
+            // Sử dụng Transaction để đảm bảo dữ liệu được lưu vào lịch sử trước khi xóa sạch bảng tạm
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var room = await _context.ThachDaus
+                    .Include(x => x.ThachDauNguoiChois)
+                    .FirstOrDefaultAsync(x => x.MaThachDau == maThachDau);
 
-            if (playerRecord == null) return false;
+                if (room == null) return false;
 
-            _mapper.Map(request, playerRecord);
+                // 1. Xác định người thắng cuộc (Điểm cao nhất, nếu bằng điểm thì ai nhanh hơn)
+                var winner = room.ThachDauNguoiChois
+                    .OrderByDescending(x => x.Diem)
+                    .ThenBy(x => x.ThoiGianLamBaiGiay)
+                    .FirstOrDefault();
 
-            return await _context.SaveChangesAsync() > 0;
+                // 2. Lưu kết quả vào bảng lịch sử vĩnh viễn
+                foreach (var p in room.ThachDauNguoiChois)
+                {
+                    _context.LichSuThachDaus.Add(new LichSuThachDau
+                    {
+                        MaNguoiDung = p.MaNguoiDung,
+                        MaBoDe = room.MaBoDe,
+
+                        // Gán mã PIN gốc vào cột MaThachDauGoc thay vì MaThachDau (Khóa chính)
+                        MaThachDauGoc = room.MaThachDau,
+
+                        // Đảm bảo p.Diem, p.SoTheDung... đã được cập nhật từ Client gửi lên trước đó
+                        Diem = p.Diem ?? 0,
+                        SoTheDung = p.SoTheDung ?? 0,
+                        SoTheSai = p.SoTheSai ?? 0,
+                        ThoiGianLamBaiGiay = p.ThoiGianLamBaiGiay ?? 0,
+
+                        LaNguoiThang = (winner != null && p.MaNguoiDung == winner.MaNguoiDung),
+                        ThoiGianKetThuc = DateTime.Now
+                    });
+                }
+
+                // 3. Xóa phòng và người chơi ra khỏi các bảng tạm để giải phóng Database
+                _context.ThachDauNguoiChois.RemoveRange(room.ThachDauNguoiChois);
+                _context.ThachDaus.Remove(room);
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return true;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                return false;
+            }
         }
 
-        // 5. Kết thúc trận đấu và xếp hạng
-        public async Task<bool> KetThucThachDauAsync(int maThachDau)
+        public async Task<bool> HuyThachDauAsync(int maThachDau)
         {
             var room = await _context.ThachDaus
                 .Include(x => x.ThachDauNguoiChois)
@@ -94,25 +140,72 @@ namespace StudyApp.BLL.Services.Learn
 
             if (room == null) return false;
 
-            room.TrangThai = TrangThaiThachDauEnum.DaKetThuc.ToString();
-            room.ThoiGianKetThuc = DateTime.Now;
-
-            // Logic tìm người thắng cuộc (Dựa trên điểm cao nhất, nếu bằng điểm thì ai nhanh hơn)
-            var winner = room.ThachDauNguoiChois
-                .OrderByDescending(x => x.Diem)
-                .ThenBy(x => x.ThoiGianLamBaiGiay)
-                .FirstOrDefault();
-
-            if (winner != null)
-            {
-                foreach (var p in room.ThachDauNguoiChois)
-                {
-                    p.LaNguoiThang = (p.MaNguoiDung == winner.MaNguoiDung);
-                }
-            }
+            _context.ThachDauNguoiChois.RemoveRange(room.ThachDauNguoiChois);
+            _context.ThachDaus.Remove(room);
 
             return await _context.SaveChangesAsync() > 0;
         }
+
+        // ==========================================
+        // QUẢN LÝ NGƯỜI CHƠI
+        // ==========================================
+
+        public async Task<bool> ThamGiaThachDauAsync(ThamGiaThachDauRequest request)
+        {
+            var room = await _context.ThachDaus
+                .Include(x => x.ThachDauNguoiChois)
+                .FirstOrDefaultAsync(x => x.MaThachDau == request.MaThachDau);
+
+            if (room == null || room.ThachDauNguoiChois.Count >= 2) return false;
+
+            // Tránh thêm trùng
+            if (!room.ThachDauNguoiChois.Any(x => x.MaNguoiDung == request.MaNguoiDung))
+            {
+                _context.ThachDauNguoiChois.Add(new ThachDauNguoiChoi
+                {
+                    MaThachDau = request.MaThachDau,
+                    MaNguoiDung = request.MaNguoiDung,
+                    Diem = 0
+                });
+            }
+
+            var isSaved = await _context.SaveChangesAsync() > 0;
+
+            if (isSaved)
+            {
+                var currentCount = await _context.ThachDauNguoiChois.CountAsync(x => x.MaThachDau == request.MaThachDau);
+                if (currentCount == 2)
+                {
+                    // Gọi qua Notifier
+                    await _notifier.NotifyReadyToStart(request.MaThachDau);
+                }
+            }
+            return isSaved;
+        }
+
+        public async Task<bool> CapNhatKetQuaNguoiChoiAsync(CapNhatKetQuaThachDauRequest request)
+        {
+            var playerRecord = await _context.ThachDauNguoiChois
+                .FirstOrDefaultAsync(x => x.MaThachDau == request.MaThachDau && x.MaNguoiDung == request.MaNguoiDung);
+
+            if (playerRecord == null) return false;
+
+            // Ánh xạ dữ liệu từ request vào record trong DB
+            _mapper.Map(request, playerRecord);
+            var result = await _context.SaveChangesAsync() > 0;
+
+            if (result)
+            {
+                // Gửi thông báo SignalR thông qua Notifier
+                // request.Diem ?? 0 giải quyết lỗi "cannot convert from 'int?' to 'int'"
+                await _notifier.NotifyUpdateScore(request.MaThachDau, request.MaNguoiDung, request.Diem ?? 0);
+            }
+            return result;
+        }
+
+        // ==========================================
+        // TRUY VẤN DỮ LIỆU
+        // ==========================================
 
         public async Task<ThachDauResponse?> GetByIdAsync(int maThachDau)
         {
@@ -125,18 +218,10 @@ namespace StudyApp.BLL.Services.Learn
             var players = await _context.ThachDauNguoiChois
                 .Where(x => x.MaThachDau == maThachDau)
                 .OrderByDescending(x => x.Diem)
+                .ThenBy(x => x.ThoiGianLamBaiGiay) // Ưu tiên người nhanh hơn nếu bằng điểm
                 .ToListAsync();
 
             return _mapper.Map<IEnumerable<ThachDauNguoiChoiResponse>>(players);
-        }
-
-        public async Task<bool> HuyThachDauAsync(int maThachDau)
-        {
-            var room = await _context.ThachDaus.FindAsync(maThachDau);
-            if (room == null) return false;
-
-            room.TrangThai = TrangThaiThachDauEnum.Huy.ToString();
-            return await _context.SaveChangesAsync() > 0;
         }
     }
 }

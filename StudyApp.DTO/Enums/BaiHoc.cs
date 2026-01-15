@@ -63,4 +63,9 @@
         DaKetThuc,
         Huy
     }
+    public enum CheDoHocEnum
+    {
+        HocMotMinh,
+        ThachDau
+    }
 }

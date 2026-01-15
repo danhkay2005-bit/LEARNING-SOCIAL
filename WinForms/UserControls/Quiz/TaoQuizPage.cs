@@ -159,23 +159,44 @@ namespace WinForms.UserControls
             var data = _fullRequest.DanhSachThe[index];
             IQuestionEditor? editor = null;
 
-            // Factory: Trả về editor dựa trên loại thẻ
+            // Điều hướng khởi tạo Editor dựa trên loại thẻ được chọn
             switch (data.TheChinh.LoaiThe)
             {
                 case LoaiTheEnum.TracNghiem:
                     editor = new TracNghiemEditorControl();
                     break;
-                // Thêm các loại khác ở đây: case LoaiTheEnum.GhepCap: ...
+
+                case LoaiTheEnum.CoBan: // Lật thẻ
+                    editor = new LatTheEditorControl();
+                    break;
+
+                case LoaiTheEnum.DienKhuyet:
+                    editor = new DienKhuyetEditorControl();
+                    break;
+
+                case LoaiTheEnum.GhepCap:
+                    editor = new GhepCapEditorControl();
+                    break;
+
+                case LoaiTheEnum.SapXep:
+                    editor = new SapXepEditorControl();
+                    break;
+
                 default:
                     editor = new TracNghiemEditorControl();
                     break;
             }
 
-            editor.SetQuestionData(data);
-            if (editor is UserControl userControl)
+            // Nạp dữ liệu vào Editor và hiển thị lên vùng pnlMid
+            if (editor != null)
             {
-                SwitchMidContent(userControl);
+                editor.SetQuestionData(data);
+                if (editor is UserControl uc)
+                {
+                    SwitchMidContent(uc);
+                }
             }
+
             HighlightSelectedThumbnail(index);
         }
 
