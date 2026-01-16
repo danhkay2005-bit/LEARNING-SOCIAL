@@ -10,5 +10,6 @@ namespace StudyApp.BLL.Interfaces.Learn
         // Phải có 2 dòng này thì ThachDauService mới không báo lỗi
         Task NotifyReadyToStart(int maThachDau);
         Task NotifyUpdateScore(int maThachDau, Guid userId, int score);
+        Task NotifyOpponentReadyNext(int maThachDau, Guid userId, int questionIndex);
     }
 }

@@ -19,8 +19,6 @@ namespace WinForms.Forms
         private void MainForm_Load(object sender, EventArgs e)
         {
             RenderMenu();
-            if(UserSession.IsLoggedIn)
-                ShowSuggestedUsers();  
         }
 
         // ================= MENU =================
@@ -80,16 +78,6 @@ namespace WinForms.Forms
             page.PerformLayout(); // Ép trang con tính toán lại vị trí các nút
         }
         
-        private void ShowSuggestedUsers()
-        {
-            splitContainer2.Panel2.Controls.Clear();
-
-            var suggested = new SuggestedUsersControl();
-            suggested.Dock = DockStyle.Fill;
-
-            splitContainer2.Panel2.Controls.Add(suggested);
-        }
-
         // ================= EVENTS =================
         private void BtnDangNhap_Click(object? sender, EventArgs e)
         {
@@ -102,7 +90,6 @@ namespace WinForms.Forms
             {
                 // Không cần dòng UserSession.Login(user) nữa vì Control đã làm rồi
                 RenderMenu();
-                ShowSuggestedUsers();
 
                 LoadPage(Program.ServiceProvider.GetRequiredService<TrangChuPage>());
             };

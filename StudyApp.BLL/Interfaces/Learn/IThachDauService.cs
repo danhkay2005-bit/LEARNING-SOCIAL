@@ -60,5 +60,6 @@ namespace StudyApp.BLL.Interfaces.Learn
         /// Lấy bảng điểm hiện tại của các thành viên trong phòng.
         /// </summary>
         Task<IEnumerable<ThachDauNguoiChoiResponse>> GetBangXepHangAsync(int maThachDau);
+        Task<bool> BaoCaoReadyNextAsync(int maThachDau, Guid userId, int questionIndex);
     }
 }

@@ -535,5 +535,43 @@ namespace StudyApp.BLL.Services.Learn
 
             return await _context.SaveChangesAsync() > 0;
         }
+        public async Task LuuKetQuaPhienHocAsync(PhienHoc phienHoc)
+        {
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                // 1. Lưu PhienHoc
+                _context.PhienHocs.Add(phienHoc);
+                await _context.SaveChangesAsync();
+
+                // 2. Tạo LichSuHocBoDe tổng quát
+                if (phienHoc.MaBoDe == null)
+                    throw new InvalidOperationException("MaBoDe must not be null when saving LichSuHocBoDe.");
+
+                if (phienHoc.ThoiGianHocGiay == null)
+                    throw new InvalidOperationException("ThoiGianHocGiay must not be null when saving LichSuHocBoDe.");
+
+                var lichSu = new LichSuHocBoDe
+                {
+                    MaNguoiDung = phienHoc.MaNguoiDung,
+                    MaBoDe = phienHoc.MaBoDe.Value,
+                    MaPhien = phienHoc.MaPhien,
+                    SoTheHoc = phienHoc.TongSoThe,
+                    TyLeDung = phienHoc.TyLeDung,
+                    ThoiGianHocPhut = (int)Math.Ceiling(phienHoc.ThoiGianHocGiay.Value / 60.0),
+                    ThoiGian = DateTime.Now
+                };
+
+                _context.LichSuHocBoDes.Add(lichSu);
+                await _context.SaveChangesAsync();
+
+                await transaction.CommitAsync();
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
     }
 }

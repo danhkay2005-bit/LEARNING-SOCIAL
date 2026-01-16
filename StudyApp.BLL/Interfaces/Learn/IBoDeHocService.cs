@@ -1,4 +1,5 @@
-﻿using StudyApp.DTO.Requests.Learn;
+﻿using StudyApp.DAL.Entities.Learn;
+using StudyApp.DTO.Requests.Learn;
 using StudyApp.DTO.Responses.Learn;
 
 namespace StudyApp.BLL.Interfaces.Learn
@@ -33,6 +34,7 @@ namespace StudyApp.BLL.Interfaces.Learn
         Task<bool> UpdateChallengeResultAsync(CapNhatKetQuaThachDauRequest request);
 
         Task<bool> UpdateCardProgressAsync(CapNhatTienDoHocTapRequest request);
+        Task LuuKetQuaPhienHocAsync(PhienHoc phienHoc);
 
     }
 }

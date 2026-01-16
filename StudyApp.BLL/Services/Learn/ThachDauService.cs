@@ -223,5 +223,28 @@ namespace StudyApp.BLL.Services.Learn
 
             return _mapper.Map<IEnumerable<ThachDauNguoiChoiResponse>>(players);
         }
+
+        public async Task<bool> BaoCaoReadyNextAsync(int maThachDau, Guid userId, int questionIndex)
+        {
+            // 1. Cập nhật trạng thái câu hỏi hiện tại của người chơi vào DB (Tùy chọn - Tăng tính an toàn)
+            var player = await _context.ThachDauNguoiChois
+                .FirstOrDefaultAsync(x => x.MaThachDau == maThachDau && x.MaNguoiDung == userId);
+
+            if (player == null) return false;
+
+            // Giả sử bạn có cột ViTriCauHoiHienTai trong bảng ThachDauNguoiChoi
+            // player.ViTriCauHoiHienTai = questionIndex; 
+
+            var result = await _context.SaveChangesAsync() >= 0; // Luôn trả về true nếu Notify thành công
+
+            if (result)
+            {
+                // 2. Gửi tín hiệu Real-time qua Notifier
+                // Notifier sẽ gọi _hubContext.Clients.Group(...).SendAsync("OpponentReadyNext", ...)
+                await _notifier.NotifyOpponentReadyNext(maThachDau, userId, questionIndex);
+            }
+
+            return result;
+        }
     }
 }

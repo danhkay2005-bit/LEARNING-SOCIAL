@@ -19,5 +19,11 @@ namespace WinForms.Services
             // WinForms không cần làm gì ở đây
             return Task.CompletedTask;
         }
+
+        public Task NotifyOpponentReadyNext(int maThachDau, Guid userId, int questionIndex)
+        {
+            // WinForms không cần làm gì ở đây
+            return Task.CompletedTask;
+        }
     }
 }

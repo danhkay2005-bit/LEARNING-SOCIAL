@@ -21,7 +21,10 @@ namespace StudyApp.BLL
 
         }
 
-
+        public Task NotifyOpponentReadyNext(int maThachDau, Guid userId, int questionIndex)
+        {
+            return _hubContext.Clients.Group(maThachDau.ToString()).SendAsync("OpponentReadyNext", userId, questionIndex);
+        }
 
         public async Task NotifyReadyToStart(int maThachDau)
 
