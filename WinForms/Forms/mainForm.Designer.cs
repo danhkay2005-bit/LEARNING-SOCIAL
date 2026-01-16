@@ -67,6 +67,25 @@
             ((System.ComponentModel.ISupportInitialize)splitContainer1).EndInit();
             splitContainer1.ResumeLayout(false);
             ResumeLayout(false);
+
+            // Tạo TabControl
+            var tabControl = new TabControl
+            {
+                Name = "tabControl1",
+                Dock = DockStyle.Fill
+            };
+
+            // Thêm các tab hiện có (Learn, User, v.v.)
+            var tabLearn = new TabPage("📚 Học tập");
+            // ...  thêm controls cho tab Learn
+
+            var tabUser = new TabPage("👤 Người dùng");
+            // ... thêm controls cho tab User
+
+            tabControl.TabPages.Add(tabLearn);
+            tabControl.TabPages.Add(tabUser);
+
+            this.Controls.Add(tabControl);
         }
     }
 }

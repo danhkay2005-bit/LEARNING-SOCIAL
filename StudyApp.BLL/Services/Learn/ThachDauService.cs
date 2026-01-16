@@ -16,14 +16,16 @@ namespace StudyApp.BLL.Services.Learn
     public class ThachDauService : IThachDauService
     {
         private readonly LearningDbContext _context;
+        private readonly UserDbContext _userDb;
         private readonly IMapper _mapper;
         private readonly IThachDauNotifier _notifier;// Tiêm HubContext
 
-        public ThachDauService(LearningDbContext context, IMapper mapper, IThachDauNotifier notifier)
+        public ThachDauService(LearningDbContext context, UserDbContext userDb, IMapper mapper, IThachDauNotifier notifier)
         {
             _context = context;
             _mapper = mapper;
             _notifier = notifier;
+            _userDb = userDb;
         }
 
         // ==========================================
@@ -79,7 +81,6 @@ namespace StudyApp.BLL.Services.Learn
 
         public async Task<bool> HoanThanhVaCleanupAsync(int maThachDau)
         {
-            // Sử dụng Transaction để đảm bảo dữ liệu được lưu vào lịch sử trước khi xóa sạch bảng tạm
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
@@ -89,35 +90,55 @@ namespace StudyApp.BLL.Services.Learn
 
                 if (room == null) return false;
 
-                // 1. Xác định người thắng cuộc (Điểm cao nhất, nếu bằng điểm thì ai nhanh hơn)
+                // 1. Xác định người thắng cuộc
                 var winner = room.ThachDauNguoiChois
                     .OrderByDescending(x => x.Diem)
                     .ThenBy(x => x.ThoiGianLamBaiGiay)
                     .FirstOrDefault();
 
-                // 2. Lưu kết quả vào bảng lịch sử vĩnh viễn
+                // 2. Lưu lịch sử và Cập nhật chỉ số User
                 foreach (var p in room.ThachDauNguoiChois)
                 {
+                    // --- PHẦN LƯU LỊCH SỬ VĨNH VIỄN ---
+                    bool isWinner = (winner != null && p.MaNguoiDung == winner.MaNguoiDung);
+
                     _context.LichSuThachDaus.Add(new LichSuThachDau
                     {
                         MaNguoiDung = p.MaNguoiDung,
                         MaBoDe = room.MaBoDe,
-
-                        // Gán mã PIN gốc vào cột MaThachDauGoc thay vì MaThachDau (Khóa chính)
                         MaThachDauGoc = room.MaThachDau,
-
-                        // Đảm bảo p.Diem, p.SoTheDung... đã được cập nhật từ Client gửi lên trước đó
                         Diem = p.Diem ?? 0,
                         SoTheDung = p.SoTheDung ?? 0,
                         SoTheSai = p.SoTheSai ?? 0,
                         ThoiGianLamBaiGiay = p.ThoiGianLamBaiGiay ?? 0,
-
-                        LaNguoiThang = (winner != null && p.MaNguoiDung == winner.MaNguoiDung),
+                        LaNguoiThang = isWinner,
                         ThoiGianKetThuc = DateTime.Now
                     });
+
+                    // --- PHẦN CẬP NHẬT BẢNG NGUOIDUNG ---
+                    // Tìm user tương ứng trong DbContext
+                    var user = await _userDb.NguoiDungs.FindAsync(p.MaNguoiDung);
+                    if (user != null)
+                    {
+                        // Tăng tổng số trận thách đấu
+                        user.SoTranThachDau = (user.SoTranThachDau ?? 0) + 1;
+
+                        if (isWinner)
+                        {
+                            // Nếu thắng
+                            user.SoTranThang = (user.SoTranThang ?? 0) + 1;
+                        }
+                        else
+                        {
+                            // Nếu thua (hoặc hòa nhưng không phải winner)
+                            user.SoTranThua = (user.SoTranThua ?? 0) + 1;
+                        }
+
+                        _userDb.NguoiDungs.Update(user);
+                    }
                 }
 
-                // 3. Xóa phòng và người chơi ra khỏi các bảng tạm để giải phóng Database
+                // 3. Xóa phòng tạm
                 _context.ThachDauNguoiChois.RemoveRange(room.ThachDauNguoiChois);
                 _context.ThachDaus.Remove(room);
 
@@ -125,7 +146,7 @@ namespace StudyApp.BLL.Services.Learn
                 await transaction.CommitAsync();
                 return true;
             }
-            catch
+            catch (Exception)
             {
                 await transaction.RollbackAsync();
                 return false;

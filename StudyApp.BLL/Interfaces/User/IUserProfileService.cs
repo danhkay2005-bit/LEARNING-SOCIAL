@@ -10,4 +10,6 @@ public interface IUserProfileService
 
     // Đổi mật khẩu khi VẪN NHỚ mật khẩu cũ
     Task<bool> ChangePasswordAsync(Guid userId, string oldPass, string newPass);
+    // ✅ THÊM:  Method tìm kiếm người dùng
+    Task<List<NguoiDungResponse>> TimKiemNguoiDungAsync(string keyword);
 }

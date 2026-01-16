@@ -1,6 +1,6 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
-using StudyApp.DTO.Enums.StudyApp.DTO.Enums;
+using StudyApp.DTO.Enums;
 
 namespace StudyApp.DTO.Requests.Social
 {

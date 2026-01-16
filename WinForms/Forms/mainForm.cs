@@ -1,15 +1,21 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using StudyApp.BLL.Interfaces.Social;
 using StudyApp.DTO;
 using System;
 using System.Drawing;
 using System.Windows.Forms;
 using WinForms.UserControls;
+using WinForms.UserControls.Components.Social;
 using WinForms.UserControls.Pages;
+using WinForms.UserControls.Social;
 
 namespace WinForms.Forms
 {
     public partial class MainForm : Form
     {
+        // ✅ THÊM:  Biến lưu NotificationBadge
+        private NotificationBadge? _notificationBadge;
+
         public MainForm()
         {
             InitializeComponent();
@@ -32,9 +38,17 @@ namespace WinForms.Forms
             }
             else
             {
-                AddMenuButton("🏠 Trang chủ", (s, e) => LoadPage(new TrangChuPage()));
+                AddMenuButton("🏠 Trang chủ", (s, e) => 
+                {
+                    if (Program.ServiceProvider == null) return;
+                    LoadPage(Program.ServiceProvider.GetRequiredService<TrangChuPage>());
+                });
                 AddMenuButton("👤 Thông tin cá nhân", (s, e) => LoadPage(new ThongTinCaNhanPage()));
                 AddMenuButton("📚 Học tập", (s, e) => LoadPage(Program.ServiceProvider!.GetRequiredService<HocTapPage>()));
+
+                // ✅ THÊM: Nút Mạng xã hội
+                AddMenuButton("🌐 Mạng xã hội", (s,e) => LoadPage(Program.ServiceProvider!.GetRequiredService<NewsfeedControl>()));
+
                 AddMenuButton("🛒 Cửa hàng", (s, e) => LoadPage(new CuaHangPage()));
                 AddMenuButton("⚙️ Cài đặt", (s, e) => LoadPage(new CaiDatPage()));
                 AddMenuButton("🏅 Thành Tựu", (s, e) => LoadPage(Program.ServiceProvider!.GetRequiredService <AchievementsPage>()));
@@ -68,14 +82,14 @@ namespace WinForms.Forms
         // ================= PAGE LOAD =================
         public void LoadPage(UserControl page)
         {
-            contentPanel.SuspendLayout(); // Tạm dừng vẽ để tránh giật hình
+            contentPanel.SuspendLayout();
             contentPanel.Controls.Clear();
 
             page.Dock = DockStyle.Fill;
             contentPanel.Controls.Add(page);
 
             contentPanel.ResumeLayout(true);
-            page.PerformLayout(); // Ép trang con tính toán lại vị trí các nút
+            page.PerformLayout();
         }
         
         // ================= EVENTS =================
@@ -85,10 +99,8 @@ namespace WinForms.Forms
                 throw new InvalidOperationException("ServiceProvider is not initialized.");
             var loginPage = Program.ServiceProvider.GetRequiredService<DangNhapControl>();
 
-            // Xóa tham số 'user' ở đây vì Action không có tham số
             loginPage.DangNhapThanhCong += () =>
             {
-                // Không cần dòng UserSession.Login(user) nữa vì Control đã làm rồi
                 RenderMenu();
 
                 LoadPage(Program.ServiceProvider.GetRequiredService<TrangChuPage>());
@@ -97,7 +109,6 @@ namespace WinForms.Forms
             loginPage.YeuCauDangKy += () =>
             {
                 var dangKyPage = Program.ServiceProvider.GetRequiredService<DangKyControl>();
-                // Bạn có thể đăng ký sự kiện quay lại từ trang đăng ký tại đây nếu cần
                 LoadPage(dangKyPage);
                 dangKyPage.QuayVeDangNhap += () =>
                 {
@@ -105,7 +116,6 @@ namespace WinForms.Forms
                 };
             };
 
-            // 3. Xử lý khi nhấn nút Quên mật khẩu
             loginPage.QuenMatKhau += () =>
             {
                 var quenMKPage = Program.ServiceProvider.GetRequiredService<QuenMatKhauControl>();
@@ -116,8 +126,6 @@ namespace WinForms.Forms
                     LoadPage(loginPage);
                 };
             };
-            
-            
 
             LoadPage(loginPage);
         }
@@ -126,6 +134,15 @@ namespace WinForms.Forms
         {
             UserSession.Logout();
             contentPanel.Controls.Clear();
+
+            // ✅ THÊM: Ẩn chuông thông báo khi đăng xuất
+            if (_notificationBadge != null)
+            {
+                this.Controls.Remove(_notificationBadge);
+                _notificationBadge.Dispose();
+                _notificationBadge = null;
+            }
+
             RenderMenu();
         }
     }

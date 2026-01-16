@@ -1,5 +1,4 @@
 ﻿using StudyApp.DTO.Enums;
-using StudyApp.DTO.Enums.StudyApp.DTO.Enums;
 using System;
 
 namespace StudyApp.DTO.Responses.Social

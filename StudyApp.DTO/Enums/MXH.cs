@@ -82,27 +82,30 @@
         BaiDang,
         BinhLuan
     }
-    namespace StudyApp.DTO.Enums
+
+    // =========================
+    // THÔNG BÁO
+    // =========================
+
+    /// <summary>
+    /// Loại thông báo hệ thống
+    /// </summary>
+    public enum LoaiThongBaoEnum
     {
-        public enum LoaiThongBaoEnum
-        {
-            MentionBaiDang = 1,
-            MentionBinhLuan = 2,
-            BinhLuanBaiDang = 3,
-            TraLoiBinhLuan = 4,
-            ThichBaiDang = 5,
-            ThichBinhLuan = 6,
-            ChiaSeBaiDang = 7,
-            TheoDoi = 8,
+        MentionBaiDang = 1,
+        MentionBinhLuan = 2,
+        BinhLuanBaiDang = 3,
+        TraLoiBinhLuan = 4,
+        ThichBaiDang = 5,
+        ThichBinhLuan = 6,
+        ChiaSeBaiDang = 7,
+        TheoDoi = 8,
 
-            DenHanOnTap = 20,
-            HoanThanhBoDe = 21,
-            MoiThachDau = 22,
-            KetQuaThachDau = 23,
+        DenHanOnTap = 20,
+        HoanThanhBoDe = 21,
+        MoiThachDau = 22,
+        KetQuaThachDau = 23,
 
-            HeThong = 99
-        }
-        
+        HeThong = 99
     }
-
 }
