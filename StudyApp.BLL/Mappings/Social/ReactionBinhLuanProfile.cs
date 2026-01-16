@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+﻿    using AutoMapper;
 using StudyApp.DAL.Entities.Social;
 using StudyApp.DTO.Enums;
 using StudyApp.DTO.Requests.Social;
