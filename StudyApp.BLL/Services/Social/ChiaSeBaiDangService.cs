@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using StudyApp.BLL.Interfaces.Social;
 using StudyApp.DAL.Data;
@@ -6,6 +6,8 @@ using StudyApp.DAL.Entities.Social;
 using StudyApp.DTO.Enums;
 using StudyApp.DTO.Requests.Social;
 using StudyApp.DTO.Responses.Social;
+
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,7 +15,7 @@ using System.Threading.Tasks;
 
 namespace StudyApp.BLL.Services.Social
 {
-    public class ChiaSeBaiDangService : IChiaSeBaiDangService
+    public class ChiaSeBaiDangService :IChiaSeBaiDangService
     {
         private readonly SocialDbContext _context;
         private readonly IMapper _mapper;
@@ -26,32 +28,41 @@ namespace StudyApp.BLL.Services.Social
 
         public async Task<ChiaSeBaiDangResponse> ChiaSeBaiDangAsync(ChiaSeBaiDangRequest request)
         {
-            using var transaction = await _context.Database.BeginTransactionAsync();
+            // Kiểm tra bài đăng gốc có tồn tại không
+            var baiDangGoc = await _context.BaiDangs
+                .FirstOrDefaultAsync(bd => bd.MaBaiDang == request.MaBaiDangGoc && bd.DaXoa != true);
 
+            if (baiDangGoc == null)
+            {
+                throw new Exception("Bài đăng không tồn tại hoặc đã bị xóa");
+            }
+
+            // Kiểm tra quyền xem bài đăng gốc
+            if (baiDangGoc.QuyenRiengTu == (byte)QuyenRiengTuEnum.RiengTu 
+                && baiDangGoc.MaNguoiDung != request.MaNguoiChiaSe)
+            {
+                throw new Exception("Bạn không có quyền chia sẻ bài đăng này");
+            }
+
+            // Kiểm tra đã chia sẻ bài đăng này chưa
+            var daChiaSe = await _context.ChiaSeBaiDangs
+                .AnyAsync(cs => cs.MaBaiDangGoc == request.MaBaiDangGoc 
+                               && cs.MaNguoiChiaSe == request.MaNguoiChiaSe);
+
+            if (daChiaSe)
+            {
+                throw new Exception("Bạn đã chia sẻ bài đăng này rồi");
+            }
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                // Kiểm tra bài đăng gốc có tồn tại không
-                var baiDangGoc = await _context.BaiDangs
-                    .FirstOrDefaultAsync(x => x.MaBaiDang == request.MaBaiDangGoc && x.DaXoa == false);
-
-                if (baiDangGoc == null)
-                {
-                    throw new Exception("Bài đăng gốc không tồn tại hoặc đã bị xóa.");
-                }
-
-                // Kiểm tra quyền truy cập bài đăng gốc
-                if (baiDangGoc.QuyenRiengTu == (byte)QuyenRiengTuEnum.RiengTu && 
-                    baiDangGoc.MaNguoiDung != request.MaNguoiChiaSe)
-                {
-                    throw new Exception("Bạn không có quyền chia sẻ bài đăng này.");
-                }
-
-                // Tạo bài đăng mới khi chia sẻ 
+                // Tạo bài đăng mới với nội dung chia sẻ
                 var baiDangMoi = new BaiDang
                 {
                     MaNguoiDung = request.MaNguoiChiaSe,
                     NoiDung = request.NoiDungThem,
-                    LoaiBaiDang = "ChiaSe",
+                    LoaiBaiDang = LoaiBaiDangEnum.ChiaSeKhoaHoc.ToString(),
                     QuyenRiengTu = (byte)request.QuyenRiengTu,
                     SoReaction = 0,
                     SoBinhLuan = 0,
@@ -62,11 +73,11 @@ namespace StudyApp.BLL.Services.Social
                     ThoiGianTao = DateTime.Now
                 };
 
-                _context.BaiDangs.Add(baiDangMoi);
+                await _context.BaiDangs.AddAsync(baiDangMoi);
                 await _context.SaveChangesAsync();
 
-                // Tạo record chia sẻ
-                var chiaSe = new ChiaSeBaiDang
+                // Tạo bản ghi chia sẻ
+                var chiaSeMoi = new ChiaSeBaiDang
                 {
                     MaBaiDangGoc = request.MaBaiDangGoc,
                     MaNguoiChiaSe = request.MaNguoiChiaSe,
@@ -75,111 +86,134 @@ namespace StudyApp.BLL.Services.Social
                     ThoiGian = DateTime.Now
                 };
 
-                _context.ChiaSeBaiDangs.Add(chiaSe);
+                await _context.ChiaSeBaiDangs.AddAsync(chiaSeMoi);
                 await _context.SaveChangesAsync();
+
+                // Load lại dữ liệu để lấy navigation properties
+                var chiaSeDaLuu = await _context.ChiaSeBaiDangs
+                    .Include(cs => cs.MaBaiDangGocNavigation)
+                    .Include(cs => cs.MaBaiDangMoiNavigation)
+                    .FirstOrDefaultAsync(cs => cs.MaChiaSe == chiaSeMoi.MaChiaSe);
 
                 await transaction.CommitAsync();
 
-                // Load lại dữ liệu để trả về đầy đủ
-                var result = await _context.ChiaSeBaiDangs
-                    .Include(x => x.MaBaiDangGocNavigation)
-                    .Include(x => x.MaBaiDangMoiNavigation)
-                    .FirstOrDefaultAsync(x => x.MaChiaSe == chiaSe.MaChiaSe);
-
-                return _mapper.Map<ChiaSeBaiDangResponse>(result);
+                return _mapper.Map<ChiaSeBaiDangResponse>(chiaSeDaLuu);
             }
-            catch
+            catch (Exception)
             {
                 await transaction.RollbackAsync();
                 throw;
             }
         }
 
-        public async Task<IEnumerable<ChiaSeBaiDangResponse>> GetDanhSachChiaSeByBaiDangAsync(int maBaiDang)
+        public async Task<List<ChiaSeBaiDangResponse>> LayDanhSachChiaSeTheoMaBaiDangAsync(int maBaiDang)
         {
-            var list = await _context.ChiaSeBaiDangs
-                .Include(x => x.MaBaiDangGocNavigation)
-                .Include(x => x.MaBaiDangMoiNavigation)
-                .Where(x => x.MaBaiDangGoc == maBaiDang)
-                .OrderByDescending(x => x.ThoiGian)
+            var danhSachChiaSe = await _context.ChiaSeBaiDangs
+                .Include(cs => cs.MaBaiDangGocNavigation)
+                .Include(cs => cs.MaBaiDangMoiNavigation)
+                .Where(cs => cs.MaBaiDangGoc == maBaiDang)
+                .OrderByDescending(cs => cs.ThoiGian)
                 .ToListAsync();
 
-            return _mapper.Map<IEnumerable<ChiaSeBaiDangResponse>>(list);
+            return _mapper.Map<List<ChiaSeBaiDangResponse>>(danhSachChiaSe);
         }
 
-        public async Task<IEnumerable<ChiaSeBaiDangResponse>> GetDanhSachChiaSeByNguoiDungAsync(Guid maNguoiDung)
+        public async Task<ThongKeChiaSeBaiDangResponse> LayThongKeChiaSeAsync(int maBaiDang)
         {
-            var list = await _context.ChiaSeBaiDangs
-                .Include(x => x.MaBaiDangGocNavigation)
-                .Include(x => x.MaBaiDangMoiNavigation)
-                .Where(x => x.MaNguoiChiaSe == maNguoiDung)
-                .OrderByDescending(x => x.ThoiGian)
-                .ToListAsync();
+            var tongSoChiaSe = await _context.ChiaSeBaiDangs
+                .CountAsync(cs => cs.MaBaiDangGoc == maBaiDang);
 
-            return _mapper.Map<IEnumerable<ChiaSeBaiDangResponse>>(list);
-        }
-
-        public async Task<ThongKeChiaSeBaiDangResponse> GetThongKeChiaSeAsync(int maBaiDang)
-        {
-            var thongKe = await _context.ChiaSeBaiDangs
-                .Where(x => x.MaBaiDangGoc == maBaiDang)
-                .GroupBy(x => x.MaBaiDangGoc)
-                .Select(g => new ThongKeChiaSeBaiDangResponse
-                {
-                    MaBaiDang = g.Key,
-                    TongSoChiaSe = g.Count(),
-                    LanChiaSeMoiNhat = g.Max(x => x.ThoiGian)
-                })
+            var lanChiaSeMoiNhat = await _context.ChiaSeBaiDangs
+                .Where(cs => cs.MaBaiDangGoc == maBaiDang)
+                .OrderByDescending(cs => cs.ThoiGian)
+                .Select(cs => cs.ThoiGian)
                 .FirstOrDefaultAsync();
 
-            return thongKe ?? new ThongKeChiaSeBaiDangResponse
+            return new ThongKeChiaSeBaiDangResponse
             {
                 MaBaiDang = maBaiDang,
-                TongSoChiaSe = 0,
-                LanChiaSeMoiNhat = null
+                TongSoChiaSe = tongSoChiaSe,
+                LanChiaSeMoiNhat = lanChiaSeMoiNhat
             };
         }
 
-        public async Task<bool> XoaChiaSeAsync(int maChiaSe, Guid maNguoiDung)
+        public async Task<ChiaSeBaiDangResponse?> LayChiTietChiaSeAsync(int maChiaSe)
         {
-            using var transaction = await _context.Database.BeginTransactionAsync();
+            var chiaSe = await _context.ChiaSeBaiDangs
+                .Include(cs => cs.MaBaiDangGocNavigation)
+                .Include(cs => cs.MaBaiDangMoiNavigation)
+                .FirstOrDefaultAsync(cs => cs.MaChiaSe == maChiaSe);
 
+            return chiaSe != null ? _mapper.Map<ChiaSeBaiDangResponse>(chiaSe) : null;
+        }
+
+        public async Task<bool> HuyChiaSeAsync(int maChiaSe, Guid maNguoiDung)
+        {
+            var chiaSe = await _context.ChiaSeBaiDangs
+                .Include(cs => cs.MaBaiDangMoiNavigation)
+                .FirstOrDefaultAsync(cs => cs.MaChiaSe == maChiaSe && cs.MaNguoiChiaSe == maNguoiDung);
+
+            if (chiaSe == null)
+            {
+                return false;
+            }
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                var chiaSe = await _context.ChiaSeBaiDangs
-                    .Include(x => x.MaBaiDangMoiNavigation)
-                    .FirstOrDefaultAsync(x => x.MaChiaSe == maChiaSe && x.MaNguoiChiaSe == maNguoiDung);
-
-                if (chiaSe == null)
-                {
-                    return false;
-                }
-
-                // Xóa bài đăng mới (soft delete)
+                // Xóa bài đăng mới (nếu có)
                 if (chiaSe.MaBaiDangMoiNavigation != null)
                 {
                     chiaSe.MaBaiDangMoiNavigation.DaXoa = true;
+                    _context.BaiDangs.Update(chiaSe.MaBaiDangMoiNavigation);
                 }
 
-                // Xóa record chia sẻ
+                // Xóa bản ghi chia sẻ
                 _context.ChiaSeBaiDangs.Remove(chiaSe);
-
                 await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
 
+                await transaction.CommitAsync();
                 return true;
             }
-            catch
+            catch (Exception)
             {
                 await transaction.RollbackAsync();
                 throw;
             }
         }
 
-        public async Task<bool> DaChiaSeAsync(int maBaiDang, Guid maNguoiDung)
+        public async Task<List<ChiaSeBaiDangResponse>> LayDanhSachChiaSeTheoNguoiDungAsync(Guid maNguoiDung, int pageIndex = 1, int pageSize = 10)
+        {
+            var danhSachChiaSe = await _context.ChiaSeBaiDangs
+                .Include(cs => cs.MaBaiDangGocNavigation)
+                .Include(cs => cs.MaBaiDangMoiNavigation)
+                .Where(cs => cs.MaNguoiChiaSe == maNguoiDung)
+                .OrderByDescending(cs => cs.ThoiGian)
+                .Skip((pageIndex - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return _mapper.Map<List<ChiaSeBaiDangResponse>>(danhSachChiaSe);
+        }
+
+        public async Task<bool> KiemTraDaChiaSeAsync(int maBaiDang, Guid maNguoiDung)
         {
             return await _context.ChiaSeBaiDangs
-                .AnyAsync(x => x.MaBaiDangGoc == maBaiDang && x.MaNguoiChiaSe == maNguoiDung);
+                .AnyAsync(cs => cs.MaBaiDangGoc == maBaiDang && cs.MaNguoiChiaSe == maNguoiDung);
+        }
+
+        public async Task<List<ChiaSeBaiDangResponse>> LayDanhSachBaiDangDaChiaSeAsync(Guid maNguoiDung, int skip, int take)
+        {
+            var danhSachChiaSe = await _context.ChiaSeBaiDangs
+                .Include(cs => cs.MaBaiDangGocNavigation)
+                .Include(cs => cs.MaBaiDangMoiNavigation)
+                .Where(cs => cs.MaNguoiChiaSe == maNguoiDung)
+                .OrderByDescending(cs => cs.ThoiGian)
+                .Skip(skip)
+                .Take(take)
+                .ToListAsync();
+
+            return _mapper.Map<List<ChiaSeBaiDangResponse>>(danhSachChiaSe);
         }
     }
 }

@@ -26,7 +26,11 @@ namespace StudyApp.BLL.Services.Social
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
+                // ✅ FIX: Clear tracker trước
+                _context.ChangeTracker.Clear();
+
                 var existing = await _context.Set<ReactionBaiDang>()
+                    .AsNoTracking() // ✅ THÊM
                     .FirstOrDefaultAsync(x => x.MaBaiDang == request.MaBaiDang && x.MaNguoiDung == request.MaNguoiDung);
 
                 if (existing != null)
@@ -34,6 +38,8 @@ namespace StudyApp.BLL.Services.Social
                     // Nếu reaction giống nhau -> XÓA (unlike)
                     if (existing.LoaiReaction == request.LoaiReaction.ToString())
                     {
+                        // ✅ Attach trước khi remove
+                        _context.Set<ReactionBaiDang>().Attach(existing);
                         _context.Set<ReactionBaiDang>().Remove(existing);
 
                         // Giảm số reaction
@@ -45,9 +51,11 @@ namespace StudyApp.BLL.Services.Social
                     }
                     else
                     {
-                        // Thay đổi loại reaction
+                        // ✅ Thay đổi loại reaction - Attach trước
+                        _context.Set<ReactionBaiDang>().Attach(existing);
                         existing.LoaiReaction = request.LoaiReaction.ToString();
                         existing.ThoiGian = DateTime.Now;
+                        _context.Entry(existing).State = EntityState.Modified;
                     }
                 }
                 else
@@ -88,12 +96,18 @@ namespace StudyApp.BLL.Services.Social
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
+                // ✅ FIX: Clear tracker
+                _context.ChangeTracker.Clear();
+
                 var reaction = await _context.Set<ReactionBaiDang>()
+                    .AsNoTracking() // ✅ THÊM
                     .FirstOrDefaultAsync(x => x.MaBaiDang == postId && x.MaNguoiDung == userId);
 
                 if (reaction == null)
                     return false;
 
+                // ✅ Attach trước khi remove
+                _context.Set<ReactionBaiDang>().Attach(reaction);
                 _context.Set<ReactionBaiDang>().Remove(reaction);
 
                 // Giảm số reaction

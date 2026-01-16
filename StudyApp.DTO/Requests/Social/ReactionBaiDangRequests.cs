@@ -31,4 +31,17 @@ namespace StudyApp.DTO.Requests.Social
         [Required]
         public Guid MaNguoiDung { get; set; }
     }
+
+    public class ThaReactionRequest
+    {
+        [Required]
+        public int MaBaiDang { get; set; }
+
+        [Required]
+        public Guid MaNguoiDung { get; set; }
+
+        // Các giá trị: "Thich", "Tim", "HaHa", "Wow", "Buon", "TucGian"
+        // Khớp với CHECK constraint trong SQL
+        public string LoaiReaction { get; set; } = "Thich";
+    }
 }

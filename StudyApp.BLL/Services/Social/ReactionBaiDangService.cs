@@ -26,15 +26,22 @@ namespace StudyApp.BLL.Services.Social
 
         public async Task<ReactionBaiDangResponse> TaoHoacCapNhatReactionAsync(TaoHoacCapNhatReactionBaiDangRequest request)
         {
+            // ✅ FIX TRIỆT ĐỂ: Clear tracker và query với AsNoTracking
+            _context.ChangeTracker.Clear();
+
             var reactionHienTai = await _context.ReactionBaiDangs
+                .AsNoTracking() // ✅ THÊM: Query không track
                 .FirstOrDefaultAsync(r => r.MaBaiDang == request.MaBaiDang && r.MaNguoiDung == request.MaNguoiDung);
 
             if (reactionHienTai != null)
             {
-                // Cập nhật reaction hiện tại
+                // ✅ Cập nhật reaction hiện tại - Attach rồi mới update
                 reactionHienTai.LoaiReaction = request.LoaiReaction.ToString();
                 reactionHienTai.ThoiGian = DateTime.Now;
-                _context.ReactionBaiDangs.Update(reactionHienTai);
+                
+                // ✅ Attach entity vào context rồi mark là Modified
+                _context.ReactionBaiDangs.Attach(reactionHienTai);
+                _context.Entry(reactionHienTai).State = EntityState.Modified;
             }
             else
             {
@@ -54,6 +61,10 @@ namespace StudyApp.BLL.Services.Social
             }
 
             await _context.SaveChangesAsync();
+            
+            // ✅ Detach sau khi save để tránh tracking conflict
+            _context.Entry(reactionHienTai).State = EntityState.Detached;
+            
             return _mapper.Map<ReactionBaiDangResponse>(reactionHienTai);
         }
 
