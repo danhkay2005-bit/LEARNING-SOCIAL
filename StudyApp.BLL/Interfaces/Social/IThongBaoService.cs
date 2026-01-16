@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using StudyApp.DTO.Enums.StudyApp.DTO.Enums;
+using StudyApp.DTO.Enums;
 using StudyApp.DTO.Requests.Social;
 using StudyApp.DTO.Responses.Social;
 

@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using StudyApp.BLL.Interfaces.Social;
 using StudyApp.DAL.Data;
 using StudyApp.DAL.Entities.Social;
-using StudyApp.DTO.Enums.StudyApp.DTO.Enums;
+using StudyApp.DTO.Enums;
 using StudyApp.DTO.Requests.Social;
 using StudyApp.DTO.Responses.Social;
 using System;
