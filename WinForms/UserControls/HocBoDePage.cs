@@ -111,8 +111,13 @@ namespace WinForms.UserControls
             bool isCorrect = false;
             if (pnlQuestionContent.Controls.Count > 0 && pnlQuestionContent.Controls[0] is IQuestionControl qc)
             {
-                isCorrect = qc.IsCorrect;
+                // 1. Yêu cầu Control tính toán kết quả (So sánh chuỗi, kiểm tra số cặp...)
                 qc.ShowResult();
+
+                // 2. SAU ĐÓ mới lấy giá trị IsCorrect đã được cập nhật
+                isCorrect = qc.IsCorrect;
+
+                // Tạm dừng để người dùng thấy hiệu ứng màu xanh/đỏ trên Control
                 await Task.Delay(600);
             }
 
