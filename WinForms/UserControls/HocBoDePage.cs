@@ -22,6 +22,7 @@ namespace WinForms.UserControls
 
         private int _currentIndex = 0, _totalScore = 0, _correctCount = 0, _wrongCount = 0, _comboCount = 0, _currentTimeLeft = 100;
         private bool _iAnsweredCurrent = false, _opponentAnsweredCurrent = false;
+        private bool _isFinishing = false; 
         private Stopwatch _totalTimer = new Stopwatch();
 
         public HocBoDePage(IBoDeHocService boDeHocService, IThachDauService thachDauService, HubConnection hubConnection)
@@ -40,12 +41,19 @@ namespace WinForms.UserControls
             _maThachDau = maThachDau;
             _data = data;
 
+            // Lọc câu hỏi nếu học một mình
             if (_cheDo == CheDoHocEnum.HocMotMinh)
                 _data.DanhSachCauHoi = _data.DanhSachCauHoi.Where(q => q.ThongTinThe.NgayOnTapTiepTheo == null || q.ThongTinThe.NgayOnTapTiepTheo <= DateTime.Now).ToList();
 
             if (_data.DanhSachCauHoi.Count == 0) { ShowFeed("Hôm nay đã hết bài tập!", Color.Lime); return; }
 
+            // --- FIX LỖI 125%: Thiết lập Maximum bằng tổng số câu hỏi ---
+            prgStatus.Minimum = 0;
+            prgStatus.Maximum = _data.DanhSachCauHoi.Count;
+            // -----------------------------------------------------------
+
             _currentIndex = 0; _totalScore = 0; _correctCount = 0; _wrongCount = 0; _comboCount = 0;
+            _isFinishing = false;
             _totalTimer.Restart();
             lblFeedContent.Text = ">> Bắt đầu trận đấu...";
 
@@ -84,16 +92,17 @@ namespace WinForms.UserControls
 
         private void ShowQuestion(int index)
         {
+            if (_data == null || _data.DanhSachCauHoi == null || index >= _data.DanhSachCauHoi.Count) return;
+
             _currentIndex = index; _iAnsweredCurrent = false; _opponentAnsweredCurrent = false;
             lblStatusMessage.Visible = false; btnNext.Enabled = true; btnNext.Text = "XÁC NHẬN ➔";
             timerTick.Stop(); _currentTimeLeft = 100; prgTimeCountdown.Value = 100;
-            if (_data?.DanhSachCauHoi == null)
-            {
-                ShowFeed("Không có dữ liệu câu hỏi!", Color.Red);
-                return;
-            }
+
             lblProgress.Text = $"CÂU HỎI: {index + 1} / {_data.DanhSachCauHoi.Count}";
-            prgStatus.Value = (int)((float)(index + 1) / _data.DanhSachCauHoi.Count * 100);
+
+            // --- FIX LỖI 125%: Gán giá trị là số thứ tự câu hiện tại ---
+            prgStatus.Value = index + 1;
+            // -----------------------------------------------------------
 
             pnlQuestionContent.Controls.Clear();
             var cauHoi = _data.DanhSachCauHoi[index];
@@ -111,20 +120,15 @@ namespace WinForms.UserControls
             bool isCorrect = false;
             if (pnlQuestionContent.Controls.Count > 0 && pnlQuestionContent.Controls[0] is IQuestionControl qc)
             {
-                // 1. Yêu cầu Control tính toán kết quả (So sánh chuỗi, kiểm tra số cặp...)
                 qc.ShowResult();
-
-                // 2. SAU ĐÓ mới lấy giá trị IsCorrect đã được cập nhật
-                isCorrect = qc.IsCorrect;
-
-                // Tạm dừng để người dùng thấy hiệu ứng màu xanh/đỏ trên Control
+                isCorrect = qc.IsCorrect; // Lấy kết quả sau khi đã ShowResult
                 await Task.Delay(600);
             }
 
             _iAnsweredCurrent = true;
             UpdateStats(isCorrect);
-            if (UserSession.CurrentUser != null)
-                if (_cheDo == CheDoHocEnum.ThachDau && _maThachDau.HasValue)
+
+            if (UserSession.CurrentUser != null && _cheDo == CheDoHocEnum.ThachDau && _maThachDau.HasValue)
             {
                 await _hubConnection.InvokeAsync("SendScore", _maThachDau.Value.ToString(), UserSession.CurrentUser.MaNguoiDung, _totalScore);
                 await _hubConnection.InvokeAsync("SendReadyNext", _maThachDau.Value.ToString(), UserSession.CurrentUser.MaNguoiDung, _currentIndex);
@@ -165,9 +169,12 @@ namespace WinForms.UserControls
 
         private async Task CheckAndMoveToNext()
         {
+            if (_data?.DanhSachCauHoi == null)
+                return;
+
             if (_cheDo == CheDoHocEnum.HocMotMinh || (_iAnsweredCurrent && _opponentAnsweredCurrent))
             {
-                if (_data?.DanhSachCauHoi != null && _currentIndex < _data.DanhSachCauHoi.Count - 1)
+                if (_currentIndex < _data.DanhSachCauHoi.Count - 1)
                     ShowQuestion(_currentIndex + 1);
                 else
                     await FinishQuiz();
@@ -182,17 +189,20 @@ namespace WinForms.UserControls
 
         private async Task FinishQuiz()
         {
+            if (_isFinishing) return;
+            _isFinishing = true;
+
             timerTick.Stop();
             _totalTimer.Stop();
 
-            // 1. Chuẩn bị UI kết quả
             pnlQuestionContent.Controls.Clear();
             var resultUI = new QuizResultControl();
             resultUI.Dock = DockStyle.Fill;
+
             if (UserSession.CurrentUser != null)
-            if (_cheDo == CheDoHocEnum.HocMotMinh)
             {
-                    // --- XỬ LÝ LƯU PHIENHOC & LICHSUHOCBODE ---
+                if (_cheDo == CheDoHocEnum.HocMotMinh)
+                {
                     var phienHoc = new PhienHoc
                     {
                         MaNguoiDung = UserSession.CurrentUser.MaNguoiDung,
@@ -204,43 +214,22 @@ namespace WinForms.UserControls
                         TongSoThe = _data?.DanhSachCauHoi?.Count ?? 0,
                         SoTheDung = _correctCount,
                         SoTheSai = _wrongCount,
-                        TyLeDung = (_data?.DanhSachCauHoi != null && _data.DanhSachCauHoi.Count > 0)
-             ? (double)_correctCount / _data.DanhSachCauHoi.Count * 100
-             : 0
+                        TyLeDung = (_data?.DanhSachCauHoi?.Count ?? 0) > 0 ? (double)_correctCount / (_data?.DanhSachCauHoi?.Count ?? 1) * 100 : 0
                     };
-
-                    // Gọi BLL để lưu (BLL này sẽ tự động tạo luôn LichSuHocBoDe bên trong)
                     await _boDeHocService.LuuKetQuaPhienHocAsync(phienHoc);
-
-                resultUI.DisplaySoloResult(
-                    _correctCount,
-                    _wrongCount,
-                    _data?.DanhSachCauHoi?.Count ?? 0,
-                    _totalTimer.Elapsed
-                                    );
-                                                }
-                        else
-                        {
-                // --- XỬ LÝ LƯU LICHSUTHACHDAU ---
-                // ThachDauService.HoanThanhVaCleanupAsync đã xử lý logic di chuyển từ bảng tạm sang bảng lịch sử
-                if (_maThachDau.HasValue)
+                    resultUI.DisplaySoloResult(_correctCount, _wrongCount, _data?.DanhSachCauHoi?.Count ?? 0, _totalTimer.Elapsed);
+                }
+                else if (_maThachDau.HasValue)
                 {
                     await _thachDauService.HoanThanhVaCleanupAsync(_maThachDau.Value);
-
-                    // Lấy BXH cuối cùng để xác định mình thắng hay thua
                     var bxh = await _thachDauService.GetBangXepHangAsync(_maThachDau.Value);
                     var me = bxh.FirstOrDefault(x => x.MaNguoiDung == UserSession.CurrentUser.MaNguoiDung);
                     bool isWinner = me != null && me.MaNguoiDung == bxh.First().MaNguoiDung;
-
                     resultUI.DisplayChallengeResult(_totalScore, _correctCount, _wrongCount, isWinner, _maThachDau.Value);
                 }
             }
-
             pnlQuestionContent.Controls.Add(resultUI);
-
-            // Ẩn thanh HUD và nút Next
             pnlBottom.Visible = false;
-            prgTimeCountdown.Visible = false;
         }
 
         private void ShowFeed(string msg, Color color, bool append = false)
