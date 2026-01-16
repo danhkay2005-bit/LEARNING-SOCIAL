@@ -33,6 +33,7 @@ public partial class LearningDbContext : DbContext
     public virtual DbSet<PhanTuSapXep> PhanTuSapXeps { get; set; }
 
     public virtual DbSet<PhienHoc> PhienHocs { get; set; }
+    public virtual DbSet<LichSuThachDau> LichSuThachDaus { get; set; }
 
     public virtual DbSet<Tag> Tags { get; set; }
 
@@ -102,6 +103,32 @@ public partial class LearningDbContext : DbContext
             entity.HasOne(d => d.MaTheNavigation).WithMany(p => p.CapGheps)
                 .HasForeignKey(d => d.MaThe)
                 .HasConstraintName("FK_CapGhep_The");
+        });
+
+        modelBuilder.Entity<LichSuThachDau>(entity =>
+        {
+            entity.HasKey(e => e.MaLichSu).HasName("PK_LichSuThachDau");
+
+            entity.ToTable("LichSuThachDau");
+
+            entity.Property(e => e.Diem).HasDefaultValue(0);
+            entity.Property(e => e.SoTheDung).HasDefaultValue(0);
+            entity.Property(e => e.SoTheSai).HasDefaultValue(0);
+            entity.Property(e => e.ThoiGianLamBaiGiay).HasDefaultValue(0);
+            entity.Property(e => e.LaNguoiThang).HasDefaultValue(false);
+
+            entity.Property(e => e.ThoiGianKetThuc)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+
+            // Cấu hình Khóa ngoại với Bộ Đề
+            entity.HasOne(d => d.MaBoDeNavigation)
+                .WithMany(p => p.LichSuThachDaus) // Đảm bảo đã thêm ICollection này vào class BoDeHoc
+                .HasForeignKey(d => d.MaBoDe)
+                .OnDelete(DeleteBehavior.Cascade) // Xóa bộ đề thì xóa luôn lịch sử liên quan
+                .HasConstraintName("FK_LichSuTD_BoDe");
+
+            // Lưu ý: MaNguoiDung không cấu hình HasOne vì nằm khác Database
         });
 
         modelBuilder.Entity<ChiTietTraLoi>(entity =>

@@ -16,4 +16,5 @@
   <Folder Name="/src/04.Shared/">
     <Project Path="StudyApp.DTO/StudyApp.DTO.csproj" Id="a2dd375e-6e1e-44ef-bebb-ab4ee0df074d" />
   </Folder>
+  <Project Path="StudyApp.API/StudyApp.API.csproj" Id="e37a1739-c072-4f71-b497-7986a6f3046d" />
 </Solution>

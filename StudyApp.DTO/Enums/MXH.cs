@@ -26,7 +26,8 @@
     {
         RiengTu = 0,
         CongKhai = 1,
-        ChiFollower = 2
+        ChiFollower = 2,
+      
     }
 
     // =========================

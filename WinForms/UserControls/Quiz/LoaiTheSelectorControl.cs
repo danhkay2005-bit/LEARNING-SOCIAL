@@ -31,9 +31,6 @@ namespace WinForms.UserControls.Quiz
             // Gán logic cho từng nút bấm dựa trên Enum bạn đã định nghĩa
             btnTracNghiem.Click += (s, e) => OnTypeSelected?.Invoke(LoaiTheEnum.TracNghiem);
 
-            // Lưu ý: Bạn đang dùng LoaiTheEnum.CoBan cho Lật thẻ
-            btnLatThe.Click += (s, e) => OnTypeSelected?.Invoke(LoaiTheEnum.CoBan);
-
             btnDienKhuyet.Click += (s, e) => OnTypeSelected?.Invoke(LoaiTheEnum.DienKhuyet);
             btnGhepCap.Click += (s, e) => OnTypeSelected?.Invoke(LoaiTheEnum.GhepCap);
             btnSapXep.Click += (s, e) => OnTypeSelected?.Invoke(LoaiTheEnum.SapXep);

@@ -34,6 +34,8 @@ namespace StudyApp.DTO.Responses.Learn
 
         public int SoLanSai { get; set; }
 
+        public DateTime? NgayOnTapTiepTheo { get; set; }
+
         public DateTime? ThoiGianTao { get; set; }
 
         public DateTime? ThoiGianCapNhat { get; set; }

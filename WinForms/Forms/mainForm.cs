@@ -25,11 +25,6 @@ namespace WinForms.Forms
         private void MainForm_Load(object sender, EventArgs e)
         {
             RenderMenu();
-            if (UserSession.IsLoggedIn)
-            {
-                ShowSuggestedUsers();
-                InitializeNotificationBadge(); // ✅ THÊM: Khởi tạo chuông thông báo
-            }
         }
 
         // ================= MENU =================
@@ -49,6 +44,7 @@ namespace WinForms.Forms
                     LoadPage(Program.ServiceProvider.GetRequiredService<TrangChuPage>());
                 });
                 AddMenuButton("👤 Thông tin cá nhân", (s, e) => LoadPage(new ThongTinCaNhanPage()));
+                AddMenuButton("📚 Học tập", (s, e) => LoadPage(Program.ServiceProvider!.GetRequiredService<HocTapPage>()));
                 AddMenuButton("📚 Học tập", (s, e) => LoadPage(new HocTapPage()));
 
                 // ✅ THÊM: Nút Mạng xã hội
@@ -56,6 +52,9 @@ namespace WinForms.Forms
 
                 AddMenuButton("🛒 Cửa hàng", (s, e) => LoadPage(new CuaHangPage()));
                 AddMenuButton("⚙️ Cài đặt", (s, e) => LoadPage(new CaiDatPage()));
+                AddMenuButton("🏅 Thành Tựu", (s, e) => LoadPage(Program.ServiceProvider!.GetRequiredService <AchievementsPage>()));
+                AddMenuButton("📋 Nhiệm Vụ", (s, e) => LoadPage(Program.ServiceProvider!.GetRequiredService<TaskPage>()));
+                                                                        
                 AddMenuButton("🚪 Đăng xuất", BtnDangXuat_Click);
             }
         }
@@ -93,75 +92,7 @@ namespace WinForms.Forms
             contentPanel.ResumeLayout(true);
             page.PerformLayout();
         }
-
-        private void ShowSuggestedUsers()
-        {
-            splitContainer2.Panel2.Controls.Clear();
-
-            var suggested = new SuggestedUsersControl();
-            suggested.Dock = DockStyle.Fill;
-
-            splitContainer2.Panel2.Controls.Add(suggested);
-        }
-
-        // ✅ THÊM:  Khởi tạo NotificationBadge (Icon chuông)
-        private void InitializeNotificationBadge()
-        {
-            if (Program.ServiceProvider == null) return;
-
-            try
-            {
-                var notificationService = Program.ServiceProvider.GetRequiredService<INotificationService>();
-
-                _notificationBadge = new NotificationBadge(
-                    notificationService,
-                    Program.ServiceProvider
-                )
-                {
-                    Location = new Point(this.Width - 80, 10),
-                    Anchor = AnchorStyles.Top | AnchorStyles.Right
-                };
-
-                this.Controls.Add(_notificationBadge);
-                _notificationBadge.BringToFront();
-            }
-            catch
-            {
-                // Nếu chưa đăng ký service thì bỏ qua
-            }
-        }
-
-        // ✅ THÊM:  Sự kiện click nút Mạng xã hội
-        private void BtnMangXaHoi_Click(object? sender, EventArgs e)
-        {
-            if (Program.ServiceProvider == null) return;
-
-            try
-            {
-                var postService = Program.ServiceProvider.GetRequiredService<IPostService>();
-                var reactionService = Program.ServiceProvider.GetRequiredService<IReactionService>();
-                var commentService = Program.ServiceProvider.GetRequiredService<ICommentService>();
-
-                var newsfeedControl = new NewsfeedControl(
-                    postService,
-                    reactionService,
-                    commentService,
-                    Program.ServiceProvider
-                );
-
-                LoadPage(newsfeedControl);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(
-                    $"Không thể tải trang mạng xã hội.\n\nChi tiết:  {ex.Message}",
-                    "Lỗi",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error
-                );
-            }
-        }
-
+        
         // ================= EVENTS =================
         private void BtnDangNhap_Click(object? sender, EventArgs e)
         {
@@ -172,8 +103,6 @@ namespace WinForms.Forms
             loginPage.DangNhapThanhCong += () =>
             {
                 RenderMenu();
-                ShowSuggestedUsers();
-                InitializeNotificationBadge(); // ✅ THÊM: Hiển thị chuông sau khi đăng nhập
 
                 LoadPage(Program.ServiceProvider.GetRequiredService<TrangChuPage>());
             };

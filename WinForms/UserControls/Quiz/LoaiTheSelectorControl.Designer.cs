@@ -30,7 +30,6 @@
         {
             lbl1 = new Label();
             btnTracNghiem = new Button();
-            btnLatThe = new Button();
             btnDienKhuyet = new Button();
             btnGhepCap = new Button();
             btnSapXep = new Button();
@@ -64,23 +63,6 @@
             btnTracNghiem.Text = "TRẮC NGHIỆM";
             btnTracNghiem.UseVisualStyleBackColor = false;
             // 
-            // btnLatThe
-            // 
-            btnLatThe.BackColor = Color.Gold;
-            btnLatThe.Cursor = Cursors.Hand;
-            btnLatThe.FlatAppearance.BorderSize = 0;
-            btnLatThe.FlatAppearance.MouseDownBackColor = Color.FromArgb(224, 224, 224);
-            btnLatThe.FlatAppearance.MouseOverBackColor = Color.FromArgb(245, 245, 245);
-            btnLatThe.FlatStyle = FlatStyle.Flat;
-            btnLatThe.Font = new Font("Segoe UI Semibold", 12F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            btnLatThe.ForeColor = Color.FromArgb(13, 56, 56);
-            btnLatThe.Location = new Point(571, 124);
-            btnLatThe.Name = "btnLatThe";
-            btnLatThe.Size = new Size(228, 52);
-            btnLatThe.TabIndex = 5;
-            btnLatThe.Text = "LẬT THẺ";
-            btnLatThe.UseVisualStyleBackColor = false;
-            // 
             // btnDienKhuyet
             // 
             btnDienKhuyet.BackColor = Color.Gold;
@@ -91,7 +73,7 @@
             btnDienKhuyet.FlatStyle = FlatStyle.Flat;
             btnDienKhuyet.Font = new Font("Segoe UI Semibold", 12F, FontStyle.Bold, GraphicsUnit.Point, 0);
             btnDienKhuyet.ForeColor = Color.FromArgb(13, 56, 56);
-            btnDienKhuyet.Location = new Point(197, 212);
+            btnDienKhuyet.Location = new Point(571, 115);
             btnDienKhuyet.Name = "btnDienKhuyet";
             btnDienKhuyet.Size = new Size(228, 52);
             btnDienKhuyet.TabIndex = 6;
@@ -125,7 +107,7 @@
             btnSapXep.FlatStyle = FlatStyle.Flat;
             btnSapXep.Font = new Font("Segoe UI Semibold", 12F, FontStyle.Bold, GraphicsUnit.Point, 0);
             btnSapXep.ForeColor = Color.FromArgb(13, 56, 56);
-            btnSapXep.Location = new Point(197, 313);
+            btnSapXep.Location = new Point(197, 212);
             btnSapXep.Name = "btnSapXep";
             btnSapXep.Size = new Size(228, 52);
             btnSapXep.TabIndex = 8;
@@ -139,7 +121,6 @@
             Controls.Add(btnSapXep);
             Controls.Add(btnGhepCap);
             Controls.Add(btnDienKhuyet);
-            Controls.Add(btnLatThe);
             Controls.Add(btnTracNghiem);
             Controls.Add(lbl1);
             Name = "LoaiTheSelectorControl";
@@ -152,7 +133,6 @@
 
         private Label lbl1;
         private Button btnTracNghiem;
-        private Button btnLatThe;
         private Button btnDienKhuyet;
         private Button btnGhepCap;
         private Button btnSapXep;

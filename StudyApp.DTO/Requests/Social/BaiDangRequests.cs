@@ -3,9 +3,7 @@ using StudyApp.DTO.Enums;
 
 namespace StudyApp.DTO.Requests.Social
 {
-    /// <summary>
     /// Request tạo bài đăng
-    /// </summary>
     public class TaoBaiDangRequest
     {
         public Guid MaNguoiDung { get; set; }
@@ -27,9 +25,7 @@ namespace StudyApp.DTO.Requests.Social
         public QuyenRiengTuEnum QuyenRiengTu { get; set; } = QuyenRiengTuEnum.CongKhai;
     }
 
-    /// <summary>
     /// Request chỉnh sửa bài đăng
-    /// </summary>
     public class CapNhatBaiDangRequest
     {
         public string? NoiDung { get; set; }
@@ -42,11 +38,20 @@ namespace StudyApp.DTO.Requests.Social
         public bool TatBinhLuan { get; set; }
     }
 
-    /// <summary>
     /// Request ghim / bỏ ghim bài đăng
-    /// </summary>
     public class GhimBaiDangRequest
     {
         public bool GhimBaiDang { get; set; }
+    }
+    /// Request chia sẻ bài đăng
+    public class ChiaSeBaiDangRequest
+    {
+        public int MaBaiDangGoc { get; set; }
+
+        public Guid MaNguoiChiaSe { get; set; }
+
+        public string? NoiDungThem { get; set; }
+
+        public QuyenRiengTuEnum QuyenRiengTu { get; set; } = QuyenRiengTuEnum.CongKhai;
     }
 }

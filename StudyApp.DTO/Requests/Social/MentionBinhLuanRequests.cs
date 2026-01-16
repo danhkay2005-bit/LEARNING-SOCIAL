@@ -17,4 +17,22 @@ namespace StudyApp.DTO.Requests.Social
     {
         public Guid MaNguoiDung { get; set; }
     }
+
+    /// <summary>
+    /// Request thêm mention vào bình luận
+    /// </summary>
+    public class ThemMentionBinhLuanRequest
+    {
+        public int MaBinhLuan { get; set; }
+        public Guid MaNguoiDuocMention { get; set; }
+    }
+
+    /// <summary>
+    /// Request xóa mention khỏi bình luận
+    /// </summary>
+    public class XoaMentionBinhLuanRequest
+    {
+        public int MaBinhLuan { get; set; }
+        public Guid MaNguoiDuocMention { get; set; }
+    }
 }
