@@ -13,7 +13,7 @@ public class AuthService(UserDbContext _context, IMapper _mapper) : IAuthService
 {
     public async Task<(LoginResult Result, NguoiDungDTO? User)> LoginAsync(DangNhapRequest request)
     {
-        var user = await _context.NguoiDungs
+        /*var user = await _context.NguoiDungs
             .AsNoTracking()
             .FirstOrDefaultAsync(u =>
                 u.TenDangNhap == request.TenDangNhap &&
@@ -31,12 +31,36 @@ public class AuthService(UserDbContext _context, IMapper _mapper) : IAuthService
         }
 
         var userDto = _mapper.Map<NguoiDungDTO>(user);
+        return (LoginResult.Success, userDto);*/
+        var user = await _context.NguoiDungs
+        .AsNoTracking()
+        .FirstOrDefaultAsync(u =>
+            u.TenDangNhap == request.TenDangNhap &&
+            (u.DaXoa ?? false) == false);
+
+        if (user == null)
+        {
+            return (LoginResult.UserNotFound, null);
+        }
+
+        // --- THAY ĐỔI Ở ĐÂY ---
+        // 1. Mã hóa cái mật khẩu người dùng vừa nhập vào
+        string inputHash = StudyApp.BLL.Helpers.SecurityHelper.HashPassword(request.MatKhau) ?? string.Empty;
+
+        // 2. So sánh 2 chuỗi đã mã hóa với nhau
+        if (user.MatKhauMaHoa != inputHash)
+        {
+            return (LoginResult.InvalidCredentials, null);
+        }
+        // ----------------------
+
+        var userDto = _mapper.Map<NguoiDungDTO>(user);
         return (LoginResult.Success, userDto);
     }
 
     public async Task<RegisterResult> RegisterAsync(DangKyNguoiDungRequest request)
     {
-        if (await _context.NguoiDungs.AnyAsync(u => u.TenDangNhap == request.TenDangNhap))
+        /*if (await _context.NguoiDungs.AnyAsync(u => u.TenDangNhap == request.TenDangNhap))
         {
             return RegisterResult.UsernameExists;
         }
@@ -72,19 +96,76 @@ public class AuthService(UserDbContext _context, IMapper _mapper) : IAuthService
         _context.NguoiDungs.Add(newUser);
         await _context.SaveChangesAsync();
 
+        return RegisterResult.Success;*/
+        if (await _context.NguoiDungs.AnyAsync(u => u.TenDangNhap == request.TenDangNhap))
+        {
+            return RegisterResult.UsernameExists;
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.Email))
+        {
+            if (await _context.NguoiDungs.AnyAsync(u => u.Email == request.Email))
+            {
+                return RegisterResult.EmailExists;
+            }
+        }
+
+        // --- THAY ĐỔI Ở ĐÂY ---
+        // Mã hóa mật khẩu trước khi tạo đối tượng
+        string passwordHash = StudyApp.BLL.Helpers.SecurityHelper.HashPassword(request.MatKhau) ?? string.Empty;
+
+        var newUser = new DAL.Entities.User.NguoiDung
+        {
+            MaNguoiDung = Guid.NewGuid(),
+            TenDangNhap = request.TenDangNhap,
+
+            MatKhauMaHoa = passwordHash, // <--- Lưu mật khẩu đã mã hóa
+
+            Email = request.Email,
+            SoDienThoai = request.SoDienThoai,
+            HoVaTen = request.HoVaTen,
+            NgaySinh = request.NgaySinh,
+            GioiTinh = request.GioiTinh.HasValue ? (byte?)request.GioiTinh.Value : null,
+            MaVaiTro = 2,
+            MaCapDo = 1,
+            Vang = 100,
+            KimCuong = 5,
+            ChuoiNgayHocLienTiep = 0,
+            SoStreakFreeze = 2,
+            ThoiGianTao = DateTime.Now,
+            DaXoa = false
+        };
+        // ----------------------
+
+        _context.NguoiDungs.Add(newUser);
+        await _context.SaveChangesAsync();
+
         return RegisterResult.Success;
     }
 
     public async Task<ResetPasswordResult> ResetPasswordAsync(string email, string newPassword)
     {
+        /* var user = await _context.NguoiDungs.FirstOrDefaultAsync(u => u.Email == email);
+         if (user == null)
+         {
+             return ResetPasswordResult.EmailNotFound;
+         }
+
+         // TODO: Hash new password
+         user.MatKhauMaHoa = newPassword;
+
+         await _context.SaveChangesAsync();
+         return ResetPasswordResult.Success;*/
         var user = await _context.NguoiDungs.FirstOrDefaultAsync(u => u.Email == email);
         if (user == null)
         {
             return ResetPasswordResult.EmailNotFound;
         }
 
-        // TODO: Hash new password
-        user.MatKhauMaHoa = newPassword;
+        // --- THAY ĐỔI Ở ĐÂY ---
+        // Mã hóa mật khẩu mới
+        user.MatKhauMaHoa = StudyApp.BLL.Helpers.SecurityHelper.HashPassword(newPassword) ?? string.Empty;
+        // ----------------------
 
         await _context.SaveChangesAsync();
         return ResetPasswordResult.Success;
