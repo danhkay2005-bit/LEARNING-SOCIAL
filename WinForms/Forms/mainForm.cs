@@ -43,7 +43,11 @@ namespace WinForms.Forms
             }
             else
             {
-                AddMenuButton("🏠 Trang chủ", (s, e) => LoadPage(Program.ServiceProvider.GetRequiredService<TrangChuPage>()));
+                AddMenuButton("🏠 Trang chủ", (s, e) => 
+                {
+                    if (Program.ServiceProvider == null) return;
+                    LoadPage(Program.ServiceProvider.GetRequiredService<TrangChuPage>());
+                });
                 AddMenuButton("👤 Thông tin cá nhân", (s, e) => LoadPage(new ThongTinCaNhanPage()));
                 AddMenuButton("📚 Học tập", (s, e) => LoadPage(new HocTapPage()));
 

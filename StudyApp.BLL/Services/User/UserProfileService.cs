@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using StudyApp.BLL.Interfaces.User;
 using StudyApp.DAL.Data;
+using StudyApp.DAL.Entities.User;
 using StudyApp.DTO.Requests.User;
 using StudyApp.DTO.Responses.User;
 using System;
@@ -60,6 +61,34 @@ public class UserProfileService(UserDbContext _context, IMapper _mapper) : IUser
         return await _context.SaveChangesAsync() > 0;
     }
 
+    public async Task<List<NguoiDungResponse>> TimKiemNguoiDungAsync(string keyword)
+    {
+        // ✅ THÊM: Debug log
+        System.Diagnostics.Debug.WriteLine($"🔍 TimKiemNguoiDungAsync được gọi với keyword: '{keyword}'");
+
+        if (string.IsNullOrWhiteSpace(keyword))
+        {
+            System.Diagnostics.Debug.WriteLine("⚠️ Keyword rỗng, return empty list");
+            return new List<NguoiDungResponse>();
+        }
+
+        var users = await _context.Set<NguoiDung>()
+            .Where(u =>
+                (u.HoVaTen != null && u.HoVaTen.Contains(keyword)) ||
+                (u.Email != null && u.Email.Contains(keyword))
+            )
+            .Take(10)
+            .ToListAsync();
+
+        // ✅ THÊM: Debug log kết quả
+        System.Diagnostics.Debug.WriteLine($"✅ Tìm thấy {users.Count} users");
+        foreach (var u in users)
+        {
+            System.Diagnostics.Debug.WriteLine($"   - {u.HoVaTen} ({u.Email})");
+        }
+
+        return _mapper.Map<List<NguoiDungResponse>>(users);
+    }
     public async Task<bool> ChangePasswordAsync(Guid userId, string oldPass, string newPass)
     {
         var user = await _context.NguoiDungs.FindAsync(userId);
