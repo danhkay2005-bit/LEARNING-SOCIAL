@@ -3,7 +3,8 @@ using StudyApp.DAL.Entities.Social;
 using StudyApp.DTO.Enums;  // ✅ Chỉ cần 1 using này
 using StudyApp.DTO.Responses.Social;
 using System;
-
+using System.Collections.Generic;
+using System.Threading.Tasks;
 namespace StudyApp.BLL.Mappings.Social
 {
     public class ThongBaoProfile : Profile

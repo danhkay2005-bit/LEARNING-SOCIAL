@@ -62,6 +62,10 @@ namespace StudyApp.BLL.Mappings.Learn
                 .ForMember(dest => dest.SoLuotChiaSe, opt => opt.Ignore())
                 .ForMember(dest => dest.DaXoa, opt => opt.Ignore())
                 .ForMember(dest => dest.ThoiGianTao, opt => opt.Ignore());
+
+            CreateMap<LichSuThachDau, LichSuThachDauResponse>()
+                .ForMember(dest => dest.TenBoDe, opt => opt.MapFrom(src => src.MaBoDeNavigation.TieuDe))
+                .ForMember(dest => dest.AnhBiaBoDe, opt => opt.MapFrom(src => src.MaBoDeNavigation.AnhBia));
         }
     }
 }

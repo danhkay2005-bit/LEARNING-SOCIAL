@@ -5,6 +5,7 @@ namespace StudyApp.DAL.Entities.Learn;
 
 public partial class ThachDau
 {
+    
     public int MaThachDau { get; set; }
 
     public int MaBoDe { get; set; }

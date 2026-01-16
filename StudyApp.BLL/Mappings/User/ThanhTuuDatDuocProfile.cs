@@ -12,10 +12,8 @@ namespace StudyApp.BLL.Mappings.User
             // ENTITY → RESPONSE
             // =========================
             CreateMap<ThanhTuuDatDuoc, ThanhTuuDatDuocResponse>()
-                .ForMember(d => d.DaXem,
-                    o => o.MapFrom(s => s.DaXem ?? false))
-                .ForMember(d => d.DaChiaSe,
-                    o => o.MapFrom(s => s.DaChiaSe ?? false));
+                .ForMember(d => d.NgayDat, o => o.MapFrom(s => s.NgayDat))
+                .ForMember(d => d.DaXem, o => o.MapFrom(s => s.DaXem ?? false));
         }
     }
 }

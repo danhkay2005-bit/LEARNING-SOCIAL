@@ -1,13 +1,16 @@
+using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using StudyApp.BLL;
+using StudyApp.BLL.Interfaces.Learn;
 using StudyApp.BLL.Mappings.Learn;
 using StudyApp.DAL.Data;
 using System;
 using System.IO;
 using System.Windows.Forms;
 using WinForms.Forms;
+using WinForms.Services; // Namespace chứa WinFormsThachDauNotifier
 
 namespace WinForms
 {
@@ -27,7 +30,7 @@ namespace WinForms
             // 2. Thiết lập DI Container
             var services = new ServiceCollection();
 
-            // --- Đăng ký DbContext ---
+            // --- Cấu hình Database (Kết nối trực tiếp từ WinForms) ---
             services.AddDbContext<LearningDbContext>(options =>
                 options.UseSqlServer(configuration.GetConnectionString("LearningDb")));
             services.AddDbContext<UserDbContext>(options =>
@@ -35,28 +38,43 @@ namespace WinForms
             services.AddDbContext<SocialDbContext>(options =>
                 options.UseSqlServer(configuration.GetConnectionString("SocialDb")));
 
-            // --- Đăng ký AutoMapper (Quét tự động các Profile) ---
+            // --- Đăng ký SignalR CLIENT (Dùng Singleton để giữ kết nối) ---
+            services.AddSingleton<HubConnection>(sp =>
+            {
+                // Lấy URL từ cấu hình, mặc định là port 7001 của dự án API
+                var hubUrl = configuration["SignalR:HubUrl"] ?? "https://localhost:7001/thachDauHub";
+
+                return new HubConnectionBuilder()
+                    .WithUrl(hubUrl)
+                    .WithAutomaticReconnect() // Tự động kết nối lại khi mất mạng
+                    .Build();
+            });
+
+            // --- Đăng ký Notifier bản rỗng cho WinForms ---
+            // Giúp ThachDauService khởi tạo thành công mà không báo lỗi IHubContext
+            services.AddSingleton<IThachDauNotifier, WinFormsThachDauNotifier>();
+
+            // --- Đăng ký AutoMapper ---
             services.AddAutoMapper(typeof(BoDeHocProfile).Assembly);
 
-            // --- Đăng ký BLL Services (Sử dụng Scrutor trong Extension Method) ---
+            // --- Đăng ký các Business Services từ tầng BLL ---
             services.AddBusinessServices();
 
-            // --- Tự động đăng ký tất cả các Form có trong Project WinForms ---
-            // Thay vì gõ từng cái, Scrutor sẽ đăng ký tất cả lớp kế thừa từ 'Form'
+            // --- Tự động đăng ký tất cả các Form và UserControl ---
             services.Scan(scan => scan
                 .FromAssemblyOf<MainForm>()
-                .AddClasses(classes => classes.AssignableToAny(typeof(Form), typeof(UserControl))) // Quét cả Form và UserControl
+                .AddClasses(classes => classes.AssignableToAny(typeof(Form), typeof(UserControl)))
                 .AsSelf()
                 .WithTransientLifetime());
 
             // 3. Build Provider
             ServiceProvider = services.BuildServiceProvider();
 
-            // 4. Khởi chạy ứng dụng
+            // 4. Khởi chạy ứng dụng WinForms
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
-            // Lấy MainForm ra từ DI và chạy
+            // Lấy MainForm từ DI Container và chạy
             var mainForm = ServiceProvider.GetRequiredService<MainForm>();
             Application.Run(mainForm);
         }
