@@ -45,10 +45,9 @@ namespace WinForms.Forms
                 });
                 AddMenuButton("👤 Thông tin cá nhân", (s, e) => LoadPage(new ThongTinCaNhanPage()));
                 AddMenuButton("📚 Học tập", (s, e) => LoadPage(Program.ServiceProvider!.GetRequiredService<HocTapPage>()));
-                AddMenuButton("📚 Học tập", (s, e) => LoadPage(new HocTapPage()));
 
                 // ✅ THÊM: Nút Mạng xã hội
-                AddMenuButton("🌐 Mạng xã hội", BtnMangXaHoi_Click);
+                AddMenuButton("🌐 Mạng xã hội", (s,e) => LoadPage(Program.ServiceProvider!.GetRequiredService<NewsfeedControl>()));
 
                 AddMenuButton("🛒 Cửa hàng", (s, e) => LoadPage(new CuaHangPage()));
                 AddMenuButton("⚙️ Cài đặt", (s, e) => LoadPage(new CaiDatPage()));
