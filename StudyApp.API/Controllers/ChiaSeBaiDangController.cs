@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using StudyApp.BLL.Interfaces.Social;
 using StudyApp.DTO.Requests.Social;
 using System;
+using System.Reflection.PortableExecutable;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
@@ -44,11 +45,13 @@ namespace StudyApp.API.Controllers
         /// Lấy danh sách chia sẻ của bài đăng
         /// </summary>
         [HttpGet("bai-dang/{maBaiDang}")]
-        public async Task<IActionResult> GetDanhSachChiaSeByBaiDang(int maBaiDang)
+        [AllowAnonymous]
+       
+            public async Task<IActionResult> GetDanhSachChiaSeByBaiDang(int maBaiDang)
         {
             try
             {
-                var result = await _chiaSeBaiDangService.GetDanhSachChiaSeByBaiDangAsync(maBaiDang);
+                var result = await _chiaSeBaiDangService.LayDanhSachChiaSeTheoMaBaiDangAsync( maBaiDang);
                 return Ok(new { success = true, data = result });
             }
             catch (Exception ex)
@@ -72,7 +75,7 @@ namespace StudyApp.API.Controllers
                     MaNguoiDung = maNguoiDung
                 };
 
-                var result = await _chiaSeBaiDangService.KiemTraChiaSeAsync(request);
+                var result = await _chiaSeBaiDangService.LayThongKeChiaSeAsync(maBaiDang);
                 return Ok(new { success = true, data = result });
             }
             catch (Exception ex)
@@ -89,7 +92,7 @@ namespace StudyApp.API.Controllers
         {
             try
             {
-                var result = await _chiaSeBaiDangService.LayThongKeChiaSeAsync(maBaiDang);
+                var result = await _chiaSeBaiDangService.LayChiTietChiaSeAsync (maBaiDang);
                 return Ok(new { success = true, data = result });
             }
             catch (Exception ex)
@@ -107,7 +110,7 @@ namespace StudyApp.API.Controllers
             try
             {
                 var maNguoiDung = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-                var result = await _chiaSeBaiDangService.LayDanhSachBaiDangDaChiaSeAsync(maNguoiDung, skip, take);
+                var result = await _chiaSeBaiDangService.LayDanhSachChiaSeTheoNguoiDungAsync(maNguoiDung);
                 return Ok(new { success = true, data = result });
             }
             catch (Exception ex)

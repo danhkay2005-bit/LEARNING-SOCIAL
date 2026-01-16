@@ -31,3 +31,4 @@ namespace StudyApp.BLL.Mappings.Social
         }
     }
 }
+
