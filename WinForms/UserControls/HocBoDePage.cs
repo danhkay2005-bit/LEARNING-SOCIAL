@@ -47,7 +47,6 @@ namespace WinForms.UserControls
 
             if (_data.DanhSachCauHoi.Count == 0) { ShowFeed("Hôm nay đã hết bài tập!", Color.Lime); return; }
 
-            // --- FIX LỖI 125%: Thiết lập Maximum bằng tổng số câu hỏi ---
             prgStatus.Minimum = 0;
             prgStatus.Maximum = _data.DanhSachCauHoi.Count;
             // -----------------------------------------------------------
