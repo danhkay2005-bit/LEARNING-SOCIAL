@@ -1,4 +1,5 @@
 ﻿using WinForms.Forms.Social;
+using WinForms.Forms; // ✅ THÊM
 using StudyApp.BLL.Interfaces.User; // ✅ THÊM
 using StudyApp.BLL.Interfaces.Social;
 using StudyApp.DTO;
@@ -362,7 +363,8 @@ namespace WinForms.UserControls.Social
             btnViewProfile.FlatAppearance.BorderSize = 0;
             btnViewProfile.Click += (s, e) =>
             {
-                MessageBox.Show($"Xem profile: {user.HoVaTen}\nMã: {user.MaNguoiDung}", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                // ✅ MỞ TRANG PROFILE
+                OpenUserProfile(user.MaNguoiDung);
             };
 
             pnlUser.Controls.Add(pbAvatar);
@@ -371,6 +373,30 @@ namespace WinForms.UserControls.Social
             pnlUser.Controls.Add(btnViewProfile);
 
             return pnlUser;
+        }
+
+        /// <summary>
+        /// 📄 Mở trang profile người dùng
+        /// </summary>
+        private void OpenUserProfile(Guid userId)
+        {
+            if (_serviceProvider == null) return;
+
+            try
+            {
+                var profilePage = new UserProfilePage(userId, _serviceProvider);
+
+                // Tìm MainForm để load page
+                var mainForm = this.FindForm();
+                if (mainForm is MainForm mf)
+                {
+                    mf.LoadPage(profilePage);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi mở trang profile: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         // CÁC METHOD CŨ (GIỮ NGUYÊN)

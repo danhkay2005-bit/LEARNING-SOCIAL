@@ -45,16 +45,27 @@ namespace WinForms.Forms
                     LoadPage(Program.ServiceProvider.GetRequiredService<TrangChuPage>());
                 });
                 AddMenuButton("👤 Thông tin cá nhân", (s, e) => LoadPage(new ThongTinCaNhanPage()));
-                AddMenuButton("📚 Học tập", (s, e) => LoadPage(Program.ServiceProvider!.GetRequiredService<HocTapPage>()));
+                AddMenuButton("📚 Học tập", (s, e) => 
+                {
+                    if (Program.ServiceProvider == null) return;
+                    LoadPage(Program.ServiceProvider.GetRequiredService<HocTapPage>());
+                });
 
-                // ✅ THÊM: Nút Mạng xã hội
-                AddMenuButton("🌐 Mạng xã hội", (s,e) => LoadPage(Program.ServiceProvider!.GetRequiredService<NewsfeedControl>()));
+                AddMenuButton("🌐 Mạng xã hội", BtnMangXaHoi_Click);
 
                 AddMenuButton("🛒 Cửa hàng", (s, e) => LoadPage(Program.ServiceProvider!.GetRequiredService<CuaHangPage>()));
                 AddMenuButton("Kho vật phẩm", (s, e) => LoadPage(Program.ServiceProvider!.GetRequiredService<KhoVatPhamPage>()));
                 AddMenuButton("⚙️ Cài đặt", (s, e) => LoadPage(new CaiDatPage()));
-                AddMenuButton("🏅 Thành Tựu", (s, e) => LoadPage(Program.ServiceProvider!.GetRequiredService <AchievementsPage>()));
-                AddMenuButton("📋 Nhiệm Vụ", (s, e) => LoadPage(Program.ServiceProvider!.GetRequiredService<TaskPage>()));
+                AddMenuButton("🏅 Thành Tựu", (s, e) => 
+                {
+                    if (Program.ServiceProvider == null) return;
+                    LoadPage(Program.ServiceProvider.GetRequiredService<AchievementsPage>());
+                });
+                AddMenuButton("📋 Nhiệm Vụ", (s, e) => 
+                {
+                    if (Program.ServiceProvider == null) return;
+                    LoadPage(Program.ServiceProvider.GetRequiredService<TaskPage>());
+                });
                                                                         
                 AddMenuButton("🚪 Đăng xuất", BtnDangXuat_Click);
             }
@@ -146,6 +157,36 @@ namespace WinForms.Forms
             };
 
             LoadPage(loginPage);
+        }
+
+        private void BtnMangXaHoi_Click(object? sender, EventArgs e)
+        {
+            if (Program.ServiceProvider == null) return;
+
+            try
+            {
+                var postService = Program.ServiceProvider.GetRequiredService<IPostService>();
+                var reactionService = Program.ServiceProvider.GetRequiredService<IReactionService>();
+                var commentService = Program.ServiceProvider.GetRequiredService<ICommentService>();
+
+                var newsfeedControl = new NewsfeedControl(
+                    postService,
+                    reactionService,
+                    commentService,
+                    Program.ServiceProvider
+                );
+
+                LoadPage(newsfeedControl);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    $"Không thể tải trang mạng xã hội.\n\nChi tiết: {ex.Message}",
+                    "Lỗi",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error
+                );
+            }
         }
 
         private void BtnDangXuat_Click(object? sender, EventArgs e)
