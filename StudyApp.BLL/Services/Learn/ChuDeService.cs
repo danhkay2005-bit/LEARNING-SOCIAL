@@ -57,5 +57,20 @@ namespace StudyApp.BLL.Services.Learn
             _context.ChuDes.Remove(item);
             return await _context.SaveChangesAsync() > 0;
         }
+
+        public async Task<IEnumerable<BoDeHocResponse>> GetByFilterAsync(int maChuDe)
+        {
+            // Sử dụng AsQueryable để tối ưu truy vấn LINQ
+            var query = _context.BoDeHocs.AsQueryable();
+
+            // Nếu maChuDe > 0 thì lọc, nếu = 0 (Tất cả) thì bỏ qua Where
+            if (maChuDe > 0)
+            {
+                query = query.Where(b => b.MaChuDe == maChuDe);
+            }
+
+            var result = await query.OrderByDescending(x => x.ThoiGianTao).ToListAsync();
+            return _mapper.Map<IEnumerable<BoDeHocResponse>>(result);
+        }
     }
 }

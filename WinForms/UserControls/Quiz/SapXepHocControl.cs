@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Windows.Forms;
 
 namespace WinForms.UserControls.Quiz
@@ -80,12 +81,29 @@ namespace WinForms.UserControls.Quiz
 
         public void ShowResult()
         {
-            // Ghép các từ trong flpResult lại thành câu
-            var userWords = flpResult.Controls.Cast<Button>().Select(b => b.Text);
+            // 1. Lấy danh sách từ, Trim từng từ để loại bỏ khoảng trắng thừa trong nút
+            var userWords = flpResult.Controls.Cast<Button>()
+                                     .Select(b => b.Text.Trim())
+                                     .Where(t => !string.IsNullOrEmpty(t));
+
+            // 2. Ghép lại thành câu
             string userSentence = string.Join(" ", userWords);
 
-            // So sánh (không phân biệt hoa thường và khoảng trắng thừa)
-            IsCorrect = string.Equals(userSentence.Trim(), _correctSentence.Trim(), StringComparison.OrdinalIgnoreCase);
+            // 3. Hàm chuẩn hóa chuỗi: 
+            // - Xóa khoảng trắng đầu/cuối.
+            // - Thay thế các cụm khoảng trắng ở giữa (2-3 dấu cách, tab...) bằng 1 dấu cách duy nhất.
+            string Normalize(string input)
+            {
+                if (string.IsNullOrWhiteSpace(input)) return "";
+                string trimmed = input.Trim();
+                return Regex.Replace(trimmed, @"\s+", " ");
+            }
+
+            string finalUser = Normalize(userSentence);
+            string finalCorrect = Normalize(_correctSentence);
+
+            // 4. So sánh
+            IsCorrect = string.Equals(finalUser, finalCorrect, StringComparison.OrdinalIgnoreCase);
 
             // Hiển thị màu sắc feedback
             foreach (Button btn in flpResult.Controls)
@@ -94,6 +112,10 @@ namespace WinForms.UserControls.Quiz
                 btn.BackColor = IsCorrect ? Color.FromArgb(46, 125, 50) : Color.FromArgb(183, 28, 28);
             }
             flpBank.Enabled = false;
+
+            // Debug (Tùy chọn): In ra để kiểm tra nếu vẫn sai
+            // Console.WriteLine($"User: '{finalUser}'");
+            // Console.WriteLine($"Correct: '{finalCorrect}'");
         }
     }
 }

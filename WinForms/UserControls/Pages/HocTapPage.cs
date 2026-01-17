@@ -2,7 +2,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using StudyApp.BLL.Interfaces.Learn;
 using StudyApp.DTO;
-using StudyApp.DTO.Enums;
 using StudyApp.DTO.Requests.Learn;
 using StudyApp.DTO.Responses.Learn;
 using System;
@@ -19,109 +18,222 @@ namespace WinForms.UserControls.Pages
     {
         private readonly IBoDeHocService _boDeHocService;
         private readonly IThachDauService _thachDauService;
-        private readonly HubConnection _hubConnection; // Kết nối SignalR dùng chung
+        private readonly IChuDeService _chuDeService;
+        private readonly HubConnection _hubConnection;
 
-        public HocTapPage(IBoDeHocService boDeHocService, IThachDauService thachDauService, HubConnection hubConnection)
+        private const int PAGE_SIZE = 4; // Số lượng hiển thị mỗi lần
+        private bool _isDataLoading = false;
+
+        // --- QUẢN LÝ DỮ LIỆU PHÂN TRANG: BỘ ĐỀ CỦA TÔI ---
+        private List<BoDeHocResponse> _allMyQuizzes = new List<BoDeHocResponse>();
+        private int _myCurrentPage = 0;
+
+        // --- QUẢN LÝ DỮ LIỆU PHÂN TRANG: BỘ ĐỀ CÔNG KHAI ---
+        private List<BoDeHocResponse> _allPublicQuizzes = new List<BoDeHocResponse>();
+        private int _publicCurrentPage = 0;
+
+        public HocTapPage(
+            IBoDeHocService boDeHocService,
+            IThachDauService thachDauService,
+            IChuDeService chuDeService,
+            HubConnection hubConnection)
         {
             InitializeComponent();
             _boDeHocService = boDeHocService;
             _thachDauService = thachDauService;
-            _hubConnection = hubConnection; // Nhận kết nối Singleton từ DI
+            _chuDeService = chuDeService;
+            _hubConnection = hubConnection;
+            this.pnlMainContent.Resize += PnlMainContent_Resize;
 
             this.Load += HocTapPage_Load;
+            cbbLocChuDe.SelectedIndexChanged += cbbLocChuDe_SelectedIndexChanged;
+
+            TaoQuiz();
+            HandleThamGia();
+
+            // Đăng ký sự kiện điều hướng cho "Bộ đề của tôi"
+            btnNextMy.Click += (s, e) => ChangeMyPage(1);
+            btnPrevMy.Click += (s, e) => ChangeMyPage(-1);
+
+            // Đăng ký sự kiện điều hướng cho "Bộ đề công khai"
+            btnNextPublic.Click += (s, e) => ChangePublicPage(1);
+            btnPrevPublic.Click += (s, e) => ChangePublicPage(-1);
+
+            SetDoubleBuffered(pnlMainContent);
+            SetDoubleBuffered(flowBoDeCuaToi);
+            SetDoubleBuffered(flowBoDeCongKhai);
+
+        }
+
+        private void TaoQuiz()
+        {
+            this.btnTaoQuiz.Click += (s, e) =>
+            {
+                var mainForm = this.ParentForm as MainForm;
+                if (mainForm != null && Program.ServiceProvider != null)
+                {
+                    var taoBoDePage = Program.ServiceProvider.GetRequiredService<TaoQuizPage>();
+                    mainForm.LoadPage(taoBoDePage);
+                }
+            };
+        }
+
+        private void PnlMainContent_Resize(object? sender, EventArgs e)
+        {
+            // Tính toán chiều rộng khả dụng (trừ đi Padding và khoảng cách Scrollbar)
+            int targetWidth = pnlMainContent.ClientSize.Width - pnlMainContent.Padding.Left - pnlMainContent.Padding.Right - 20;
+
+            // Ép các thành phần chính giãn theo chiều rộng này
+            pnlHeader.Width = targetWidth;
+            lblMyQuizzes.Width = targetWidth;
+            flowBoDeCuaToi.Width = targetWidth;
+            pnlFilterContainer.Width = targetWidth;
+            lblPublicQuizzes.Width = targetWidth;
+            flowBoDeCongKhai.Width = targetWidth;
         }
 
         private async void HocTapPage_Load(object? sender, EventArgs e)
         {
-            await Task.WhenAll(
-                LoadMyQuizzesAsync(),
-                LoadPublicQuizzesAsync(),
-                LoadTopicQuizzesAsync()
-            );
-        }
-
-        // ======================================================
-        // LOGIC THAM GIA THÁCH ĐẤU (NHẬP MÃ PIN)
-        // ======================================================
-        private async void btnThamGia_Click(object? sender, EventArgs e)
-        {
-            string pinInput = Microsoft.VisualBasic.Interaction.InputBox("Nhập mã PIN 6 số:", "THAM GIA", "");
-            if (string.IsNullOrWhiteSpace(pinInput) || pinInput.Length != 6 || !int.TryParse(pinInput, out int pin)) return;
-            if (UserSession.CurrentUser == null)
-            {
-                MessageBox.Show("Bạn cần đăng nhập để tham gia thách đấu.");
-                return;
-            }
             try
             {
-                var joinReq = new ThamGiaThachDauRequest { MaThachDau = pin, MaNguoiDung = UserSession.CurrentUser.MaNguoiDung };
-                bool isJoined = await _thachDauService.ThamGiaThachDauAsync(joinReq);
+                _isDataLoading = true;
+                await LoadFilterCategoriesAsync();
 
-                if (isJoined)
+                // Tải dữ liệu cá nhân trước
+                await LoadMyQuizzesAsync();
+
+                _isDataLoading = false;
+                // Sau đó mới tải dữ liệu công khai dựa trên ComboBox
+                if (cbbLocChuDe.SelectedValue is int maChuDe)
                 {
-                    var room = await _thachDauService.GetByIdAsync(pin);
-                    if (room == null)
-                    {
-                        MessageBox.Show("Không tìm thấy thông tin phòng thách đấu.");
-                        return;
-                    }
-                    var mainForm = this.ParentForm as MainForm;
-                    if (mainForm != null && Program.ServiceProvider != null)
-                    {
-                        // Lấy ChiTietBoDeControl từ DI
-                        var chiTietPage = Program.ServiceProvider.GetRequiredService<ChiTietBoDeControl>();
-
-                        // Gọi hàm khởi tạo với vai trò GUEST
-                        await chiTietPage.JoinAsGuest(pin, room.MaBoDe);
-
-                        mainForm.LoadPage(chiTietPage);
-
-                        // Kích hoạt SignalR báo cho chủ phòng biết mình đã vào
-                        if (_hubConnection.State == HubConnectionState.Disconnected) await _hubConnection.StartAsync();
-                        await _hubConnection.InvokeAsync("TriggerStartMatch", pin.ToString());
-                    }
+                    await LoadPublicQuizzesAsync(maChuDe);
                 }
-                else { MessageBox.Show("Phòng không tồn tại hoặc đã đầy!"); }
             }
-            catch (Exception ex) { MessageBox.Show($"Lỗi: {ex.Message}"); }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[Load Error] {ex.Message}");
+            }
+            finally { _isDataLoading = false; }
+        }
+
+        private async Task LoadFilterCategoriesAsync()
+        {
+            var dsChuDe = await _chuDeService.GetAllAsync();
+            var filterList = dsChuDe.ToList();
+            cbbLocChuDe.DataSource = filterList;
+            cbbLocChuDe.DisplayMember = "TenChuDe";
+            cbbLocChuDe.ValueMember = "MaChuDe";
+        }
+
+        private async void cbbLocChuDe_SelectedIndexChanged(object? sender, EventArgs e)
+        {
+            if (_isDataLoading || cbbLocChuDe.SelectedValue == null) return;
+            if (cbbLocChuDe.SelectedValue is int maChuDe)
+            {
+                await LoadPublicQuizzesAsync(maChuDe);
+            }
         }
 
         // ======================================================
-        // CÁC HÀM TẢI DỮ LIỆU UI (GIỮ NGUYÊN)
+        // LOGIC BỘ ĐỀ CỦA TÔI
         // ======================================================
 
         public async Task LoadMyQuizzesAsync()
         {
+            if (UserSession.CurrentUser == null) return;
             try
             {
-                if (UserSession.CurrentUser != null)
-                {
-                    var ds = await _boDeHocService.GetByUserAsync(UserSession.CurrentUser.MaNguoiDung);
-                    PopulateFlowPanel(flowBoDeCuaToi, ds);
-                }
+                var ds = await _boDeHocService.GetByUserAsync(UserSession.CurrentUser.MaNguoiDung);
+                _allMyQuizzes = ds?.ToList() ?? new List<BoDeHocResponse>();
+                _myCurrentPage = 0;
+                DisplayMyQuizzesByPage();
             }
-            catch (Exception ex) { Console.WriteLine(ex.Message); }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[MyQuizzes Error] {ex.Message}");
+            }
         }
 
-        public async Task LoadPublicQuizzesAsync()
+        private void DisplayMyQuizzesByPage()
         {
-            try
-            {
-                var ds = await _boDeHocService.GetPublicRandomAsync(10);
-                PopulateFlowPanel(flowBoDeCongKhai, ds);
-            }
-            catch (Exception ex) { Console.WriteLine(ex.Message); }
+            var pagedData = _allMyQuizzes
+                .Skip(_myCurrentPage * PAGE_SIZE)
+                .Take(PAGE_SIZE)
+                .ToList();
+
+            PopulateFlowPanel(flowBoDeCuaToi, pagedData);
+            UpdateMyNavigationButtons();
         }
 
-        public async Task LoadTopicQuizzesAsync()
+        private void ChangeMyPage(int direction)
         {
+            int newPage = _myCurrentPage + direction;
+            if (newPage >= 0 && newPage * PAGE_SIZE < _allMyQuizzes.Count)
+            {
+                _myCurrentPage = newPage;
+                DisplayMyQuizzesByPage();
+            }
+        }
+
+        private void UpdateMyNavigationButtons()
+        {
+            btnPrevMy.Visible = _myCurrentPage > 0;
+            btnNextMy.Visible = (_myCurrentPage + 1) * PAGE_SIZE < _allMyQuizzes.Count;
+        }
+
+        // ======================================================
+        // LOGIC BỘ ĐỀ CÔNG KHAI
+        // ======================================================
+
+        public async Task LoadPublicQuizzesAsync(int maChuDe)
+        {
+            if (_isDataLoading) return;
+            _isDataLoading = true;
+
             try
             {
-                var ds = await _boDeHocService.GetByTopicAsync(2);
-                PopulateFlowPanel(flowChuDe, ds);
+                var ds = await _boDeHocService.GetByFilterAsync(maChuDe);
+                _allPublicQuizzes = ds?.ToList() ?? new List<BoDeHocResponse>();
+                _publicCurrentPage = 0;
+                DisplayPublicQuizzesByPage();
             }
-            catch (Exception ex) { Console.WriteLine(ex.Message); }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Lỗi khi tải bộ đề công khai: " + ex.Message);
+            }
+            finally { _isDataLoading = false; }
         }
+
+        private void DisplayPublicQuizzesByPage()
+        {
+            var pagedData = _allPublicQuizzes
+                .Skip(_publicCurrentPage * PAGE_SIZE)
+                .Take(PAGE_SIZE)
+                .ToList();
+
+            PopulateFlowPanel(flowBoDeCongKhai, pagedData);
+            UpdatePublicNavigationButtons();
+        }
+
+        private void ChangePublicPage(int direction)
+        {
+            int newPage = _publicCurrentPage + direction;
+            if (newPage >= 0 && newPage * PAGE_SIZE < _allPublicQuizzes.Count)
+            {
+                _publicCurrentPage = newPage;
+                DisplayPublicQuizzesByPage();
+            }
+        }
+
+        private void UpdatePublicNavigationButtons()
+        {
+            btnPrevPublic.Visible = _publicCurrentPage > 0;
+            btnNextPublic.Visible = (_publicCurrentPage + 1) * PAGE_SIZE < _allPublicQuizzes.Count;
+        }
+
+        // ======================================================
+        // CƠ CHẾ HIỂN THỊ UI
+        // ======================================================
 
         private void PopulateFlowPanel(FlowLayoutPanel panel, IEnumerable<BoDeHocResponse> data)
         {
@@ -131,15 +243,30 @@ namespace WinForms.UserControls.Pages
                 return;
             }
 
-            panel.Controls.Clear();
-            if (data == null || !data.Any()) return;
+            // --- BƯỚC 1: Khóa layout của panel chính để tránh nhảy trang ---
+            pnlMainContent.SuspendLayout();
+            panel.SuspendLayout();
 
-            foreach (var boDe in data)
+            try
             {
-                var item = new BoDeItemControl();
-                item.SetData(boDe.MaBoDe, boDe.TieuDe, boDe.SoLuongThe, 0);
-                item.OnVaoThiClick += (s, ev) => StartQuiz(boDe.MaBoDe);
-                panel.Controls.Add(item);
+                panel.Controls.Clear();
+
+                if (data != null)
+                {
+                    foreach (var boDe in data)
+                    {
+                        var item = new BoDeItemControl();
+                        item.SetData(boDe.MaBoDe, boDe.TieuDe, boDe.SoLuongThe, boDe.SoLuotHoc, boDe.AnhBia ?? "");
+                        item.OnVaoThiClick += (s, ev) => StartQuiz(boDe.MaBoDe);
+                        panel.Controls.Add(item);
+                    }
+                }
+            }
+            finally
+            {
+                // --- BƯỚC 2: Mở khóa và vẽ lại một lần duy nhất ---
+                panel.ResumeLayout();
+                pnlMainContent.ResumeLayout(true);
             }
         }
 
@@ -154,13 +281,75 @@ namespace WinForms.UserControls.Pages
             }
         }
 
-        private void btnTaoQuiz_Click(object sender, EventArgs e)
+        private void SetDoubleBuffered(Control control)
+        {
+            typeof(Control).InvokeMember("DoubleBuffered",
+                System.Reflection.BindingFlags.SetProperty | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic,
+                null, control, new object[] { true });
+        }
+        private void HandleThamGia()
+        {
+            btnThamGia.Click += async (s, e) =>
+            {
+                // 1. Hiển thị hộp thoại nhập mã PIN (Sử dụng InputBox hoặc Custom Form)
+                string inputCode = Microsoft.VisualBasic.Interaction.InputBox(
+                    "Nhập mã PIN gồm 6 chữ số để tham gia thách đấu:",
+                    "Tham gia phòng học",
+                    "");
+
+                if (string.IsNullOrWhiteSpace(inputCode) || !int.TryParse(inputCode, out int pin))
+                {
+                    return;
+                }
+                if (UserSession.CurrentUser == null)
+                {
+                    MessageBox.Show("Bạn cần đăng nhập để tham gia thách đấu.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+                try
+                {
+                    // 2. Tạo request tham gia
+                    var request = new ThamGiaThachDauRequest
+                    {
+                        MaThachDau = pin,
+                        MaNguoiDung = UserSession.CurrentUser.MaNguoiDung
+                    };
+
+                    // 3. Gọi Service để xử lý logic Join (trong ThachDauService bạn đã viết)
+                    bool isJoined = await _thachDauService.ThamGiaThachDauAsync(request);
+
+                    if (isJoined)
+                    {
+                        // 4. Lấy thông tin phòng để biết MaBoDe là gì
+                        var roomInfo = await _thachDauService.GetByIdAsync(pin);
+
+                        if (roomInfo != null)
+                        {
+                            NavigateToQuizPage(roomInfo.MaBoDe, pin);
+                        }
+                    }
+                    else
+                    {
+                        MessageBox.Show("Mã PIN không đúng hoặc phòng đã đủ người!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Lỗi: {ex.Message}");
+                }
+            };
+        }
+
+        private void NavigateToQuizPage(int maBoDe, int maThachDau)
         {
             var mainForm = this.ParentForm as MainForm;
             if (mainForm != null && Program.ServiceProvider != null)
             {
-                var taoQuizPage = Program.ServiceProvider.GetRequiredService<TaoQuizPage>();
-                mainForm.LoadPage(taoQuizPage);
+                // Chuyển sang màn hình làm bài (HocBoDePage hoặc màn hình Thách đấu)
+                var hocPage = Program.ServiceProvider.GetRequiredService<ChiTietBoDeControl>();
+                hocPage.MaBoDe = maBoDe;
+                // Nếu là thách đấu, bạn có thể truyền thêm MaThachDau vào để bật chế độ Real-time
+                mainForm.LoadPage(hocPage);
             }
         }
     }

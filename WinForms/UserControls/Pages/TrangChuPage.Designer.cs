@@ -41,5 +41,10 @@
         }
 
         #endregion
+        public async Task RefreshNowAsync()
+        {
+            await LoadUserStats();
+            RenderDashboard();
+        }
     }
 }

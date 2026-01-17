@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using StudyApp.BLL.Interfaces.Learn;
 using StudyApp.BLL.Interfaces.Social;
 using StudyApp.DTO;
 using System;
@@ -52,7 +53,8 @@ namespace WinForms.Forms
 
                 AddMenuButton("🌐 Mạng xã hội", BtnMangXaHoi_Click);
 
-                AddMenuButton("🛒 Cửa hàng", (s, e) => LoadPage(new CuaHangPage()));
+                AddMenuButton("🛒 Cửa hàng", (s, e) => LoadPage(Program.ServiceProvider!.GetRequiredService<CuaHangPage>()));
+                AddMenuButton("Kho vật phẩm", (s, e) => LoadPage(Program.ServiceProvider!.GetRequiredService<KhoVatPhamPage>()));
                 AddMenuButton("⚙️ Cài đặt", (s, e) => LoadPage(new CaiDatPage()));
                 AddMenuButton("🏅 Thành Tựu", (s, e) => 
                 {
@@ -91,18 +93,34 @@ namespace WinForms.Forms
         }
 
         // ================= PAGE LOAD =================
-        public void LoadPage(UserControl page)
+        public async void LoadPage(UserControl page)
         {
+            if (contentPanel.Controls.Count > 0)
+            {
+                var oldPage = contentPanel.Controls[0];
+                if (oldPage is ICleanupControl cleanupPage)
+                {
+                    await cleanupPage.CleanupAsync();
+                }
+                oldPage.Dispose();
+            }
+
             contentPanel.SuspendLayout();
             contentPanel.Controls.Clear();
 
-            page.Dock = DockStyle.Fill;
+            // THIẾT LẬP QUAN TRỌNG:
+            page.Dock = DockStyle.Fill;   // Lấp đầy contentPanel
+            page.AutoSize = false;        // Tắt tự động điều chỉnh kích thước theo nội dung
+
             contentPanel.Controls.Add(page);
+
+            // Đảm bảo contentPanel cũng đang Fill trong cha của nó
+            contentPanel.Dock = DockStyle.Fill;
 
             contentPanel.ResumeLayout(true);
             page.PerformLayout();
         }
-        
+
         // ================= EVENTS =================
         private void BtnDangNhap_Click(object? sender, EventArgs e)
         {

@@ -43,7 +43,8 @@
         HoanThanhNhiemVu,
         DiemDanh,
         ThachDau,
-        SuDungBoost
+        SuDungBoost,
+        SuDungVatPham
     }
 
     // =========================

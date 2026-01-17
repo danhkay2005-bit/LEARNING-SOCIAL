@@ -2,15 +2,8 @@
 {
     partial class QuizResultControl
     {
-        /// <summary> 
-        /// Required designer variable.
-        /// </summary>
         private System.ComponentModel.IContainer components = null;
 
-        /// <summary> 
-        /// Clean up any resources being used.
-        /// </summary>
-        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
         protected override void Dispose(bool disposing)
         {
             if (disposing && (components != null))
@@ -20,51 +13,86 @@
             base.Dispose(disposing);
         }
 
+        #region Component Designer generated code
+
         private void InitializeComponent()
         {
-            this.lblTitle = new Label();
-            this.lblMainStat = new Label();
-            this.lblDetails = new Label();
-            this.btnHome = new Button();
-            this.pnlCircle = new Panel(); // Dùng để vẽ vòng tròn tỉ lệ (tùy chọn)
-
-            // lblTitle: Chúc mừng hoặc Kết quả trận đấu
-            this.lblTitle.Font = new Font("Segoe UI Black", 20F);
-            this.lblTitle.ForeColor = Color.FromArgb(193, 225, 127);
-            this.lblTitle.Dock = DockStyle.Top;
-            this.lblTitle.Height = 80;
-            this.lblTitle.TextAlign = ContentAlignment.MiddleCenter;
-
-            // lblMainStat: Hiển thị XP hoặc Tỉ lệ % đúng
-            this.lblMainStat.Font = new Font("Segoe UI", 48F, FontStyle.Bold);
-            this.lblMainStat.ForeColor = Color.White;
-            this.lblMainStat.Dock = DockStyle.Top;
-            this.lblMainStat.Height = 150;
-            this.lblMainStat.TextAlign = ContentAlignment.MiddleCenter;
-
-            // lblDetails: Chi tiết Số thẻ đúng/sai, Thời gian
-            this.lblDetails.Font = new Font("Segoe UI Semibold", 13F);
-            this.lblDetails.ForeColor = Color.Silver;
-            this.lblDetails.Dock = DockStyle.Fill;
-            this.lblDetails.TextAlign = ContentAlignment.MiddleCenter;
-
-            // btnHome: Nút quay về
-            this.btnHome.BackColor = Color.FromArgb(193, 225, 127);
-            this.btnHome.FlatStyle = FlatStyle.Flat;
-            this.btnHome.Font = new Font("Segoe UI Black", 12F);
-            this.btnHome.Size = new Size(250, 60);
-            this.btnHome.Location = new Point(425, 550); // Căn giữa
-            this.btnHome.Text = "TIẾP TỤC ➔";
-
-            this.BackColor = Color.FromArgb(18, 38, 44);
-            this.Controls.Add(this.lblDetails);
-            this.Controls.Add(this.btnHome);
-            this.Controls.Add(this.lblMainStat);
-            this.Controls.Add(this.lblTitle);
-            this.Size = new Size(1100, 650);
+            lblTitle = new Label();
+            lblMainStat = new Label();
+            lblDetails = new Label();
+            btnFinish = new Button(); // Khai báo nút mới
+            SuspendLayout();
+            // 
+            // lblTitle
+            // 
+            lblTitle.Dock = DockStyle.Top;
+            lblTitle.Font = new Font("Segoe UI", 24F, FontStyle.Bold);
+            lblTitle.Location = new Point(0, 50);
+            lblTitle.Name = "lblTitle";
+            lblTitle.Size = new Size(800, 60);
+            lblTitle.TabIndex = 0;
+            lblTitle.Text = "KẾT QUẢ";
+            lblTitle.TextAlign = ContentAlignment.MiddleCenter;
+            // 
+            // lblMainStat
+            // 
+            lblMainStat.Dock = DockStyle.Top;
+            lblMainStat.Font = new Font("Segoe UI", 60F, FontStyle.Bold);
+            lblMainStat.ForeColor = Color.White;
+            lblMainStat.Location = new Point(0, 110);
+            lblMainStat.Name = "lblMainStat";
+            lblMainStat.Size = new Size(800, 150);
+            lblMainStat.TabIndex = 1;
+            lblMainStat.Text = "0%";
+            lblMainStat.TextAlign = ContentAlignment.MiddleCenter;
+            // 
+            // lblDetails
+            // 
+            lblDetails.Dock = DockStyle.Top;
+            lblDetails.Font = new Font("Segoe UI", 14F);
+            lblDetails.ForeColor = Color.FromArgb(200, 200, 200);
+            lblDetails.Location = new Point(0, 260);
+            lblDetails.Name = "lblDetails";
+            lblDetails.Size = new Size(800, 150);
+            lblDetails.TabIndex = 2;
+            lblDetails.Text = "Chi tiết kết quả...";
+            lblDetails.TextAlign = ContentAlignment.MiddleCenter;
+            // 
+            // btnFinish
+            // 
+            btnFinish.BackColor = Color.FromArgb(193, 225, 127);
+            btnFinish.Cursor = Cursors.Hand;
+            btnFinish.FlatAppearance.BorderSize = 0;
+            btnFinish.FlatStyle = FlatStyle.Flat;
+            btnFinish.Font = new Font("Segoe UI", 14F, FontStyle.Bold);
+            btnFinish.ForeColor = Color.FromArgb(13, 56, 56);
+            btnFinish.Location = new Point(275, 450);
+            btnFinish.Name = "btnFinish";
+            btnFinish.Size = new Size(250, 60);
+            btnFinish.TabIndex = 3;
+            btnFinish.Text = "HOÀN THÀNH";
+            btnFinish.UseVisualStyleBackColor = false;
+            // 
+            // QuizResultControl
+            // 
+            AutoScaleDimensions = new SizeF(8F, 20F);
+            AutoScaleMode = AutoScaleMode.Font;
+            BackColor = Color.FromArgb(13, 56, 56);
+            Controls.Add(btnFinish);
+            Controls.Add(lblDetails);
+            Controls.Add(lblMainStat);
+            Controls.Add(lblTitle);
+            Name = "QuizResultControl";
+            Padding = new Padding(0, 50, 0, 0);
+            Size = new Size(800, 600);
+            ResumeLayout(false);
         }
-        private Label lblTitle, lblMainStat, lblDetails;
-        private Button btnHome;
-        private Panel pnlCircle;
+
+        #endregion
+
+        private Label lblTitle;
+        private Label lblMainStat;
+        private Label lblDetails;
+        private Button btnFinish; // Khai báo nút
     }
 }

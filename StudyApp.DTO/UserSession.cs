@@ -33,6 +33,7 @@
         public int KimCuong { get; set; }
         public int TongDiemXp { get; set; }
         public int ChuoiNgayHocLienTiep { get; set; }
+        public int ChuoiNgayDaiNhat { get; set; }  // ✅ THÊM DÒNG NÀY
         public int TongSoTheHoc { get; set; }
         public int TongSoTheDung { get; set; }
     }
