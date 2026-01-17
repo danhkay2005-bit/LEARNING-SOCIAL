@@ -272,15 +272,30 @@ namespace WinForms.UserControls
                 }
                 else if (_maThachDau.HasValue)
                 {
+                    // 1. Tăng số lượt học cho bộ đề (Statistic)
                     if (_data?.ThongTinChung?.MaBoDe != null)
                     {
                         await _boDeHocService.TangSoLuotHocAsync(_data.ThongTinChung.MaBoDe);
                     }
-                    await _thachDauService.HoanThanhVaCleanupAsync(_maThachDau.Value);
+
+                    // 2. Lấy BXH hiện tại để biết ai thắng, ai thua
                     var bxh = await _thachDauService.GetBangXepHangAsync(_maThachDau.Value);
+
+                    // 3. Gọi Service để lưu Lịch sử thách đấu và dọn dẹp phòng
+                    // Lưu ý: Hàm này nên xử lý việc tạo record trong bảng LichSuThachDau ở Backend
+                    await _thachDauService.HoanThanhVaCleanupAsync(_maThachDau.Value);
+
+                    // 4. Xác định kết quả của bản thân để hiển thị UI
                     var me = bxh.FirstOrDefault(x => x.MaNguoiDung == UserSession.CurrentUser.MaNguoiDung);
-                    bool isWinner = me != null && me.MaNguoiDung == bxh.First().MaNguoiDung;
+                    var topPlayer = bxh.OrderByDescending(x => x.Diem).FirstOrDefault();
+
+                    bool isWinner = me != null && topPlayer != null && me.MaNguoiDung == topPlayer.MaNguoiDung;
+
+                    // 5. Cập nhật giao diện kết quả
                     resultUI.DisplayChallengeResult(_totalScore, _correctCount, _wrongCount, isWinner, _maThachDau.Value);
+
+                    // 6. (Tùy chọn) Nếu bạn muốn nạp lại dữ liệu User để cập nhật XP/Tiền sau trận đấu
+                    await RefreshUserStats();
                 }
             }
 
@@ -372,6 +387,29 @@ namespace WinForms.UserControls
             if (this.FindForm() is MainForm mainForm)
             {
                 mainForm.LoadPage((Program.ServiceProvider!.GetRequiredService<HocTapPage>()));
+            }
+        }
+
+        private async Task RefreshUserStats()
+        {
+            if (Program.ServiceProvider != null && UserSession.CurrentUser != null)
+            {
+                using (var scope = Program.ServiceProvider.CreateScope())
+                {
+                    var userDb = scope.ServiceProvider.GetRequiredService<UserDbContext>();
+                    var user = await userDb.NguoiDungs.FindAsync(UserSession.CurrentUser.MaNguoiDung);
+
+                    if (user != null)
+                    {
+                        // Cập nhật các thông số mới nhất từ DB vào Session
+                        UserSession.CurrentUser.TongDiemXp = user.TongDiemXp ?? 0;
+                        UserSession.CurrentUser.Vang = user.Vang ?? 0;
+                        UserSession.CurrentUser.KimCuong = user.KimCuong ?? 0;
+
+                        // Kích hoạt sự kiện để các trang khác (như Dashboard) cập nhật theo
+                        AppEvents.OnUserStatsChanged();
+                    }
+                }
             }
         }
     }

@@ -340,16 +340,20 @@ namespace WinForms.UserControls.Pages
             };
         }
 
-        private void NavigateToQuizPage(int maBoDe, int maThachDau)
+        private async void NavigateToQuizPage(int maBoDe, int maThachDau)
         {
             var mainForm = this.ParentForm as MainForm;
             if (mainForm != null && Program.ServiceProvider != null)
             {
-                // Chuyển sang màn hình làm bài (HocBoDePage hoặc màn hình Thách đấu)
-                var hocPage = Program.ServiceProvider.GetRequiredService<ChiTietBoDeControl>();
-                hocPage.MaBoDe = maBoDe;
-                // Nếu là thách đấu, bạn có thể truyền thêm MaThachDau vào để bật chế độ Real-time
-                mainForm.LoadPage(hocPage);
+                // 1. Khởi tạo Control chi tiết bộ đề
+                var chiTietPage = Program.ServiceProvider.GetRequiredService<ChiTietBoDeControl>();
+
+                // 2. Load trang vào giao diện chính trước
+                mainForm.LoadPage(chiTietPage);
+
+                // 3. QUAN TRỌNG: Gọi hàm JoinAsGuest để kích hoạt giao diện chờ cho Khách
+                // Hàm này sẽ tự động LoadDataById, hiện mã PIN và đổi text nút thành "ĐANG ĐỢI..."
+                await chiTietPage.JoinAsGuest(maThachDau, maBoDe);
             }
         }
     }

@@ -39,39 +39,37 @@ namespace WinForms.UserControls.Quiz
             btnEdit.Click += btnEdit_Click;
             btnDelete.Click += btnDelete_Click;
 
-            RegisterSignalREvents();
+            RegisterSignalREvents();    
         }
 
         public int MaBoDe { set => LoadDataById(value); }
 
         private void RegisterSignalREvents()
         {
-            // 1. Khi đối thủ vào phòng (Dành cho Chủ phòng)
+            // Khi Khách gọi TriggerStartMatch, Chủ phòng sẽ nhận được cái này:
             _hubConnection.On("ReadyToStart", () =>
             {
                 this.Invoke(() => {
                     if (_currentRole == LobbyRole.Host)
                     {
-                        lblStatus.Text = "ĐỐI THỦ ĐÃ VÀO PHÒNG!";
-                        lblStatus.ForeColor = Color.LimeGreen;
+                        lblStatus.Text = "ĐỐI THỦ ĐÃ VÀO!";
                         btnStartSolo.Enabled = true;
                         btnStartSolo.Text = "BẮT ĐẦU TRẬN ĐẤU";
                         btnStartSolo.BackColor = Color.LimeGreen;
 
                         btnStartSolo.Click -= btnStartSolo_Click;
+                        btnStartSolo.Click -= btnOwnerStartMatch_Click; // Xóa để tránh gán trùng
                         btnStartSolo.Click += btnOwnerStartMatch_Click;
                     }
                 });
             });
 
-            // 2. Khi chủ phòng bấm Bắt đầu (Dành cho Khách)
+            // Khi bất kỳ ai gọi SendStartSignal (thường là Chủ), CẢ HAI sẽ nhận được cái này:
             _hubConnection.On("StartMatchSignal", () =>
             {
                 this.Invoke(async () => {
-                    if (_currentRole == LobbyRole.Guest)
-                    {
-                        await ExecuteStart();
-                    }
+                    // Cả Host và Guest đều tự động nhảy vào đây để bắt đầu làm bài cùng lúc
+                    await ExecuteStart();
                 });
             });
         }
@@ -162,42 +160,28 @@ namespace WinForms.UserControls.Quiz
             _currentPin = pin;
             LoadDataById(maBoDe);
 
-            // 1. Giao diện chờ
+            // Cập nhật UI chờ
             btnCreateChallenge.Visible = false;
             btnStartSolo.Enabled = false;
             btnStartSolo.Text = "ĐANG ĐỢI CHỦ PHÒNG...";
             lblChallengeCode.Text = pin.ToString("D6");
-            lblStatus.Text = "Đang kết nối...";
 
-            // 2. Kết nối SignalR và vào Group trước
-            if (_hubConnection.State == HubConnectionState.Disconnected)
-                await _hubConnection.StartAsync();
+            try
+            {
+                if (_hubConnection.State == HubConnectionState.Disconnected)
+                    await _hubConnection.StartAsync();
 
-            await _hubConnection.InvokeAsync("JoinRoom", pin.ToString());
-            if(UserSession.CurrentUser == null)
-            {
-                lblStatus.Text = "Bạn cần đăng nhập để tham gia thách đấu!";
-                return;
-            }
-            // 3. QUAN TRỌNG: Gọi API để báo với Database là tôi đã vào
-            // Khi hàm này thành công, Backend sẽ tự động bắn "ReadyToStart" tới chủ phòng
-            var request = new ThamGiaThachDauRequest
-            {
-                MaThachDau = pin,
-                MaNguoiDung = UserSession.CurrentUser.MaNguoiDung
-            };
+                // 1. Khách vào phòng
+                await _hubConnection.InvokeAsync("JoinRoom", pin.ToString());
 
-            bool isJoined = await _thachDauService.ThamGiaThachDauAsync(request);
-            if (isJoined)
-            {
+                // 2. QUAN TRỌNG: Gọi hàm này để báo cho máy Chủ phòng hiện nút "BẮT ĐẦU"
+                // Hub sẽ gửi lệnh "ReadyToStart" về cho máy Chủ
+                await _hubConnection.InvokeAsync("TriggerStartMatch", pin.ToString());
+
                 lblStatus.Text = "Đã vào phòng, đợi chủ phòng bắt đầu!";
             }
-            else
-            {
-                lblStatus.Text = "Phòng đã đầy hoặc không tồn tại!";
-            }
+            catch (Exception ex) { MessageBox.Show("Lỗi kết nối: " + ex.Message); }
         }
-
 
 
         // --- DÀNH CHO CHỦ PHÒNG (HOST) ---
@@ -232,9 +216,22 @@ namespace WinForms.UserControls.Quiz
 
         private async void btnOwnerStartMatch_Click(object? sender, EventArgs e)
         {
-            // Gửi lệnh cho khách rồi tự chuyển trang
-            await _hubConnection.InvokeAsync("SendStartSignal", _currentPin.ToString());
-            await ExecuteStart();
+            try
+            {
+                btnStartSolo.Enabled = false;
+
+                // 1. Gửi lệnh cho đối thủ (Guest) vào trận
+                await _hubConnection.InvokeAsync("SendStartSignal", _currentPin.ToString());
+                if (_currentRole == LobbyRole.Host)
+                {
+                    await ExecuteStart();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Lỗi khởi động: " + ex.Message);
+                btnStartSolo.Enabled = true;
+            }
         }
 
         private async void btnStartSolo_Click(object? sender, EventArgs e)
