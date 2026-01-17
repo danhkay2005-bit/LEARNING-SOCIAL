@@ -16,6 +16,9 @@ namespace StudyApp.BLL.Services.Learn
         private readonly LearningDbContext _context;
         private readonly IMapper _mapper;
         private static readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
+        // ✅ THÊM CÁC FIELD NÀY
+        private readonly IGamificationService _gamificationService;
+        private readonly IDailyStreakService _dailyStreakService;
 
         public BoDeHocService(LearningDbContext context, IMapper mapper, IGamificationService gamificationService, IDailyStreakService dailyStreakService)
         {
@@ -711,8 +714,8 @@ namespace StudyApp.BLL.Services.Learn
                 _context.PhienHocs.Add(phienHoc);
                 await _context.SaveChangesAsync();
 
-                if (phienHoc.MaBoDe == null) throw new Exception("MaBoDe null");
-                    throw new InvalidOperationException("MaBoDe must not be null when saving LichSuHocBoDe.");
+                // ✅ SỬA: Xóa các dòng throw thừa, giữ logic rõ ràng
+                if (phienHoc.MaBoDe == null) 
                     throw new InvalidOperationException("MaBoDe must not be null when saving LichSuHocBoDe.");
 
                 var boDe = await _context.BoDeHocs.FindAsync(phienHoc.MaBoDe);
@@ -735,6 +738,7 @@ namespace StudyApp.BLL.Services.Learn
                 // 4. KÍCH HOẠT GAMIFICATION
                 if (phienHoc.TongSoThe == null)
                     throw new InvalidOperationException("TongSoThe must not be null when calculating XP.");
+                
                 var tyLeDung = phienHoc.TyLeDung ?? 0;
                 var tongSoThe = phienHoc.TongSoThe ?? 0;
 
