@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.Extensions.DependencyInjection;
 using StudyApp.BLL.Interfaces.Learn;
 using StudyApp.DAL.Entities.Learn;
 using StudyApp.DTO;
@@ -6,6 +7,8 @@ using StudyApp.DTO.Enums;
 using StudyApp.DTO.Requests.Learn;
 using StudyApp.DTO.Responses.Learn;
 using System.Diagnostics;
+using WinForms.Forms;
+using WinForms.UserControls.Pages;
 using WinForms.UserControls.Quiz;
 
 namespace WinForms.UserControls
@@ -33,7 +36,11 @@ namespace WinForms.UserControls
             _hubConnection = hubConnection;
             timerTick.Tick += TimerTick_Tick;
             btnNext.Click += btnNext_Click;
+
+            this.HandleDestroyed += HocBoDePage_HandleDestroyed;
         }
+
+
 
         public void Initialize(HocBoDeResponse data, CheDoHocEnum cheDo, int? maThachDau = null)
         {
@@ -87,6 +94,18 @@ namespace WinForms.UserControls
                     });
                 }
             });
+
+            _hubConnection.Remove("OpponentLeft");
+            _hubConnection.On("OpponentLeft", () => {
+                this.Invoke(() => {
+                    timerTick.Stop();
+                    MessageBox.Show("Đối thủ đã rời trận đấu. Bạn sẽ được đưa về trang học tập.", "Thông báo");
+
+                    // Logic quay về trang chủ (Bạn thay thế bằng hàm chuyển trang của bạn)
+                    // Ví dụ: this.Parent.Controls.Remove(this); hoặc gọi hàm của MainForm
+                    DisposeAndGoBack();
+                });
+            });
         }
 
         private void ShowQuestion(int index)
@@ -98,8 +117,6 @@ namespace WinForms.UserControls
             timerTick.Stop(); _currentTimeLeft = 100; prgTimeCountdown.Value = 100;
 
             lblProgress.Text = $"CÂU HỎI: {index + 1} / {_data.DanhSachCauHoi.Count}";
-
-            // --- FIX LỖI 125%: Gán giá trị là số thứ tự câu hiện tại ---
             prgStatus.Value = index + 1;
             // -----------------------------------------------------------
 
@@ -195,8 +212,16 @@ namespace WinForms.UserControls
             _totalTimer.Stop();
 
             pnlQuestionContent.Controls.Clear();
+
+            // 1. Khởi tạo UserControl kết quả
             var resultUI = new QuizResultControl();
             resultUI.Dock = DockStyle.Fill;
+
+            // 2. KẾT NỐI SỰ KIỆN: Khi ấn nút Hoàn thành trên resultUI -> Gọi hàm quay về
+            resultUI.OnFinishClicked += () =>
+            {
+                DisposeAndGoBack();
+            };
 
             if (UserSession.CurrentUser != null)
             {
@@ -220,6 +245,10 @@ namespace WinForms.UserControls
                 }
                 else if (_maThachDau.HasValue)
                 {
+                    if (_data?.ThongTinChung?.MaBoDe != null)
+                    {
+                        await _boDeHocService.TangSoLuotHocAsync(_data.ThongTinChung.MaBoDe);
+                    }
                     await _thachDauService.HoanThanhVaCleanupAsync(_maThachDau.Value);
                     var bxh = await _thachDauService.GetBangXepHangAsync(_maThachDau.Value);
                     var me = bxh.FirstOrDefault(x => x.MaNguoiDung == UserSession.CurrentUser.MaNguoiDung);
@@ -227,6 +256,7 @@ namespace WinForms.UserControls
                     resultUI.DisplayChallengeResult(_totalScore, _correctCount, _wrongCount, isWinner, _maThachDau.Value);
                 }
             }
+
             pnlQuestionContent.Controls.Add(resultUI);
             pnlBottom.Visible = false;
         }
@@ -273,6 +303,49 @@ namespace WinForms.UserControls
             var listDapAn = distractors.Select(d => new DapAnTracNghiemResponse { NoiDung = d, LaDapAnDung = false }).ToList();
             listDapAn.Add(new DapAnTracNghiemResponse { NoiDung = correctAns, LaDapAnDung = true });
             return new TracNghiemHocControl(cauHoi.ThongTinThe, listDapAn.OrderBy(x => Guid.NewGuid()).ToList());
+        }
+
+        private async void HocBoDePage_HandleDestroyed(object? sender, EventArgs e)
+        {
+            if (_cheDo == CheDoHocEnum.ThachDau && _maThachDau.HasValue && !_isFinishing)
+            {
+                try
+                {
+                    _isFinishing = true;
+
+                    // 1. Thông báo cho đối thủ qua SignalR TRƯỚC
+                    if (_hubConnection.State == HubConnectionState.Connected)
+                    {
+                        await _hubConnection.InvokeAsync("NotifyOpponentLeft", _maThachDau.Value.ToString());
+                    }
+
+                    // 2. Gọi Service để xóa dữ liệu tạm trong Database
+                    await _thachDauService.HuyThachDauAsync(_maThachDau.Value);
+
+                    Debug.WriteLine($"[Cleanup] Đã dọn dẹp phòng: {_maThachDau.Value}");
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"[Cleanup Error] {ex.Message}");
+                }
+            }
+        }
+
+        private void DisposeAndGoBack()
+        {
+            // 1. Khóa cờ hiệu để sự kiện HandleDestroyed biết là chúng ta đang chủ động thoát
+            _isFinishing = true;
+
+            // 2. Dừng các bộ đếm thời gian đang chạy
+            timerTick.Stop();
+            _totalTimer.Stop();
+
+            // 3. Sử dụng Singleton của MainForm để nạp trang mới
+            // Giả sử bạn muốn quay về Trang Chủ
+            if (this.FindForm() is MainForm mainForm)
+            {
+                mainForm.LoadPage((Program.ServiceProvider!.GetRequiredService<HocTapPage>()));
+            }
         }
     }
 }

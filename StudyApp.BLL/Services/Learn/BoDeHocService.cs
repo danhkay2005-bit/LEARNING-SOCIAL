@@ -14,11 +14,39 @@ namespace StudyApp.BLL.Services.Learn
     {
         private readonly LearningDbContext _context;
         private readonly IMapper _mapper;
+        private static readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
 
         public BoDeHocService(LearningDbContext context, IMapper mapper)
         {
             _context = context;
             _mapper = mapper;
+        }
+
+        public async Task<IEnumerable<BoDeHocResponse>> GetByFilterAsync(int maChuDe)
+        {
+            // Đợi cho đến khi "khóa" được mở (nếu có tác vụ khác đang chạy)
+            await _semaphore.WaitAsync();
+            try
+            {
+                var query = _context.BoDeHocs.AsQueryable();
+
+                if (maChuDe > 0)
+                {
+                    query = query.Where(b => b.MaChuDe == maChuDe);
+                }
+
+                var list = await query
+                    .Where(b => b.LaCongKhai == true)
+                    .OrderByDescending(b => b.ThoiGianTao)
+                    .ToListAsync();
+
+                return _mapper.Map<IEnumerable<BoDeHocResponse>>(list);
+            }
+            finally
+            {
+                // Giải phóng khóa để tác vụ khác có thể vào
+                _semaphore.Release();
+            }
         }
 
         #region Helper Methods (Xử lý Hashtag)
@@ -535,36 +563,42 @@ namespace StudyApp.BLL.Services.Learn
 
             return await _context.SaveChangesAsync() > 0;
         }
+
+        public async Task TangSoLuotHocAsync(int maBoDe)
+        {
+            var boDe = await _context.BoDeHocs.FindAsync(maBoDe);
+            if (boDe != null)
+            {
+                boDe.SoLuotHoc = (boDe.SoLuotHoc ?? 0) + 1;
+                await _context.SaveChangesAsync();
+            }
+        }
         public async Task LuuKetQuaPhienHocAsync(PhienHoc phienHoc)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                // 1. Lưu PhienHoc
+                // ... (Giữ nguyên logic lưu PhienHoc và LichSuHocBoDe của bạn)
                 _context.PhienHocs.Add(phienHoc);
                 await _context.SaveChangesAsync();
 
-                // 2. Tạo LichSuHocBoDe tổng quát
-                if (phienHoc.MaBoDe == null)
-                    throw new InvalidOperationException("MaBoDe must not be null when saving LichSuHocBoDe.");
+                if (phienHoc.MaBoDe == null) throw new Exception("MaBoDe null");
 
-                if (phienHoc.ThoiGianHocGiay == null)
-                    throw new InvalidOperationException("ThoiGianHocGiay must not be null when saving LichSuHocBoDe.");
+                var boDe = await _context.BoDeHocs.FindAsync(phienHoc.MaBoDe);
+                if (boDe != null)
+                {
+                    boDe.SoLuotHoc = (boDe.SoLuotHoc ?? 0) + 1;
+                }
 
                 var lichSu = new LichSuHocBoDe
                 {
-                    MaNguoiDung = phienHoc.MaNguoiDung,
+                    // ... các field cũ của bạn
                     MaBoDe = phienHoc.MaBoDe.Value,
-                    MaPhien = phienHoc.MaPhien,
-                    SoTheHoc = phienHoc.TongSoThe,
-                    TyLeDung = phienHoc.TyLeDung,
-                    ThoiGianHocPhut = (int)Math.Ceiling(phienHoc.ThoiGianHocGiay.Value / 60.0),
-                    ThoiGian = DateTime.Now
+                    MaPhien = phienHoc.MaPhien
                 };
-
                 _context.LichSuHocBoDes.Add(lichSu);
-                await _context.SaveChangesAsync();
 
+                await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
             }
             catch

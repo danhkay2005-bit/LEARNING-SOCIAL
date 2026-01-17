@@ -50,6 +50,8 @@ namespace WinForms
                     .Build();
             });
 
+            services.AddSingleton<IConfiguration>(configuration);
+
             // --- Đăng ký Notifier bản rỗng cho WinForms ---
             // Giúp ThachDauService khởi tạo thành công mà không báo lỗi IHubContext
             services.AddSingleton<IThachDauNotifier, WinFormsThachDauNotifier>();

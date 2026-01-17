@@ -35,6 +35,8 @@ namespace StudyApp.BLL.Interfaces.Learn
 
         Task<bool> UpdateCardProgressAsync(CapNhatTienDoHocTapRequest request);
         Task LuuKetQuaPhienHocAsync(PhienHoc phienHoc);
+        Task<IEnumerable<BoDeHocResponse>> GetByFilterAsync(int maChuDe);
+        Task TangSoLuotHocAsync(int maBoDe);
 
     }
 }

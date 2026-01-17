@@ -6,7 +6,8 @@ using StudyApp.DAL.Data;
 using StudyApp.DAL.Entities.Learn;
 using StudyApp.DTO.Responses.Learn;
 using System.Text;
-using System.Net.Http.Headers; // Required for MediaTypeHeaderValue
+using System.Net.Http.Headers;
+using Microsoft.Extensions.Configuration; // Required for MediaTypeHeaderValue
 
 public class GeminiAiService : IGeminiAiService
 {
@@ -16,14 +17,16 @@ public class GeminiAiService : IGeminiAiService
     private readonly HttpClient _httpClient;
 
     // RECOMMENDATION: Move this to appsettings.json
-    private readonly string _geminiApiKey = "AIzaSyBD0iKLeDG5x6wf73HYZwCeR5kWWSpzDJo";
+    private readonly string? _geminiApiKey;
 
-    public GeminiAiService(LearningDbContext context, UserDbContext userContext, IMapper mapper)
+    public GeminiAiService(LearningDbContext context, UserDbContext userContext, IMapper mapper, IConfiguration configuration)
     {
         _context = context;
         _userContext = userContext;
         _mapper = mapper;
         _httpClient = new HttpClient();
+
+        _geminiApiKey = configuration["AiSettings:GeminiApiKey"];
     }
 
     public async Task<LogsGenerateAiResponse> GenerateImageForFlashcardAsync(int maThe, Guid maNguoiDung)
@@ -79,6 +82,41 @@ public class GeminiAiService : IGeminiAiService
         }
     }
 
+    public async Task<LogsGenerateAiResponse> GenerateImageForBoDeAsync(string tieuDe, Guid maNguoiDung)
+    {
+        const int phiAi = 5;
+
+        // 1. Kiểm tra User & Kim cương
+        var user = await _userContext.NguoiDungs.FirstOrDefaultAsync(u => u.MaNguoiDung == maNguoiDung);
+        if (user == null || (user.KimCuong ?? 0) < phiAi)
+            throw new Exception("Bạn không đủ kim cương (cần 5 💎)!");
+
+        // 2. Gọi Gemini để lấy "đơn đặt hàng" cho họa sĩ
+        string imageUrl = await CallGeminiToGetIllustration(tieuDe);
+
+        // 3. Trừ kim cương và Lưu Log
+        user.KimCuong -= phiAi;
+
+        // Cần đảm bảo MaThe là int? trong Entity để gán null thành công
+        var log = new LogsGenerateAi
+        {
+            MaNguoiDung = maNguoiDung,
+            MaThe = null,
+            Prompt = $"Mô tả minh họa cho bộ đề: {tieuDe}",
+            UrlHinhAnh = imageUrl,
+            TrangThai = "ThanhCong",
+            ThoiGian = DateTime.Now
+        };
+
+        _userContext.NguoiDungs.Update(user);
+        _context.LogsGenerateAis.Add(log);
+
+        await _userContext.SaveChangesAsync();
+        await _context.SaveChangesAsync();
+
+        return _mapper.Map<LogsGenerateAiResponse>(log);
+    }
+
     private async Task<string> CallGeminiToGetIllustration(string keyword)
     {
         string geminiUrl = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={_geminiApiKey}";
@@ -86,30 +124,30 @@ public class GeminiAiService : IGeminiAiService
         var requestBody = new
         {
             contents = new[] {
-                new { parts = new[] { new { text = $"Write a short English visual description (1 sentence) to generate an image for: {keyword}. Return ONLY the description text." } } }
-            }
+            new { parts = new[] { new { text = $"Create a detailed, high-quality visual description in English to generate a 3D digital art style image for: '{keyword}'. Return ONLY the description, no intro." } } }
+        }
         };
 
-        // Serialize the object to JSON string
-        string json = JsonConvert.SerializeObject(requestBody);
+        try
+        {
+            string json = JsonConvert.SerializeObject(requestBody);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            var response = await _httpClient.PostAsync(geminiUrl, content);
 
-        // FIX: Use StringContent then manually set the ContentType to avoid "Argument 3" error
-        var content = new StringContent(json, Encoding.UTF8);
-        content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+            if (!response.IsSuccessStatusCode) return "https://via.placeholder.com/500?text=Gemini_API_Failed";
 
-        var response = await _httpClient.PostAsync(geminiUrl, content);
+            var jsonResponse = await response.Content.ReadAsStringAsync();
 
-        if (!response.IsSuccessStatusCode)
-            return "https://via.placeholder.com/500?text=AI_Error";
+            // Fix: Use nullable dynamic and null-coalescing assignment
+            dynamic? result = JsonConvert.DeserializeObject<dynamic>(jsonResponse);
+            string description = result?.candidates?[0]?.content?.parts?[0]?.text ?? keyword;
 
-        var jsonResponse = await response.Content.ReadAsStringAsync();
-        if (jsonResponse == null)
-            return $"https://via.placeholder.com/500?text=AI_Error";
-        dynamic result = jsonResponse;
-        string description = result?.candidates[0]?.content?.parts[0]?.text ?? keyword;
-
-        // Step B: Generate Image URL via Pollinations.ai
-        string encodedPrompt = Uri.EscapeDataString(description.Trim());
-        return $"https://image.pollinations.ai/prompt/{encodedPrompt}?width=512&height=512&nologo=true";
+            string encodedPrompt = Uri.EscapeDataString(description.Trim());
+            return $"https://image.pollinations.ai/prompt/{encodedPrompt}?width=1024&height=768&nologo=true&seed={new Random().Next(1000)}";
+        }
+        catch
+        {
+            return "https://via.placeholder.com/500?text=System_Error";
+        }
     }
 }

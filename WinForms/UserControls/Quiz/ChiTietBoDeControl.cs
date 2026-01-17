@@ -10,6 +10,7 @@ using System.Drawing;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using WinForms.Forms;
+using WinForms.UserControls.Pages;
 
 namespace WinForms.UserControls.Quiz
 {
@@ -112,6 +113,8 @@ namespace WinForms.UserControls.Quiz
             await _hubConnection.InvokeAsync("JoinRoom", pin.ToString());
         }
 
+
+
         // --- DÀNH CHO CHỦ PHÒNG (HOST) ---
         private async void btnCreateChallenge_Click(object? sender, EventArgs e)
         {
@@ -156,6 +159,11 @@ namespace WinForms.UserControls.Quiz
             NavigateToQuiz(data, CheDoHocEnum.HocMotMinh);
         }
 
+        public async Task CleanupAsync()
+        {
+            await CleanupLobbyAsync(); // Hàm xóa phòng bạn đã viết
+        }
+
         private async Task ExecuteStart()
         {
             var data = await _boDeHocService.GetFullDataToLearnAsync(_currentBoDe!.MaBoDe);
@@ -176,11 +184,102 @@ namespace WinForms.UserControls.Quiz
         }
         protected override void OnHandleDestroyed(EventArgs e)
         {
-            // Xóa các sự kiện để tránh rò rỉ bộ nhớ và chạy sai logic khi quay lại trang
-            _hubConnection.Remove("ReadyToStart");
-            _hubConnection.Remove("StartMatchSignal");
-
+            if (_currentPin != 0)
+            {
+                int pinToCleanup = _currentPin;
+                // Chạy một luồng tách biệt hoàn toàn với UI
+                Task.Run(async () => {
+                    try
+                    {
+                        // Tạo một bản sao Service mới từ ServiceProvider để tránh lỗi Dispose
+                        if (Program.ServiceProvider != null)
+                        {
+                            using (var scope = Program.ServiceProvider.CreateScope())
+                            {
+                                var thachDauService = scope.ServiceProvider.GetRequiredService<IThachDauService>();
+                                await thachDauService.HuyThachDauAsync(pinToCleanup);
+                            }
+                        }
+                    }
+                    catch { /* Tránh crash app khi tắt */ }
+                });
+            }
             base.OnHandleDestroyed(e);
         }
+
+        // 1. Sự kiện Click nút Back
+        private async void btnBack_Click(object? sender, EventArgs e)
+        {
+            btnBack.Enabled = false; // Chống bấm nhiều lần
+
+            if (this.FindForm() is MainForm mForm && Program.ServiceProvider != null)
+            {
+                // Lấy trang cần quay về
+                var hocTapPage = Program.ServiceProvider.GetRequiredService<HocTapPage>();
+                mForm.LoadPage(hocTapPage);
+            }
+        }
+
+        // 2. Hàm xử lý logic chính
+        private async Task HandleLeavePage()
+        {
+            try
+            {
+                // Thực hiện hủy phòng nếu đang trong lobby
+                await CleanupLobbyAsync();
+
+                // Điều hướng lùi về trang trước (HocTapPage)
+                if (this.ParentForm is MainForm mainForm)
+                {
+                    var hocTapPage = Program.ServiceProvider?.GetRequiredService<HocTapPage>();
+                    if (hocTapPage != null)
+                    {
+                        mainForm.LoadPage(hocTapPage);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Lỗi khi rời trang: {ex.Message}");
+            }
+        }
+
+        // 3. Hàm dọn dẹp (Dùng chung cho cả Back và Destroyed)
+        private async Task CleanupLobbyAsync()
+        {
+            if (_currentPin == 0) return;
+
+            // Lưu lại PIN vào biến tạm để tránh bị reset mất giá trị khi đang xử lý
+            int pinToCancel = _currentPin;
+            _currentPin = 0;
+
+            try
+            {
+                // 1. Cố gắng thông báo qua SignalR (nhưng không để nó chặn việc xóa DB)
+                if (_hubConnection.State == HubConnectionState.Connected)
+                {
+                    try
+                    {
+                        await _hubConnection.InvokeAsync("LeaveRoom", pinToCancel.ToString());
+                        if (_currentRole == LobbyRole.Host)
+                        {
+                            await _hubConnection.InvokeAsync("NotifyOpponentLeft", pinToCancel.ToString());
+                        }
+                    }
+                    catch { /* Bỏ qua lỗi SignalR để tiếp tục xóa DB */ }
+                }
+
+                // 2. QUAN TRỌNG: Gọi Service xóa phòng trong Database
+                // Phải đảm bảo hàm này chạy bất kể SignalR có kết nối hay không
+                await _thachDauService.HuyThachDauAsync(pinToCancel);
+
+                System.Diagnostics.Debug.WriteLine($"[Success] Đã xóa phòng {pinToCancel} khỏi DB.");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[Error] Không thể xóa phòng: {ex.Message}");
+            }
+        }
+
     }
 }
