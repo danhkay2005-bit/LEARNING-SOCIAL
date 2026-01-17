@@ -162,16 +162,40 @@ namespace WinForms.UserControls.Quiz
             _currentPin = pin;
             LoadDataById(maBoDe);
 
+            // 1. Giao diện chờ
             btnCreateChallenge.Visible = false;
             btnStartSolo.Enabled = false;
             btnStartSolo.Text = "ĐANG ĐỢI CHỦ PHÒNG...";
             lblChallengeCode.Text = pin.ToString("D6");
-            lblStatus.Text = "Đã tham gia thách đấu";
+            lblStatus.Text = "Đang kết nối...";
 
+            // 2. Kết nối SignalR và vào Group trước
             if (_hubConnection.State == HubConnectionState.Disconnected)
                 await _hubConnection.StartAsync();
 
             await _hubConnection.InvokeAsync("JoinRoom", pin.ToString());
+            if(UserSession.CurrentUser == null)
+            {
+                lblStatus.Text = "Bạn cần đăng nhập để tham gia thách đấu!";
+                return;
+            }
+            // 3. QUAN TRỌNG: Gọi API để báo với Database là tôi đã vào
+            // Khi hàm này thành công, Backend sẽ tự động bắn "ReadyToStart" tới chủ phòng
+            var request = new ThamGiaThachDauRequest
+            {
+                MaThachDau = pin,
+                MaNguoiDung = UserSession.CurrentUser.MaNguoiDung
+            };
+
+            bool isJoined = await _thachDauService.ThamGiaThachDauAsync(request);
+            if (isJoined)
+            {
+                lblStatus.Text = "Đã vào phòng, đợi chủ phòng bắt đầu!";
+            }
+            else
+            {
+                lblStatus.Text = "Phòng đã đầy hoặc không tồn tại!";
+            }
         }
 
 

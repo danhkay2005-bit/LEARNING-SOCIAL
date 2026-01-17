@@ -48,6 +48,9 @@ namespace WinForms.UserControls.Pages
             this.Load += HocTapPage_Load;
             cbbLocChuDe.SelectedIndexChanged += cbbLocChuDe_SelectedIndexChanged;
 
+            TaoQuiz();
+            HandleThamGia();
+
             // Đăng ký sự kiện điều hướng cho "Bộ đề của tôi"
             btnNextMy.Click += (s, e) => ChangeMyPage(1);
             btnPrevMy.Click += (s, e) => ChangeMyPage(-1);
@@ -59,7 +62,20 @@ namespace WinForms.UserControls.Pages
             SetDoubleBuffered(pnlMainContent);
             SetDoubleBuffered(flowBoDeCuaToi);
             SetDoubleBuffered(flowBoDeCongKhai);
-    
+
+        }
+
+        private void TaoQuiz()
+        {
+            this.btnTaoQuiz.Click += (s, e) =>
+            {
+                var mainForm = this.ParentForm as MainForm;
+                if (mainForm != null && Program.ServiceProvider != null)
+                {
+                    var taoBoDePage = Program.ServiceProvider.GetRequiredService<TaoQuizPage>();
+                    mainForm.LoadPage(taoBoDePage);
+                }
+            };
         }
 
         private void PnlMainContent_Resize(object? sender, EventArgs e)
@@ -270,6 +286,71 @@ namespace WinForms.UserControls.Pages
             typeof(Control).InvokeMember("DoubleBuffered",
                 System.Reflection.BindingFlags.SetProperty | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic,
                 null, control, new object[] { true });
+        }
+        private void HandleThamGia()
+        {
+            btnThamGia.Click += async (s, e) =>
+            {
+                // 1. Hiển thị hộp thoại nhập mã PIN (Sử dụng InputBox hoặc Custom Form)
+                string inputCode = Microsoft.VisualBasic.Interaction.InputBox(
+                    "Nhập mã PIN gồm 6 chữ số để tham gia thách đấu:",
+                    "Tham gia phòng học",
+                    "");
+
+                if (string.IsNullOrWhiteSpace(inputCode) || !int.TryParse(inputCode, out int pin))
+                {
+                    return;
+                }
+                if (UserSession.CurrentUser == null)
+                {
+                    MessageBox.Show("Bạn cần đăng nhập để tham gia thách đấu.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+                try
+                {
+                    // 2. Tạo request tham gia
+                    var request = new ThamGiaThachDauRequest
+                    {
+                        MaThachDau = pin,
+                        MaNguoiDung = UserSession.CurrentUser.MaNguoiDung
+                    };
+
+                    // 3. Gọi Service để xử lý logic Join (trong ThachDauService bạn đã viết)
+                    bool isJoined = await _thachDauService.ThamGiaThachDauAsync(request);
+
+                    if (isJoined)
+                    {
+                        // 4. Lấy thông tin phòng để biết MaBoDe là gì
+                        var roomInfo = await _thachDauService.GetByIdAsync(pin);
+
+                        if (roomInfo != null)
+                        {
+                            NavigateToQuizPage(roomInfo.MaBoDe, pin);
+                        }
+                    }
+                    else
+                    {
+                        MessageBox.Show("Mã PIN không đúng hoặc phòng đã đủ người!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Lỗi: {ex.Message}");
+                }
+            };
+        }
+
+        private void NavigateToQuizPage(int maBoDe, int maThachDau)
+        {
+            var mainForm = this.ParentForm as MainForm;
+            if (mainForm != null && Program.ServiceProvider != null)
+            {
+                // Chuyển sang màn hình làm bài (HocBoDePage hoặc màn hình Thách đấu)
+                var hocPage = Program.ServiceProvider.GetRequiredService<ChiTietBoDeControl>();
+                hocPage.MaBoDe = maBoDe;
+                // Nếu là thách đấu, bạn có thể truyền thêm MaThachDau vào để bật chế độ Real-time
+                mainForm.LoadPage(hocPage);
+            }
         }
     }
 }
