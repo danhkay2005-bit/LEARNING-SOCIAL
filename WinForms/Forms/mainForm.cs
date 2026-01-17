@@ -83,27 +83,27 @@ namespace WinForms.Forms
         // ================= PAGE LOAD =================
         public async void LoadPage(UserControl page)
         {
-            // 1. Kiểm tra trang cũ đang hiển thị trong panel
             if (contentPanel.Controls.Count > 0)
             {
                 var oldPage = contentPanel.Controls[0];
-
-                // 2. Nếu trang cũ là trang Thách đấu (có thực thi ICleanupControl)
                 if (oldPage is ICleanupControl cleanupPage)
                 {
-                    // Đợi lệnh xóa Database/SignalR chạy xong
                     await cleanupPage.CleanupAsync();
                 }
-
-                // 3. Giải phóng tài nguyên trang cũ
                 oldPage.Dispose();
             }
 
             contentPanel.SuspendLayout();
             contentPanel.Controls.Clear();
 
-            page.Dock = DockStyle.Fill;
+            // THIẾT LẬP QUAN TRỌNG:
+            page.Dock = DockStyle.Fill;   // Lấp đầy contentPanel
+            page.AutoSize = false;        // Tắt tự động điều chỉnh kích thước theo nội dung
+
             contentPanel.Controls.Add(page);
+
+            // Đảm bảo contentPanel cũng đang Fill trong cha của nó
+            contentPanel.Dock = DockStyle.Fill;
 
             contentPanel.ResumeLayout(true);
             page.PerformLayout();

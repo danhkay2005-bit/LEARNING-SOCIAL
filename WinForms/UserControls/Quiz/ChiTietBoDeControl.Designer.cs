@@ -28,6 +28,8 @@
             lblSideInfo = new Label();
             lblSideTitle = new Label();
             picThumb = new PictureBox();
+            btnEdit = new Button();
+            btnDelete = new Button();
             tlpMain.SuspendLayout();
             pnlLeftLobby.SuspendLayout();
             tlpLobby.SuspendLayout();
@@ -71,19 +73,36 @@
             tlpLobby.Controls.Add(lblChallengeCode, 0, 2);
             tlpLobby.Controls.Add(btnStartSolo, 0, 3);
             tlpLobby.Controls.Add(btnCreateChallenge, 0, 4);
-            tlpLobby.Controls.Add(lblStatus, 0, 5);
+            tlpLobby.Controls.Add(btnEdit, 0, 5);
+            tlpLobby.Controls.Add(btnDelete, 0, 6); // Thêm nút xóa vào hàng 6
+            tlpLobby.Controls.Add(lblStatus, 0, 7);
             tlpLobby.Dock = DockStyle.Fill;
             tlpLobby.Location = new Point(0, 0);
             tlpLobby.Name = "tlpLobby";
-            tlpLobby.RowCount = 6;
-            tlpLobby.RowStyles.Add(new RowStyle(SizeType.Absolute, 60F)); // Hàng nút Back
-            tlpLobby.RowStyles.Add(new RowStyle(SizeType.Percent, 25F));  // Tiêu đề
-            tlpLobby.RowStyles.Add(new RowStyle(SizeType.Percent, 25F));  // Mã PIN
-            tlpLobby.RowStyles.Add(new RowStyle(SizeType.Absolute, 90F)); // Nút Solo
-            tlpLobby.RowStyles.Add(new RowStyle(SizeType.Absolute, 70F)); // Nút Thách đấu
-            tlpLobby.RowStyles.Add(new RowStyle(SizeType.Percent, 10F));  // Trạng thái
+            tlpLobby.RowCount = 7;
+            tlpLobby.RowStyles.Add(new RowStyle(SizeType.Absolute, 60F));
+            tlpLobby.RowStyles.Add(new RowStyle(SizeType.Percent, 20F));
+            tlpLobby.RowStyles.Add(new RowStyle(SizeType.Percent, 20F));
+            tlpLobby.RowStyles.Add(new RowStyle(SizeType.Absolute, 85F));
+            tlpLobby.RowStyles.Add(new RowStyle(SizeType.Absolute, 65F));
+            tlpLobby.RowStyles.Add(new RowStyle(SizeType.Absolute, 65F));
+            tlpLobby.RowStyles.Add(new RowStyle(SizeType.Percent, 10F));
             tlpLobby.Size = new Size(666, 654);
             tlpLobby.TabIndex = 0;
+            btnEdit.Anchor = AnchorStyles.None;
+            btnEdit.Cursor = Cursors.Hand;
+            btnEdit.FlatAppearance.BorderColor = Color.FromArgb(255, 193, 7);
+            btnEdit.FlatAppearance.BorderSize = 1;
+            btnEdit.FlatStyle = FlatStyle.Flat;
+            btnEdit.Font = new Font("Segoe UI Semibold", 12F);
+            btnEdit.ForeColor = Color.FromArgb(255, 193, 7);
+            btnEdit.Location = new Point(158, 445);
+            btnEdit.Name = "btnEdit";
+            btnEdit.Size = new Size(350, 45);
+            btnEdit.TabIndex = 6;
+            btnEdit.Text = "✎ Chỉnh sửa bộ đề này";
+            btnEdit.UseVisualStyleBackColor = true;
+            btnEdit.Visible = false;
             // 
             // btnBack
             // 
@@ -103,7 +122,7 @@
             btnBack.TabIndex = 5;
             btnBack.Text = "← Quay lại";
             btnBack.UseVisualStyleBackColor = false;
-            this.btnBack.Click += new System.EventHandler(this.btnBack_Click);
+            btnBack.Click += btnBack_Click;
             // 
             // lblMainTitle
             // 
@@ -128,6 +147,21 @@
             lblChallengeCode.TabIndex = 1;
             lblChallengeCode.Text = "000000";
             lblChallengeCode.TextAlign = ContentAlignment.MiddleCenter;
+
+            btnDelete.Anchor = AnchorStyles.None;
+            btnDelete.Cursor = Cursors.Hand;
+            btnDelete.FlatAppearance.BorderColor = Color.LightCoral;
+            btnDelete.FlatAppearance.BorderSize = 1;
+            btnDelete.FlatStyle = FlatStyle.Flat;
+            btnDelete.Font = new Font("Segoe UI Semibold", 12F);
+            btnDelete.ForeColor = Color.LightCoral;
+            btnDelete.Location = new Point(158, 510);
+            btnDelete.Name = "btnDelete";
+            btnDelete.Size = new Size(350, 45);
+            btnDelete.TabIndex = 7;
+            btnDelete.Text = "🗑 Xóa bộ đề này";
+            btnDelete.UseVisualStyleBackColor = true;
+            btnDelete.Visible = false;
             // 
             // btnStartSolo
             // 
@@ -234,6 +268,7 @@
             ResumeLayout(false);
         }
 
+        private Button btnDelete;
         private Panel pnlLeftLobby;
         private Label lblMainTitle;
         private Label lblChallengeCode;
@@ -247,5 +282,6 @@
         private TableLayoutPanel tlpMain;
         private TableLayoutPanel tlpLobby;
         private Button btnBack;
+        private Button btnEdit;
     }
 }

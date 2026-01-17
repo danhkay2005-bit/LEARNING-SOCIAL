@@ -29,11 +29,11 @@
             pnlMyNavigation = new FlowLayoutPanel();
             btnPrevMy = new Button();
             btnNextMy = new Button();
-            flowBoDeCongKhai = new FlowLayoutPanel();
             pnlFilterContainer = new FlowLayoutPanel();
             lblFilterTitle = new Label();
             cbbLocChuDe = new ComboBox();
             lblPublicQuizzes = new Label();
+            flowBoDeCongKhai = new FlowLayoutPanel();
             pnlPublicNavigation = new FlowLayoutPanel();
             btnPrevPublic = new Button();
             btnNextPublic = new Button();
@@ -50,20 +50,13 @@
             pnlMainContent.AutoScroll = true;
             pnlMainContent.BackColor = Color.WhiteSmoke;
             pnlMainContent.Controls.Add(pnlHeader);
-
-            // ===== BỘ ĐỀ CỦA TÔI =====
             pnlMainContent.Controls.Add(lblMyQuizzes);
             pnlMainContent.Controls.Add(flowBoDeCuaToi);
             pnlMainContent.Controls.Add(pnlMyNavigation);
-
-            // ===== LỌC =====
             pnlMainContent.Controls.Add(pnlFilterContainer);
-
-            // ===== BỘ ĐỀ CÔNG KHAI =====
             pnlMainContent.Controls.Add(lblPublicQuizzes);
             pnlMainContent.Controls.Add(flowBoDeCongKhai);
             pnlMainContent.Controls.Add(pnlPublicNavigation);
-
             pnlMainContent.Dock = DockStyle.Fill;
             pnlMainContent.FlowDirection = FlowDirection.TopDown;
             pnlMainContent.Location = new Point(0, 0);
@@ -134,6 +127,7 @@
             // 
             // pictureBox1
             // 
+            pictureBox1.Image = Properties.Resources.unnamed_removebg_preview;
             pictureBox1.Location = new Point(0, 0);
             pictureBox1.Name = "pictureBox1";
             pictureBox1.Size = new Size(380, 205);
@@ -188,22 +182,12 @@
             btnNextMy.Text = "▶";
             btnNextMy.Visible = false;
             // 
-            // flowBoDeCongKhai
-            // 
-            flowBoDeCongKhai.AutoScroll = true;
-            flowBoDeCongKhai.AutoSize = true;
-            flowBoDeCongKhai.Location = new Point(33, 344);
-            flowBoDeCongKhai.Name = "flowBoDeCongKhai";
-            flowBoDeCongKhai.Size = new Size(0, 0);
-            flowBoDeCongKhai.TabIndex = 6;
-            flowBoDeCongKhai.WrapContents = false;
-            // 
             // pnlFilterContainer
             // 
             pnlFilterContainer.AutoSize = true;
             pnlFilterContainer.Controls.Add(lblFilterTitle);
             pnlFilterContainer.Controls.Add(cbbLocChuDe);
-            pnlFilterContainer.Location = new Point(30, 377);
+            pnlFilterContainer.Location = new Point(30, 371);
             pnlFilterContainer.Margin = new Padding(0, 30, 0, 10);
             pnlFilterContainer.Name = "pnlFilterContainer";
             pnlFilterContainer.Size = new Size(512, 47);
@@ -230,11 +214,21 @@
             // lblPublicQuizzes
             // 
             lblPublicQuizzes.Font = new Font("Segoe UI", 16F, FontStyle.Bold);
-            lblPublicQuizzes.Location = new Point(33, 434);
+            lblPublicQuizzes.Location = new Point(33, 428);
             lblPublicQuizzes.Name = "lblPublicQuizzes";
             lblPublicQuizzes.Size = new Size(100, 44);
             lblPublicQuizzes.TabIndex = 5;
             lblPublicQuizzes.Text = "Bộ đề công khai";
+            // 
+            // flowBoDeCongKhai
+            // 
+            flowBoDeCongKhai.AutoScroll = true;
+            flowBoDeCongKhai.AutoSize = true;
+            flowBoDeCongKhai.Location = new Point(33, 475);
+            flowBoDeCongKhai.Name = "flowBoDeCongKhai";
+            flowBoDeCongKhai.Size = new Size(0, 0);
+            flowBoDeCongKhai.TabIndex = 6;
+            flowBoDeCongKhai.WrapContents = false;
             // 
             // pnlPublicNavigation
             // 

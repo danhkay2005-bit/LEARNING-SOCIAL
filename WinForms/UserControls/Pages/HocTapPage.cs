@@ -43,6 +43,7 @@ namespace WinForms.UserControls.Pages
             _thachDauService = thachDauService;
             _chuDeService = chuDeService;
             _hubConnection = hubConnection;
+            this.pnlMainContent.Resize += PnlMainContent_Resize;
 
             this.Load += HocTapPage_Load;
             cbbLocChuDe.SelectedIndexChanged += cbbLocChuDe_SelectedIndexChanged;
@@ -59,6 +60,20 @@ namespace WinForms.UserControls.Pages
             SetDoubleBuffered(flowBoDeCuaToi);
             SetDoubleBuffered(flowBoDeCongKhai);
     
+        }
+
+        private void PnlMainContent_Resize(object? sender, EventArgs e)
+        {
+            // Tính toán chiều rộng khả dụng (trừ đi Padding và khoảng cách Scrollbar)
+            int targetWidth = pnlMainContent.ClientSize.Width - pnlMainContent.Padding.Left - pnlMainContent.Padding.Right - 20;
+
+            // Ép các thành phần chính giãn theo chiều rộng này
+            pnlHeader.Width = targetWidth;
+            lblMyQuizzes.Width = targetWidth;
+            flowBoDeCuaToi.Width = targetWidth;
+            pnlFilterContainer.Width = targetWidth;
+            lblPublicQuizzes.Width = targetWidth;
+            flowBoDeCongKhai.Width = targetWidth;
         }
 
         private async void HocTapPage_Load(object? sender, EventArgs e)

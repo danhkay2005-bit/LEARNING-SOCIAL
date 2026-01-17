@@ -36,6 +36,8 @@ namespace WinForms.UserControls.Quiz
             // Đăng ký sự kiện mặc định
             btnStartSolo.Click += btnStartSolo_Click;
             btnCreateChallenge.Click += btnCreateChallenge_Click;
+            btnEdit.Click += btnEdit_Click;
+            btnDelete.Click += btnDelete_Click;
 
             RegisterSignalREvents();
         }
@@ -92,6 +94,65 @@ namespace WinForms.UserControls.Quiz
             lblSideTitle.Text = data.TieuDe;
             lblSideInfo.Text = $"{data.SoLuongThe} thẻ • Độ khó: {data.MucDoKho}";
             if (!string.IsNullOrEmpty(data.AnhBia)) picThumb.ImageLocation = data.AnhBia;
+
+            // 2. Kiểm tra quyền sở hữu để hiện nút Sửa và Xóa
+            bool isOwner = UserSession.CurrentUser != null && data.MaNguoiDung == UserSession.CurrentUser.MaNguoiDung;
+            btnEdit.Visible = isOwner;
+            btnDelete.Visible = isOwner; // Hiện nút xóa nếu là chủ
+        }
+
+        private async void btnDelete_Click(object? sender, EventArgs e)
+        {
+            if (_currentBoDe == null) return;
+
+            var confirm = MessageBox.Show(
+                $"Bạn có chắc chắn muốn xóa bộ đề '{_currentBoDe.TieuDe}' không?\nDữ liệu đã xóa không thể khôi phục.",
+                "Xác nhận xóa",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning);
+
+            if (confirm == DialogResult.Yes)
+            {
+                try
+                {
+                    // Gọi service để xóa (Giả sử bạn đã có hàm DeleteAsync trong IBoDeHocService)
+                    // Nếu backend dùng xóa mềm (soft delete), trạng thái sẽ chuyển thành DaXoa = true
+                    await _boDeHocService.DeleteAsync(_currentBoDe.MaBoDe);
+
+                    MessageBox.Show("Đã xóa bộ đề thành công.", "Thông báo");
+
+                    // Quay lại trang danh sách sau khi xóa
+                    btnBack.PerformClick();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Lỗi khi xóa bộ đề: {ex.Message}", "Lỗi");
+                }
+            }
+        }
+
+        private async void btnEdit_Click(object? sender, EventArgs e)
+        {
+            if (_currentBoDe == null) return;
+
+            try
+            {
+                // 1. Lấy toàn bộ dữ liệu (bao gồm các câu hỏi)
+                var fullData = await _boDeHocService.GetFullDataToLearnAsync(_currentBoDe.MaBoDe);
+
+                // 2. Chuyển hướng sang TaoQuizPage
+                var mainForm = this.FindForm() as MainForm;
+                if (Program.ServiceProvider != null && mainForm != null)
+                {
+                    var taoQuizPage = Program.ServiceProvider.GetRequiredService<TaoQuizPage>();
+
+                    // 3. Gọi hàm load dữ liệu để chỉnh sửa (chúng ta sẽ viết hàm này ở bước sau)
+                    taoQuizPage.LoadDataForEdit(fullData);
+
+                    mainForm.LoadPage(taoQuizPage);
+                }
+            }
+            catch (Exception ex) { MessageBox.Show($"Lỗi tải dữ liệu chỉnh sửa: {ex.Message}"); }
         }
 
         // --- DÀNH CHO KHÁCH (GUEST) GỌI TỪ TRANG CHỦ ---
