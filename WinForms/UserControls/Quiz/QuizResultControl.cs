@@ -1,18 +1,20 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
-using System.Text;
 using System.Windows.Forms;
 
 namespace WinForms.UserControls.Quiz
 {
     public partial class QuizResultControl : UserControl
     {
+        // Sự kiện để báo cho MainForm biết người dùng đã nhấn Hoàn thành
+        public event Action? OnFinishClicked;
+
         public QuizResultControl()
         {
             InitializeComponent();
+
+            // Đăng ký sự kiện Click cho nút Hoàn thành
+            btnFinish.Click += (s, e) => OnFinishClicked?.Invoke();
         }
 
         // Chế độ Solo: Hiển thị % chính xác và thông báo SM-2
@@ -21,12 +23,12 @@ namespace WinForms.UserControls.Quiz
             double accuracy = total > 0 ? (double)correct / total * 100 : 0;
 
             lblTitle.Text = "HOÀN THÀNH PHIÊN HỌC!";
-            lblTitle.ForeColor = Color.FromArgb(193, 225, 127);
+            lblTitle.ForeColor = Color.FromArgb(193, 225, 127); // Màu xanh lá nhẹ
 
             lblMainStat.Text = $"{Math.Round(accuracy, 1)}%";
             lblDetails.Text = $"✅ Đúng: {correct}  |  ❌ Sai: {wrong}\n" +
-                              $"⏱️ Thời gian: {time:mm\\:ss}\n" +
-                              $"Tiến độ ghi nhớ đã được cập nhật vào kho dữ liệu SM-2.";
+                              $"⏱️ Thời gian: {time:mm\\:ss}\n\n" +
+                              "Tiến độ ghi nhớ đã được cập nhật vào kho dữ liệu SM-2.";
         }
 
         // Chế độ Thách đấu: Hiển thị XP và trạng thái Thắng/Thua
@@ -37,8 +39,8 @@ namespace WinForms.UserControls.Quiz
 
             lblMainStat.Text = $"{score} XP";
             lblDetails.Text = $"Kết quả trận đấu: {correct} Đúng - {wrong} Sai\n" +
-                              $"Mã phòng (PIN): #{pin}\n" +
-                              $"Trận đấu đã được lưu vào lịch sử thách đấu vĩnh viễn.";
+                              $"Mã phòng (PIN): #{pin}\n\n" +
+                              "Trận đấu đã được lưu vào lịch sử thách đấu vĩnh viễn.";
         }
     }
 }

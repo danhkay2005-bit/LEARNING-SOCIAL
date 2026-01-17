@@ -9,7 +9,7 @@ public partial class LogsGenerateAi
 
     public Guid MaNguoiDung { get; set; }
 
-    public int MaThe { get; set; }
+    public int? MaThe { get; set; } = null;
 
     public string Prompt { get; set; } = null!;
 

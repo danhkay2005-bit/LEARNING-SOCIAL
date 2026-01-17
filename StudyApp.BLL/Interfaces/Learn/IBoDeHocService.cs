@@ -10,7 +10,7 @@ namespace StudyApp.BLL.Interfaces.Learn
         Task<IEnumerable<BoDeHocResponse>> GetByUserAsync(Guid userId);
         Task<BoDeHocResponse> CreateAsync(TaoBoDeHocRequest request);
         Task<BoDeHocResponse> CreateFullAsync(LuuToanBoBoDeRequest request);
-        Task<BoDeHocResponse> UpdateAsync(int id, CapNhatBoDeHocRequest request);
+        Task<BoDeHocResponse> UpdateFullAsync(int id, LuuToanBoBoDeRequest request);
         Task<bool> DeleteAsync(int id); // Soft delete
 
         // Logic Sao chép bộ đề
@@ -35,6 +35,8 @@ namespace StudyApp.BLL.Interfaces.Learn
 
         Task<bool> UpdateCardProgressAsync(CapNhatTienDoHocTapRequest request);
         Task LuuKetQuaPhienHocAsync(PhienHoc phienHoc);
+        Task<IEnumerable<BoDeHocResponse>> GetByFilterAsync(int maChuDe);
+        Task TangSoLuotHocAsync(int maBoDe);
 
     }
 }

@@ -34,28 +34,10 @@ namespace StudyApp.DTO.Requests.Learn
     /// <summary>
     /// Request cập nhật thẻ flashcard
     /// </summary>
-    public class CapNhatTheFlashcardRequest
+    public class CapNhatTheFlashcardRequest: TaoTheFlashcardRequest
     {
         [Required]
         public int MaThe { get; set; }
 
-        [Required]
-        public LoaiTheEnum LoaiThe { get; set; }
-
-        [Required]
-        public string MatTruoc { get; set; } = null!;
-
-        [Required]
-        public string MatSau { get; set; } = null!;
-
-        public string? GiaiThich { get; set; }
-
-        public string? HinhAnhTruoc { get; set; }
-
-        public string? HinhAnhSau { get; set; }
-
-        public int? ThuTu { get; set; }
-
-        public MucDoKhoEnum? DoKho { get; set; }
     }
 }

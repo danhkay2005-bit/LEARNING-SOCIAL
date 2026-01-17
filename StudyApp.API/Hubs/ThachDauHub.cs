@@ -40,5 +40,11 @@ namespace StudyApp.API.Hubs
         {
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, roomCode);
         }
+
+        public async Task NotifyOpponentLeft(string maThachDau)
+        {
+            // Gửi lệnh "OpponentLeft" cho tất cả mọi người trong nhóm (trừ người vừa gửi)
+            await Clients.OthersInGroup(maThachDau).SendAsync("OpponentLeft");
+        }
     }
 }

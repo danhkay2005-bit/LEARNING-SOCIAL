@@ -10,5 +10,6 @@ namespace StudyApp.BLL.Interfaces.Learn
         Task<ChuDeResponse> CreateAsync(TaoChuDeRequest request);
         Task<ChuDeResponse> UpdateAsync(CapNhatChuDeRequest request);
         Task<bool> DeleteAsync(int id);
+        Task<IEnumerable<BoDeHocResponse>> GetByFilterAsync(int maChuDe);
     }
 }
