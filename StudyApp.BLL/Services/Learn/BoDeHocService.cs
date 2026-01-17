@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using StudyApp.BLL.Interfaces.Learn;
+using StudyApp.BLL.Interfaces.User;
 using StudyApp.DAL.Data;
 using StudyApp.DAL.Entities.Learn;
 using StudyApp.DTO.Enums;
@@ -14,11 +15,15 @@ namespace StudyApp.BLL.Services.Learn
     {
         private readonly LearningDbContext _context;
         private readonly IMapper _mapper;
+        private readonly IGamificationService _gamificationService;
+        private readonly IDailyStreakService _dailyStreakService;
 
-        public BoDeHocService(LearningDbContext context, IMapper mapper)
+        public BoDeHocService(LearningDbContext context, IMapper mapper, IGamificationService gamificationService, IDailyStreakService dailyStreakService)
         {
             _context = context;
             _mapper = mapper;
+            _gamificationService = gamificationService;
+            _dailyStreakService = dailyStreakService;
         }
 
         #region Helper Methods (Xử lý Hashtag)
@@ -540,11 +545,9 @@ namespace StudyApp.BLL.Services.Learn
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                // 1. Lưu PhienHoc
                 _context.PhienHocs.Add(phienHoc);
                 await _context.SaveChangesAsync();
 
-                // 2. Tạo LichSuHocBoDe tổng quát
                 if (phienHoc.MaBoDe == null)
                     throw new InvalidOperationException("MaBoDe must not be null when saving LichSuHocBoDe.");
 
@@ -566,6 +569,26 @@ namespace StudyApp.BLL.Services.Learn
                 await _context.SaveChangesAsync();
 
                 await transaction.CommitAsync();
+
+                // 4. KÍCH HOẠT GAMIFICATION
+                if (phienHoc.TongSoThe == null)
+                    throw new InvalidOperationException("TongSoThe must not be null when calculating XP.");
+                var tyLeDung = phienHoc.TyLeDung ?? 0;
+                var tongSoThe = phienHoc.TongSoThe ?? 0;
+
+                int questionsCorrect = (int)(tongSoThe * (tyLeDung / 100.0));
+                int xpEarned = questionsCorrect * 10;
+
+                try
+                {
+                    await _gamificationService.ProcessLessonCompletionAsync(phienHoc.MaNguoiDung, xpEarned);
+                }
+                catch (Exception)
+                {
+                    // bỏ qua để không crash luồng chính
+                }
+
+                await _dailyStreakService.MarkLessonCompletedTodayAsync(phienHoc.MaNguoiDung);
             }
             catch
             {

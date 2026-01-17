@@ -1,12 +1,14 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using StudyApp.BLL.Interfaces.Social;
 using StudyApp.BLL.Interfaces.User;
+using WinForms.UserControls.Tasks;
 using StudyApp.DTO;
 using StudyApp.DTO.Responses.User;
 using System;
 using System.Drawing;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using WinForms;
 
 namespace WinForms.UserControls.Pages
 {
@@ -14,6 +16,7 @@ namespace WinForms.UserControls.Pages
     {
         private readonly IUserProfileService _userProfileService;
         private readonly ISocialService _socialService;
+       
         private NguoiDungGamificationResponse? _userStats;
 
         private Panel? _rootPanel;
@@ -25,15 +28,24 @@ namespace WinForms.UserControls.Pages
 
             _userProfileService = userProfileService;
             _socialService = socialService;
+           
         }
 
         private async void TrangChuPage_Load(object sender, EventArgs e)
         {
-            if (!UserSession.IsLoggedIn || UserSession.CurrentUser == null)
+            if (!UserSession.IsLoggedIn)
                 return;
-
-            await LoadUserStats();
+           await LoadUserStats();
             RenderDashboard();
+
+            this.VisibleChanged +=async (s, ev) =>
+            {
+                if (this.Visible)
+                {
+                   await LoadUserStats();
+                    RenderDashboard();
+                }
+            };
         }
 
         // ================= LOAD USER STATS =================
@@ -41,6 +53,7 @@ namespace WinForms.UserControls.Pages
         {
             try
             {
+                var currentUserId = UserSession.CurrentUser;
                 // Tạo response từ CurrentUser (đã có đầy đủ properties sau khi cập nhật)
                 _userStats = new NguoiDungGamificationResponse
                 {
@@ -296,6 +309,33 @@ namespace WinForms.UserControls.Pages
             var page = Program.ServiceProvider?.GetRequiredService<T>();
             if (page != null)
                 main.LoadPage(page);
+        }
+
+        protected override void OnHandleCreated(EventArgs e)
+        {
+            base.OnHandleCreated(e);
+
+            AppEvents.UserStatsChanged -= OnUserStatsChanged;
+            AppEvents.UserStatsChanged += OnUserStatsChanged;
+        }
+
+        protected override void OnHandleDestroyed(EventArgs e)
+        {
+            AppEvents.UserStatsChanged -= OnUserStatsChanged;
+            base.OnHandleDestroyed(e);
+        }
+
+        private void OnUserStatsChanged()
+        {
+            if (!IsHandleCreated) return;
+
+            BeginInvoke(async () =>
+            {
+                if (!Visible) return; // chỉ refresh khi TrangChuPage đang mở
+                await LoadUserStats();
+
+                RenderDashboard();
+            });
         }
     }
 }

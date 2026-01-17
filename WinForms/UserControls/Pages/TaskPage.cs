@@ -11,6 +11,8 @@ using System.Windows.Forms;
 using WinForms.Forms;
 using WinForms.UserControls.Tasks;
 using StudyApp.BLL.Interfaces.User;
+using StudyApp.DAL.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace WinForms.UserControls.Pages
 {
@@ -27,9 +29,13 @@ namespace WinForms.UserControls.Pages
 
         private async void TaskPage_Load(object sender, EventArgs e)
         {
+            var userId = UserSession.CurrentUser!.MaNguoiDung;
+            await _service.ResetDailyQuestCountAsync(userId);
+            // Thêm 2 dòng trên
+
             await LoadAllQuests();
         }
-
+        #region LoadAllQuests
         private async Task LoadAllQuests()
         {
             try
@@ -60,7 +66,9 @@ namespace WinForms.UserControls.Pages
                 MessageBox.Show("Lỗi tải dữ liệu: " + ex.Message);
             }
         }
+        #endregion
 
+        #region RenderDataToPanel
         private void RenderDataToPanel(FlowLayoutPanel panel, List<TienDoNhiemVuResponse> list)
         {
             panel.Controls.Clear();
@@ -93,8 +101,10 @@ namespace WinForms.UserControls.Pages
                 panel.Controls.Add(item);
             }
         }
+        #endregion
 
-        private async void Item_OnClaimClicked(object? sender, int maNhiemVu)
+        #region Item_OnClaimClicked
+      /*  private async void Item_OnClaimClicked(object? sender, int maNhiemVu)
         {
             try
             {
@@ -112,6 +122,7 @@ namespace WinForms.UserControls.Pages
                     RewardPopupTask popup = new RewardPopupTask("🎉 Nhận thưởng thành công!\nKiểm tra ví của bạn nhé.");
                     popup.ShowDialog();
                     await LoadAllQuests();
+                    
                 }
                 else
                 {
@@ -122,6 +133,75 @@ namespace WinForms.UserControls.Pages
             {
                 MessageBox.Show("Lỗi hệ thống: " + ex.Message);
             }
+        }*/
+        #endregion
+
+
+        #region Item_OnClaimClicked2
+        private async void Item_OnClaimClicked(object? sender, int maNhiemVu)
+        {
+            try
+            {
+                if (!UserSession.IsLoggedIn) return;
+
+                var userId = UserSession.CurrentUser!.MaNguoiDung;
+                var resultMsg = await _service.ClaimQuestRewardAsync(userId, maNhiemVu);
+
+                if (resultMsg.StartsWith("Lỗi") || resultMsg.Contains("Chưa hoàn thành") || resultMsg.Contains("Đã nhận"))
+                {
+                    MessageBox.Show(resultMsg, "Thất bại", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+                else
+                {
+                    // === THÀNH CÔNG ===
+                    var popup = new RewardPopupTask(resultMsg);
+                    popup.ShowDialog();
+                    await RefreshDashboardManual(maNhiemVu);
+
+                    // 🔥 TRIGGER EVENT ĐỂ REFRESH TRANG CHỦ
+                    AppEvents.OnUserStatsChanged();
+
+                    // Refresh dashboard
+                    
+                    await LoadAllQuests();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Lỗi hệ thống: " + ex.Message);
+            }
         }
+        #endregion
+
+        #region RefreshDashboard
+        private async Task RefreshDashboardManual(int maNhiemVu)
+        {
+            try
+            {
+                if (Program.ServiceProvider == null || UserSession.CurrentUser == null)
+                    return;
+
+                var db = Program.ServiceProvider.GetRequiredService<UserDbContext>();
+
+                var user = await db.NguoiDungs.FindAsync(UserSession.CurrentUser.MaNguoiDung);
+                if (user == null) return;
+
+                var current = UserSession.CurrentUser;
+
+                current.Vang = user.Vang ?? 0;
+                current.KimCuong = user.KimCuong ?? 0;
+                current.TongDiemXp = user.TongDiemXp ?? 0;
+                current.ChuoiNgayHocLienTiep = user.ChuoiNgayHocLienTiep ?? 0;
+                current.TongSoTheHoc = user.TongSoTheHoc ?? 0;
+                current.TongSoTheDung = user.TongSoTheDung ?? 0;
+
+                UserSession.Login(current);
+            }
+            catch
+            {
+                // bỏ qua
+            }
+        }
+        #endregion
     }
 }

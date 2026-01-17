@@ -1,5 +1,8 @@
-﻿using Microsoft.AspNetCore.SignalR.Client;
+﻿using WinForms.UserControls.Tasks;
+using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.Extensions.DependencyInjection;
 using StudyApp.BLL.Interfaces.Learn;
+using StudyApp.DAL.Data;
 using StudyApp.DAL.Entities.Learn;
 using StudyApp.DTO;
 using StudyApp.DTO.Enums;
@@ -7,6 +10,8 @@ using StudyApp.DTO.Requests.Learn;
 using StudyApp.DTO.Responses.Learn;
 using System.Diagnostics;
 using WinForms.UserControls.Quiz;
+
+
 
 namespace WinForms.UserControls
 {
@@ -216,6 +221,29 @@ namespace WinForms.UserControls
                         TyLeDung = (_data?.DanhSachCauHoi?.Count ?? 0) > 0 ? (double)_correctCount / (_data?.DanhSachCauHoi?.Count ?? 1) * 100 : 0
                     };
                     await _boDeHocService.LuuKetQuaPhienHocAsync(phienHoc);
+
+                    // Thêm vào đây
+                    if (Program.ServiceProvider != null)
+                    {
+                        var userDb = Program.ServiceProvider.GetRequiredService<UserDbContext>();
+                        var user = await userDb.NguoiDungs.FindAsync(UserSession.CurrentUser.MaNguoiDung);
+
+                        if (user != null)
+                        {
+                            UserSession.CurrentUser.Vang = user.Vang ?? 0;
+                            UserSession.CurrentUser.KimCuong = user.KimCuong ?? 0;
+                            UserSession.CurrentUser.TongDiemXp = user.TongDiemXp ?? 0;
+                            UserSession.CurrentUser.ChuoiNgayHocLienTiep = user.ChuoiNgayHocLienTiep ?? 0;
+                            UserSession.CurrentUser.TongSoTheHoc = user.TongSoTheHoc ?? 0;
+                            UserSession.CurrentUser.TongSoTheDung = user.TongSoTheDung ?? 0;
+
+                            UserSession.Login(UserSession.CurrentUser);
+
+                            AppEvents.OnUserStatsChanged();
+                        }
+
+                    }
+                    // Kết thúc thêm vào đây
                     resultUI.DisplaySoloResult(_correctCount, _wrongCount, _data?.DanhSachCauHoi?.Count ?? 0, _totalTimer.Elapsed);
                 }
                 else if (_maThachDau.HasValue)

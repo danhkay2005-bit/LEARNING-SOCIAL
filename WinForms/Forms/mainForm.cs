@@ -49,7 +49,8 @@ namespace WinForms.Forms
                 // ✅ THÊM: Nút Mạng xã hội
                 AddMenuButton("🌐 Mạng xã hội", (s,e) => LoadPage(Program.ServiceProvider!.GetRequiredService<NewsfeedControl>()));
 
-                AddMenuButton("🛒 Cửa hàng", (s, e) => LoadPage(new CuaHangPage()));
+                AddMenuButton("🛒 Cửa hàng", (s, e) => LoadPage(Program.ServiceProvider!.GetRequiredService<CuaHangPage>()));
+                AddMenuButton("Kho vật phẩm", (s, e) => LoadPage(Program.ServiceProvider!.GetRequiredService<KhoVatPhamPage>()));
                 AddMenuButton("⚙️ Cài đặt", (s, e) => LoadPage(new CaiDatPage()));
                 AddMenuButton("🏅 Thành Tựu", (s, e) => LoadPage(Program.ServiceProvider!.GetRequiredService <AchievementsPage>()));
                 AddMenuButton("📋 Nhiệm Vụ", (s, e) => LoadPage(Program.ServiceProvider!.GetRequiredService<TaskPage>()));

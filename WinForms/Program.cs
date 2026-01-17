@@ -4,7 +4,10 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using StudyApp.BLL;
 using StudyApp.BLL.Interfaces.Learn;
+using StudyApp.BLL.Interfaces.User;
 using StudyApp.BLL.Mappings.Learn;
+using StudyApp.BLL.Services.Learn;
+using StudyApp.BLL.Services.User;
 using StudyApp.DAL.Data;
 using System;
 using System.IO;
@@ -59,6 +62,22 @@ namespace WinForms
 
             // --- Đăng ký các Business Services từ tầng BLL ---
             services.AddBusinessServices();
+
+
+            //================================================
+            //Thêm các này vào
+            //====================
+            // Đăng ký Service cho Game & Nhiệm vụ
+          //  services.AddScoped<IGamificationService, GamificationService>();
+
+            // Đăng ký Service cho Chuỗi (Streak)
+          //  services.AddScoped<IDailyStreakService, DailyStreakService>();
+
+            // Đăng ký lại BoDeHocService (để đảm bảo dùng phiên bản có tích hợp Game)
+            // Lưu ý: Nếu AddBusinessServices đã đăng ký rồi thì dòng này sẽ ghi đè (tốt)
+          //  services.AddScoped<IBoDeHocService, BoDeHocService>();
+
+            // ==================================================================
 
             // --- Tự động đăng ký tất cả các Form và UserControl ---
             services.Scan(scan => scan
