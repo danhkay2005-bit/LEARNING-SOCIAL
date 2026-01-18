@@ -8,13 +8,10 @@ namespace WinForms.UserControls.Quiz
 {
     public partial class HeaderEditorControl : UserControl
     {
-        private readonly IGeminiAiService _geminiAiService;
         public HeaderEditorControl()
         {
             if (Program.ServiceProvider == null)
                 throw new InvalidOperationException("ServiceProvider is not initialized.");
-
-            _geminiAiService = Program.ServiceProvider.GetRequiredService<IGeminiAiService>();
             InitializeComponent();
             SetupPrivacyComboBox();
             SetupDifficultyComboBox();

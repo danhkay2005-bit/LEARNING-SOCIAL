@@ -56,5 +56,4 @@ public partial class BoDeHoc
     public virtual ICollection<ThachDau> ThachDaus { get; set; } = new List<ThachDau>();
 
     public virtual ICollection<TheFlashcard> TheFlashcards { get; set; } = new List<TheFlashcard>();
-    public virtual ICollection<LichSuThachDau> LichSuThachDaus { get; set; } = new List<LichSuThachDau>();
 }

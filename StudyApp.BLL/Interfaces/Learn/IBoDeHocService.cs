@@ -30,7 +30,7 @@ namespace StudyApp.BLL.Interfaces.Learn
 
         // Chế độ Thách đấu
         Task<ThachDauResponse> CreateChallengeAsync(TaoThachDauRequest request);
-        Task<bool> JoinChallengeAsync(ThamGiaThachDauRequest request);
+        Task<bool> JoinChallengeAsync(LichSuThachDauRequest request);
         Task<bool> UpdateChallengeResultAsync(CapNhatKetQuaThachDauRequest request);
 
         Task<bool> UpdateCardProgressAsync(CapNhatTienDoHocTapRequest request);

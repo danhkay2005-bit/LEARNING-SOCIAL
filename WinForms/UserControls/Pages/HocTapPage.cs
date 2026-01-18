@@ -309,7 +309,7 @@ namespace WinForms.UserControls.Pages
                 try
                 {
                     // 2. Tạo request tham gia
-                    var request = new ThamGiaThachDauRequest
+                    var request = new LichSuThachDauRequest
                     {
                         MaThachDau = pin,
                         MaNguoiDung = UserSession.CurrentUser.MaNguoiDung

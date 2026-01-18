@@ -5,7 +5,6 @@ namespace StudyApp.DAL.Entities.Learn;
 
 public partial class ThachDau
 {
-    
     public int MaThachDau { get; set; }
 
     public int MaBoDe { get; set; }
@@ -23,6 +22,4 @@ public partial class ThachDau
     public virtual BoDeHoc MaBoDeNavigation { get; set; } = null!;
 
     public virtual ICollection<PhienHoc> PhienHocs { get; set; } = new List<PhienHoc>();
-
-    public virtual ICollection<ThachDauNguoiChoi> ThachDauNguoiChois { get; set; } = new List<ThachDauNguoiChoi>();
 }

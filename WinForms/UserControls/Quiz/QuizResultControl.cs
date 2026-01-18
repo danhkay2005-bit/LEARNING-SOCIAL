@@ -34,13 +34,35 @@ namespace WinForms.UserControls.Quiz
         // Chế độ Thách đấu: Hiển thị XP và trạng thái Thắng/Thua
         public void DisplayChallengeResult(int score, int correct, int wrong, bool isWinner, int pin)
         {
-            lblTitle.Text = isWinner ? "🏆 CHIẾN THẮNG!" : "🏳️ CỐ GẮNG LẦN SAU";
-            lblTitle.ForeColor = isWinner ? Color.Gold : Color.FromArgb(255, 128, 128);
+            double total = correct + wrong;
+            double accuracy = total > 0 ? (double)correct / total : 0;
+
+            if (isWinner)
+            {
+                lblTitle.ForeColor = Color.Gold;
+                // Nếu thắng nhưng làm đúng dưới 60%, nhắc nhở cố gắng
+                if (accuracy < 0.6)
+                {
+                    lblTitle.Text = "🏆 THẮNG SUÝT SAO!";
+                    lblDetails.Text = "Bạn đã giành chiến thắng, nhưng tỷ lệ chính xác còn thấp.\n" +
+                                      "Cả bạn và đối thủ đều cần cố gắng luyện tập thêm!";
+                }
+                else
+                {
+                    lblTitle.Text = "🏆 CHIẾN THẮNG!";
+                    lblDetails.Text = "Màn trình diễn tuyệt vời! Bạn đã áp đảo đối thủ.";
+                }
+            }
+            else
+            {
+                lblTitle.Text = "🏳️ CỐ GẮNG LẦN SAU";
+                lblTitle.ForeColor = Color.FromArgb(255, 128, 128);
+                lblDetails.Text = accuracy < 0.4 ? "Đừng nản chí! Hãy ôn tập lại kiến thức SM-2 nhé."
+                                                 : "Bạn đã làm rất tốt, chỉ thiếu một chút may mắn thôi.";
+            }
 
             lblMainStat.Text = $"{score} XP";
-            lblDetails.Text = $"Kết quả trận đấu: {correct} Đúng - {wrong} Sai\n" +
-                              $"Mã phòng (PIN): #{pin}\n\n" +
-                              "Trận đấu đã được lưu vào lịch sử thách đấu vĩnh viễn.";
+            lblDetails.Text += $"\n\nThống kê: {correct} Đúng - {wrong} Sai | Mã phòng: #{pin}";
         }
     }
 }

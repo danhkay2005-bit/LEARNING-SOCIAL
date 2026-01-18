@@ -1,5 +1,4 @@
 ﻿using AutoMapper;
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using StudyApp.BLL.Interfaces.Learn;
 using StudyApp.DAL.Data;
@@ -8,6 +7,7 @@ using StudyApp.DTO.Requests.Learn;
 using StudyApp.DTO.Responses.Learn;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -18,14 +18,14 @@ namespace StudyApp.BLL.Services.Learn
         private readonly LearningDbContext _context;
         private readonly UserDbContext _userDb;
         private readonly IMapper _mapper;
-        private readonly IThachDauNotifier _notifier;// Tiêm HubContext
+        private readonly IThachDauNotifier _notifier;
 
         public ThachDauService(LearningDbContext context, UserDbContext userDb, IMapper mapper, IThachDauNotifier notifier)
         {
             _context = context;
+            _userDb = userDb;
             _mapper = mapper;
             _notifier = notifier;
-            _userDb = userDb;
         }
 
         // ==========================================
@@ -38,7 +38,6 @@ namespace StudyApp.BLL.Services.Learn
             int pin;
             bool isExist;
 
-            // Đảm bảo mã PIN 6 số là duy nhất trong các phòng đang hoạt động
             do
             {
                 pin = rnd.Next(100000, 999999);
@@ -56,12 +55,17 @@ namespace StudyApp.BLL.Services.Learn
 
             _context.ThachDaus.Add(thachDau);
 
-            // Thêm ngay Người tạo (User A) vào danh sách người chơi
-            _context.ThachDauNguoiChois.Add(new ThachDauNguoiChoi
+            _context.LichSuThachDaus.Add(new LichSuThachDau
             {
-                MaThachDau = pin,
                 MaNguoiDung = request.NguoiTao,
-                Diem = 0
+                MaBoDe = request.MaBoDe,
+                MaThachDauGoc = pin,
+                Diem = null, // null nghĩa là đang thi
+                SoTheDung = 0,
+                SoTheSai = 0,
+                ThoiGianLamBaiGiay = 0,
+                LaNguoiThang = false,
+                ThoiGianKetThuc = DateTime.Now
             });
 
             await _context.SaveChangesAsync();
@@ -81,166 +85,158 @@ namespace StudyApp.BLL.Services.Learn
 
         public async Task<bool> HoanThanhVaCleanupAsync(int maThachDau)
         {
+            // 1. Lấy danh sách người chơi
+            var players = await _context.LichSuThachDaus
+                .Where(x => x.MaThachDauGoc == maThachDau)
+                .ToListAsync();
+
+            if (players.Count == 0) return false;
+
+            // FIX: Cho phép dọn dẹp nếu có ít nhất 1 người đã nộp bài (phòng trường hợp người kia thoát ngang)
+            // Nếu muốn chặt chẽ hơn, bạn có thể giữ players.Count >= 2
+            if (!players.Any(p => p.Diem != null)) return false;
+
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                var room = await _context.ThachDaus
-                    .Include(x => x.ThachDauNguoiChois)
-                    .FirstOrDefaultAsync(x => x.MaThachDau == maThachDau);
+                // Quy đổi tất cả Diem null thành 0 để tính toán thắng thua
+                foreach (var p in players) { if (p.Diem == null) p.Diem = 0; }
 
-                if (room == null) return true; // Đã xóa bởi luồng khác
-
-                // 1. Xác định người thắng
-                var winner = room.ThachDauNguoiChois
+                // 2. PHÂN ĐỊNH THẮNG THUA
+                var winner = players
                     .OrderByDescending(x => x.Diem)
                     .ThenBy(x => x.ThoiGianLamBaiGiay)
                     .FirstOrDefault();
 
-                DateTime finishTime = DateTime.Now;
-
-                // 2. Di chuyển dữ liệu sang bảng Lịch sử vĩnh viễn
-                foreach (var p in room.ThachDauNguoiChois)
+                if (winner != null)
                 {
-                    bool isWinner = (winner != null && p.MaNguoiDung == winner.MaNguoiDung);
-
-                    _context.LichSuThachDaus.Add(new LichSuThachDau
+                    foreach (var p in players)
                     {
-                        MaNguoiDung = p.MaNguoiDung,
-                        MaBoDe = room.MaBoDe,
-                        MaThachDauGoc = room.MaThachDau,
-                        Diem = p.Diem ?? 0,
-                        LaNguoiThang = isWinner,
-                        ThoiGianKetThuc = finishTime
-                    });
+                        p.LaNguoiThang = (p.MaNguoiDung == winner.MaNguoiDung);
+                        p.ThoiGianKetThuc = DateTime.Now;
+                        _context.Entry(p).State = EntityState.Modified;
 
-                    // Cập nhật bảng NguoiDung (User DB)
-                    var user = await _userDb.NguoiDungs.FindAsync(p.MaNguoiDung);
-                    if (user != null)
-                    {
-                        user.SoTranThachDau = (user.SoTranThachDau ?? 0) + 1;
-                        if (isWinner) user.SoTranThang = (user.SoTranThang ?? 0) + 1;
-                        else user.SoTranThua = (user.SoTranThua ?? 0) + 1;
+                        // 3. TÍNH TOÁN HIỆU NĂNG & XP
+                        int totalCards = (p.SoTheDung ?? 0) + (p.SoTheSai ?? 0);
+                        double accuracy = totalCards > 0 ? (double)(p.SoTheDung ?? 0) / totalCards : 0;
+
+                        var user = await _userDb.NguoiDungs.FindAsync(p.MaNguoiDung);
+                        if (user != null)
+                        {
+                            user.SoTranThachDau = (user.SoTranThachDau ?? 0) + 1;
+                            if (p.LaNguoiThang == true)
+                            {
+                                user.SoTranThang = (user.SoTranThang ?? 0) + 1;
+                                user.TongDiemXp = (user.TongDiemXp ?? 0) + (accuracy >= 0.8 ? 100 : 50);
+                            }
+                            else
+                            {
+                                user.SoTranThua = (user.SoTranThua ?? 0) + 1;
+                                if (accuracy >= 0.5) user.TongDiemXp = (user.TongDiemXp ?? 0) + 10;
+                            }
+                        }
                     }
                 }
 
-                // 3. LỆNH XÓA BẢNG TẠM: Giải quyết việc rác bảng ThachDau
-                _context.ThachDauNguoiChois.RemoveRange(room.ThachDauNguoiChois);
-                _context.ThachDaus.Remove(room);
+                // 4. XÓA PHÒNG CHỜ (QUAN TRỌNG: Đây là chỗ xóa ID thách đấu)
+                var room = await _context.ThachDaus.FindAsync(maThachDau);
+                if (room != null)
+                {
+                    _context.ThachDaus.Remove(room);
+                }
 
-                await _userDb.SaveChangesAsync();
                 await _context.SaveChangesAsync();
+                await _userDb.SaveChangesAsync();
+
                 await transaction.CommitAsync();
+                Debug.WriteLine($"[Cleanup] Thành công phòng: {maThachDau}");
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
                 await transaction.RollbackAsync();
+                Debug.WriteLine($"[Cleanup Error] {ex.Message}");
                 return false;
             }
         }
 
         public async Task<bool> HuyThachDauAsync(int maThachDau)
         {
-            // Thêm log để debug trong Visual Studio Output
-            System.Diagnostics.Debug.WriteLine($"[Service] Đang yêu cầu hủy phòng: {maThachDau}");
+            var room = await _context.ThachDaus.FindAsync(maThachDau);
+            if (room != null) _context.ThachDaus.Remove(room);
 
-            var room = await _context.ThachDaus
-                .Include(x => x.ThachDauNguoiChois)
-                .FirstOrDefaultAsync(x => x.MaThachDau == maThachDau);
+            // Xóa tất cả bản ghi liên quan đến phòng này để không làm rác bảng Lịch sử
+            var pendingEntries = _context.LichSuThachDaus.Where(x => x.MaThachDauGoc == maThachDau);
+            _context.LichSuThachDaus.RemoveRange(pendingEntries);
 
-            if (room == null)
-            {
-                System.Diagnostics.Debug.WriteLine($"[Service] Không tìm thấy phòng {maThachDau} để xóa.");
-                return false;
-            }
-
-            _context.ThachDauNguoiChois.RemoveRange(room.ThachDauNguoiChois);
-            _context.ThachDaus.Remove(room);
-
-            var result = await _context.SaveChangesAsync() > 0;
-            System.Diagnostics.Debug.WriteLine($"[Service] Kết quả xóa phòng {maThachDau}: {result}");
-            return result;
+            return await _context.SaveChangesAsync() > 0;
         }
 
         // ==========================================
         // QUẢN LÝ NGƯỜI CHƠI
         // ==========================================
 
-        public async Task<bool> ThamGiaThachDauAsync(ThamGiaThachDauRequest request)
+        public async Task<bool> ThamGiaThachDauAsync(LichSuThachDauRequest request)
         {
-            // 1. Lấy thông tin phòng kèm danh sách người chơi hiện tại
-            var room = await _context.ThachDaus
-                .Include(x => x.ThachDauNguoiChois)
-                .FirstOrDefaultAsync(x => x.MaThachDau == request.MaThachDau);
+            var room = await _context.ThachDaus.FindAsync(request.MaThachDau);
+            if (room == null || (room.TrangThai != "ChoNguoiChoi" && room.TrangThai != "DangDau")) return false;
 
-            // Kiểm tra phòng tồn tại và chưa đủ 2 người
-            if (room == null || room.ThachDauNguoiChois.Count >= 2) return false;
+            bool isAlreadyJoined = await _context.LichSuThachDaus
+                .AnyAsync(x => x.MaThachDauGoc == request.MaThachDau && x.MaNguoiDung == request.MaNguoiDung);
 
-            // 2. Thêm người chơi thứ 2 nếu chưa có trong danh sách
-            if (!room.ThachDauNguoiChois.Any(x => x.MaNguoiDung == request.MaNguoiDung))
+            if (isAlreadyJoined) return true;
+
+            _context.LichSuThachDaus.Add(new LichSuThachDau
             {
-                _context.ThachDauNguoiChois.Add(new ThachDauNguoiChoi
-                {
-                    MaThachDau = request.MaThachDau,
-                    MaNguoiDung = request.MaNguoiDung,
-                    Diem = 0
-                });
-            }
+                MaNguoiDung = request.MaNguoiDung,
+                MaBoDe = room.MaBoDe,
+                MaThachDauGoc = request.MaThachDau,
+                Diem = null,
+                ThoiGianLamBaiGiay = 0,
+                ThoiGianKetThuc = DateTime.Now
+            });
 
-            // 3. LOGIC QUAN TRỌNG: Nếu đủ 2 người, cập nhật trạng thái và thời gian bắt đầu
-            // Điều này giúp giải quyết các dòng NULL trong ảnh bạn gửi
-            if (room.ThachDauNguoiChois.Count + 1 == 2)
-            {
-                room.TrangThai = "DangDau";
-                room.ThoiGianBatDau = DateTime.Now;
-            }
+            room.TrangThai = "DangDau";
+            room.ThoiGianBatDau = DateTime.Now;
 
-            var isSaved = await _context.SaveChangesAsync() > 0;
+            var result = await _context.SaveChangesAsync() > 0;
+            if (result) await _notifier.NotifyReadyToStart(request.MaThachDau);
 
-            if (isSaved && room.TrangThai == "DangDau")
-            {
-                // Gửi tín hiệu SignalR để hai máy bắt đầu nhảy vào màn hình học
-                await _notifier.NotifyReadyToStart(request.MaThachDau);
-            }
-            return isSaved;
+            return result;
         }
 
         public async Task<bool> CapNhatKetQuaNguoiChoiAsync(CapNhatKetQuaThachDauRequest request)
         {
-            var playerRecord = await _context.ThachDauNguoiChois
-                .FirstOrDefaultAsync(x => x.MaThachDau == request.MaThachDau && x.MaNguoiDung == request.MaNguoiDung);
+            // FIX: Bỏ điều kiện Diem == null để có thể ghi đè dữ liệu test nhiều lần
+            var record = await _context.LichSuThachDaus
+                .FirstOrDefaultAsync(x => x.MaThachDauGoc == request.MaThachDau
+                                       && x.MaNguoiDung == request.MaNguoiDung);
 
-            if (playerRecord == null) return false;
+            if (record == null) return false;
 
-            // Ánh xạ dữ liệu từ request vào record trong DB
-            _mapper.Map(request, playerRecord);
-            var result = await _context.SaveChangesAsync() > 0;
+            record.Diem = request.Diem ?? 0;
+            record.SoTheDung = request.SoTheDung ?? 0;
+            record.SoTheSai = request.SoTheSai ?? 0;
+            record.ThoiGianLamBaiGiay = request.ThoiGianLamBaiGiay ?? 0;
+            record.ThoiGianKetThuc = DateTime.Now;
 
-            if (result)
-            {
-                // Gửi thông báo SignalR thông qua Notifier
-                // request.Diem ?? 0 giải quyết lỗi "cannot convert from 'int?' to 'int'"
-                await _notifier.NotifyUpdateScore(request.MaThachDau, request.MaNguoiDung, request.Diem ?? 0);
-            }
-            return result;
+            _context.Entry(record).State = EntityState.Modified;
+            return await _context.SaveChangesAsync() > 0;
         }
-
-        // ==========================================
-        // TRUY VẤN DỮ LIỆU
-        // ==========================================
 
         public async Task<ThachDauResponse?> GetByIdAsync(int maThachDau)
         {
-            var room = await _context.ThachDaus.FindAsync(maThachDau);
+            var room = await _context.ThachDaus.AsNoTracking().FirstOrDefaultAsync(x => x.MaThachDau == maThachDau);
             return _mapper.Map<ThachDauResponse>(room);
         }
 
         public async Task<IEnumerable<ThachDauNguoiChoiResponse>> GetBangXepHangAsync(int maThachDau)
         {
-            var players = await _context.ThachDauNguoiChois
-                .Where(x => x.MaThachDau == maThachDau)
+            var players = await _context.LichSuThachDaus
+                .AsNoTracking()
+                .Where(x => x.MaThachDauGoc == maThachDau)
                 .OrderByDescending(x => x.Diem)
-                .ThenBy(x => x.ThoiGianLamBaiGiay) // Ưu tiên người nhanh hơn nếu bằng điểm
+                .ThenBy(x => x.ThoiGianLamBaiGiay)
                 .ToListAsync();
 
             return _mapper.Map<IEnumerable<ThachDauNguoiChoiResponse>>(players);
@@ -248,25 +244,8 @@ namespace StudyApp.BLL.Services.Learn
 
         public async Task<bool> BaoCaoReadyNextAsync(int maThachDau, Guid userId, int questionIndex)
         {
-            // 1. Cập nhật trạng thái câu hỏi hiện tại của người chơi vào DB (Tùy chọn - Tăng tính an toàn)
-            var player = await _context.ThachDauNguoiChois
-                .FirstOrDefaultAsync(x => x.MaThachDau == maThachDau && x.MaNguoiDung == userId);
-
-            if (player == null) return false;
-
-            // Giả sử bạn có cột ViTriCauHoiHienTai trong bảng ThachDauNguoiChoi
-            // player.ViTriCauHoiHienTai = questionIndex; 
-
-            var result = await _context.SaveChangesAsync() >= 0; // Luôn trả về true nếu Notify thành công
-
-            if (result)
-            {
-                // 2. Gửi tín hiệu Real-time qua Notifier
-                // Notifier sẽ gọi _hubContext.Clients.Group(...).SendAsync("OpponentReadyNext", ...)
-                await _notifier.NotifyOpponentReadyNext(maThachDau, userId, questionIndex);
-            }
-
-            return result;
+            await _notifier.NotifyOpponentReadyNext(maThachDau, userId, questionIndex);
+            return true;
         }
     }
 }

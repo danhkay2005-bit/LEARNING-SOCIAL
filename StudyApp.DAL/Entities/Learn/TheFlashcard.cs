@@ -39,8 +39,6 @@ public partial class TheFlashcard
 
     public virtual ICollection<DapAnTracNghiem> DapAnTracNghiems { get; set; } = new List<DapAnTracNghiem>();
 
-    public virtual ICollection<LogsGenerateAi> LogsGenerateAis { get; set; } = new List<LogsGenerateAi>();
-
     public virtual BoDeHoc MaBoDeNavigation { get; set; } = null!;
 
     public virtual ICollection<PhanTuSapXep> PhanTuSapXeps { get; set; } = new List<PhanTuSapXep>();

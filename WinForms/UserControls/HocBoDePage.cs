@@ -135,26 +135,35 @@ namespace WinForms.UserControls
         private async void btnNext_Click(object? sender, EventArgs? e)
         {
             if (_iAnsweredCurrent) return;
-            timerTick.Stop();
-
-            bool isCorrect = false;
             if (pnlQuestionContent.Controls.Count > 0 && pnlQuestionContent.Controls[0] is IQuestionControl qc)
             {
+                // 1. KIỂM TRA: Nếu chưa trả lời thì không cho đi tiếp
+                // Trừ khi sender == null (tức là do Timer gọi khi hết giờ - ép buộc kết thúc)
+                if (!qc.HasAnswered && sender != null)
+                {
+                    lblStatusMessage.Text = "⚠️ Vui lòng chọn hoặc nhập đáp án!";
+                    lblStatusMessage.ForeColor = Color.OrangeRed;
+                    lblStatusMessage.Visible = true;
+                    return;
+                }
+
+                timerTick.Stop(); // Dừng timer ngay khi xác nhận hợp lệ
                 qc.ShowResult();
-                isCorrect = qc.IsCorrect; // Lấy kết quả sau khi đã ShowResult
-                await Task.Delay(600);
+                bool isCorrect = qc.IsCorrect;
+
+                await Task.Delay(600); // Đợi hiệu ứng xem đúng/sai
+
+                _iAnsweredCurrent = true;
+                UpdateStats(isCorrect);
+
+                // Gửi SignalR và chuyển câu... (giữ nguyên logic cũ của bạn)
+                if (UserSession.CurrentUser != null && _cheDo == CheDoHocEnum.ThachDau && _maThachDau.HasValue)
+                {
+                    await _hubConnection.InvokeAsync("SendScore", _maThachDau.Value.ToString(), UserSession.CurrentUser.MaNguoiDung, _totalScore);
+                    await _hubConnection.InvokeAsync("SendReadyNext", _maThachDau.Value.ToString(), UserSession.CurrentUser.MaNguoiDung, _currentIndex);
+                }
+                await CheckAndMoveToNext();
             }
-
-            _iAnsweredCurrent = true;
-            UpdateStats(isCorrect);
-
-            if (UserSession.CurrentUser != null && _cheDo == CheDoHocEnum.ThachDau && _maThachDau.HasValue)
-            {
-                await _hubConnection.InvokeAsync("SendScore", _maThachDau.Value.ToString(), UserSession.CurrentUser.MaNguoiDung, _totalScore);
-                await _hubConnection.InvokeAsync("SendReadyNext", _maThachDau.Value.ToString(), UserSession.CurrentUser.MaNguoiDung, _currentIndex);
-            }
-
-            await CheckAndMoveToNext();
         }
 
         private void UpdateStats(bool isCorrect)
@@ -210,22 +219,15 @@ namespace WinForms.UserControls
         private async Task FinishQuiz()
         {
             if (_isFinishing) return;
-            _isFinishing = true;
+            // Lưu ý: Không set _isFinishing = true ở đây để HandleDestroyed vẫn có thể dọn dẹp nếu user tắt form ở màn hình kết quả
 
             timerTick.Stop();
             _totalTimer.Stop();
-
             pnlQuestionContent.Controls.Clear();
 
-            // 1. Khởi tạo UserControl kết quả
             var resultUI = new QuizResultControl();
             resultUI.Dock = DockStyle.Fill;
-
-            // 2. KẾT NỐI SỰ KIỆN: Khi ấn nút Hoàn thành trên resultUI -> Gọi hàm quay về
-            resultUI.OnFinishClicked += () =>
-            {
-                DisposeAndGoBack();
-            };
+            resultUI.OnFinishClicked += () => { _isFinishing = true; DisposeAndGoBack(); };
 
             if (UserSession.CurrentUser != null)
             {
@@ -245,56 +247,45 @@ namespace WinForms.UserControls
                         TyLeDung = (_data?.DanhSachCauHoi?.Count ?? 0) > 0 ? (double)_correctCount / (_data?.DanhSachCauHoi?.Count ?? 1) * 100 : 0
                     };
                     await _boDeHocService.LuuKetQuaPhienHocAsync(phienHoc);
-
-                    // Thêm vào đây
-                    if (Program.ServiceProvider != null)
-                    {
-                        var userDb = Program.ServiceProvider.GetRequiredService<UserDbContext>();
-                        var user = await userDb.NguoiDungs.FindAsync(UserSession.CurrentUser.MaNguoiDung);
-
-                        if (user != null)
-                        {
-                            UserSession.CurrentUser.Vang = user.Vang ?? 0;
-                            UserSession.CurrentUser.KimCuong = user.KimCuong ?? 0;
-                            UserSession.CurrentUser.TongDiemXp = user.TongDiemXp ?? 0;
-                            UserSession.CurrentUser.ChuoiNgayHocLienTiep = user.ChuoiNgayHocLienTiep ?? 0;
-                            UserSession.CurrentUser.TongSoTheHoc = user.TongSoTheHoc ?? 0;
-                            UserSession.CurrentUser.TongSoTheDung = user.TongSoTheDung ?? 0;
-
-                            UserSession.Login(UserSession.CurrentUser);
-
-                            AppEvents.OnUserStatsChanged();
-                        }
-
-                    }
-                    // Kết thúc thêm vào đây
+                    await RefreshUserStats();
                     resultUI.DisplaySoloResult(_correctCount, _wrongCount, _data?.DanhSachCauHoi?.Count ?? 0, _totalTimer.Elapsed);
                 }
                 else if (_maThachDau.HasValue)
                 {
-                    // 1. Tăng số lượt học cho bộ đề (Statistic)
-                    if (_data?.ThongTinChung?.MaBoDe != null)
+                    // 1. Gửi kết quả và CHỜ (AWAIT) cho đến khi server báo xong
+                    var updateReq = new CapNhatKetQuaThachDauRequest
                     {
-                        await _boDeHocService.TangSoLuotHocAsync(_data.ThongTinChung.MaBoDe);
+                        MaThachDau = _maThachDau.Value,
+                        MaNguoiDung = UserSession.CurrentUser.MaNguoiDung,
+                        Diem = _totalScore, // Dùng biến thật để test sau khi đã thông dữ liệu ảo
+                        SoTheDung = _correctCount,
+                        SoTheSai = _wrongCount,
+                        ThoiGianLamBaiGiay = (int)_totalTimer.Elapsed.TotalSeconds
+                    };
+
+                    bool isSaved = await _thachDauService.CapNhatKetQuaNguoiChoiAsync(updateReq);
+
+                    if (isSaved)
+                    {
+                        // 2. Chắc chắn đã lưu điểm xong mới gọi Cleanup để phân định thắng thua
+                        await _thachDauService.HoanThanhVaCleanupAsync(_maThachDau.Value);
+
+                        // 3. CUỐI CÙNG mới lấy BXH để hiển thị lên màn hình kết quả
+                        var bxh = (await _thachDauService.GetBangXepHangAsync(_maThachDau.Value)).ToList();
+
+                        var me = bxh.FirstOrDefault(x => x.MaNguoiDung == UserSession.CurrentUser.MaNguoiDung);
+                        var opp = bxh.FirstOrDefault(x => x.MaNguoiDung != UserSession.CurrentUser.MaNguoiDung);
+
+                        // Tính toán thắng thua dựa trên dữ liệu chuẩn từ DB
+                        bool isWin = (opp == null) || (me != null && opp != null && (me.Diem > opp.Diem || (me.Diem == opp.Diem && me.ThoiGianLamBaiGiay < opp.ThoiGianLamBaiGiay)));
+
+                        resultUI.DisplayChallengeResult(_totalScore, _correctCount, _wrongCount, isWin, _maThachDau.Value);
+                    }
+                    else
+                    {
+                        MessageBox.Show("Không thể lưu kết quả thách đấu!");
                     }
 
-                    // 2. Lấy BXH hiện tại để biết ai thắng, ai thua
-                    var bxh = await _thachDauService.GetBangXepHangAsync(_maThachDau.Value);
-
-                    // 3. Gọi Service để lưu Lịch sử thách đấu và dọn dẹp phòng
-                    // Lưu ý: Hàm này nên xử lý việc tạo record trong bảng LichSuThachDau ở Backend
-                    await _thachDauService.HoanThanhVaCleanupAsync(_maThachDau.Value);
-
-                    // 4. Xác định kết quả của bản thân để hiển thị UI
-                    var me = bxh.FirstOrDefault(x => x.MaNguoiDung == UserSession.CurrentUser.MaNguoiDung);
-                    var topPlayer = bxh.OrderByDescending(x => x.Diem).FirstOrDefault();
-
-                    bool isWinner = me != null && topPlayer != null && me.MaNguoiDung == topPlayer.MaNguoiDung;
-
-                    // 5. Cập nhật giao diện kết quả
-                    resultUI.DisplayChallengeResult(_totalScore, _correctCount, _wrongCount, isWinner, _maThachDau.Value);
-
-                    // 6. (Tùy chọn) Nếu bạn muốn nạp lại dữ liệu User để cập nhật XP/Tiền sau trận đấu
                     await RefreshUserStats();
                 }
             }
@@ -349,27 +340,18 @@ namespace WinForms.UserControls
 
         private async void HocBoDePage_HandleDestroyed(object? sender, EventArgs e)
         {
+            // Nếu thoát ngang khi đang đấu hoặc chưa nhấn Hoàn Thành
             if (_cheDo == CheDoHocEnum.ThachDau && _maThachDau.HasValue && !_isFinishing)
             {
+                _isFinishing = true;
                 try
                 {
-                    _isFinishing = true;
-
-                    // 1. Thông báo cho đối thủ qua SignalR TRƯỚC
                     if (_hubConnection.State == HubConnectionState.Connected)
-                    {
                         await _hubConnection.InvokeAsync("NotifyOpponentLeft", _maThachDau.Value.ToString());
-                    }
 
-                    // 2. Gọi Service để xóa dữ liệu tạm trong Database
                     await _thachDauService.HuyThachDauAsync(_maThachDau.Value);
-
-                    Debug.WriteLine($"[Cleanup] Đã dọn dẹp phòng: {_maThachDau.Value}");
                 }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"[Cleanup Error] {ex.Message}");
-                }
+                catch (Exception ex) { Debug.WriteLine("Cleanup Error: " + ex.Message); }
             }
         }
 

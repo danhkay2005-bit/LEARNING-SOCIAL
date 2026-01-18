@@ -3,25 +3,24 @@ using StudyApp.DTO.Responses.Learn;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq; // Cần thêm System.Linq để dùng Any()
 using System.Windows.Forms;
 
 namespace WinForms.UserControls.Quiz
 {
     public partial class TracNghiemHocControl : UserControl, IQuestionControl
     {
-        // Thuộc tính bắt buộc từ IQuestionControl
         public bool IsCorrect { get; private set; } = false;
+
+        // ROOT FIX: Kiểm tra xem có nút nào đang ở trạng thái "đã chọn" (màu highlight) không
+        public bool HasAnswered => _optionButtons.Any(btn => btn.BackColor == Color.FromArgb(40, 70, 80));
 
         private List<Button> _optionButtons = new List<Button>();
 
         public TracNghiemHocControl(TheFlashcardResponse info, List<DapAnTracNghiemResponse> dapAns)
         {
             InitializeComponent();
-
-            // Hiển thị mặt trước (Câu hỏi)
             lblMatTruoc.Text = info.MatTruoc;
-
-            // Nạp danh sách đáp án
             RenderDapAn(dapAns);
         }
 
@@ -34,10 +33,9 @@ namespace WinForms.UserControls.Quiz
             {
                 Button btn = new Button();
                 btn.Text = da.NoiDung;
-                btn.Tag = da.LaDapAnDung; // Lưu trữ đáp án đúng/sai vào Tag
+                btn.Tag = da.LaDapAnDung;
 
-                // Thiết kế Button Style
-                btn.Size = new Size(600, 65); // Kích thước cố định cho đồng bộ
+                btn.Size = new Size(600, 65);
                 btn.FlatStyle = FlatStyle.Flat;
                 btn.FlatAppearance.BorderSize = 1;
                 btn.FlatAppearance.BorderColor = Color.FromArgb(60, 80, 85);
@@ -58,24 +56,19 @@ namespace WinForms.UserControls.Quiz
         {
             Button clickedBtn = (Button)sender!;
 
-            // 1. Reset màu tất cả các nút về trạng thái bình thường
             foreach (var btn in _optionButtons)
             {
                 btn.BackColor = Color.FromArgb(25, 45, 50);
                 btn.FlatAppearance.BorderColor = Color.FromArgb(60, 80, 85);
             }
 
-            // 2. Highlight nút đang được chọn (Màu xanh dương nhẹ)
+            // Đánh dấu nút được chọn
             clickedBtn.BackColor = Color.FromArgb(40, 70, 80);
-            clickedBtn.FlatAppearance.BorderColor = Color.FromArgb(193, 225, 127); // Màu Lime nhấn
+            clickedBtn.FlatAppearance.BorderColor = Color.FromArgb(193, 225, 127);
 
-            // 3. Cập nhật kết quả hiện tại
             IsCorrect = (clickedBtn.Tag is bool b && b);
         }
 
-        /// <summary>
-        /// Hiển thị kết quả đúng/sai (Tô màu xanh/đỏ)
-        /// </summary>
         public void ShowResult()
         {
             foreach (var btn in _optionButtons)
@@ -84,18 +77,16 @@ namespace WinForms.UserControls.Quiz
 
                 if (isCorrectOption)
                 {
-                    // Đáp án đúng luôn tô màu xanh lá
                     btn.BackColor = Color.FromArgb(46, 125, 50);
                     btn.FlatAppearance.BorderColor = Color.Lime;
                 }
                 else if (btn.BackColor == Color.FromArgb(40, 70, 80))
                 {
-                    // Nếu nút này được chọn nhưng nó sai -> Tô màu đỏ
                     btn.BackColor = Color.FromArgb(183, 28, 28);
                     btn.FlatAppearance.BorderColor = Color.Red;
                 }
 
-                btn.Enabled = false; // Khóa tương tác sau khi đã hiện kết quả
+                btn.Enabled = false;
             }
         }
     }

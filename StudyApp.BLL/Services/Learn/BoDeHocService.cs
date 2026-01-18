@@ -7,6 +7,7 @@ using StudyApp.DAL.Entities.Learn;
 using StudyApp.DTO.Enums;
 using StudyApp.DTO.Requests.Learn;
 using StudyApp.DTO.Responses.Learn;
+using System.Diagnostics;
 using System.Text.RegularExpressions;
 
 namespace StudyApp.BLL.Services.Learn
@@ -542,95 +543,109 @@ namespace StudyApp.BLL.Services.Learn
 
         public async Task<ThachDauResponse> CreateChallengeAsync(TaoThachDauRequest request)
         {
-            // 1. Map TaoThachDauRequest -> ThachDau Entity
+            // 1. Map TaoThachDauRequest -> ThachDau Entity (Phòng chờ)
             var thachDau = _mapper.Map<ThachDau>(request);
+            thachDau.TrangThai = TrangThaiThachDauEnum.ChoNguoiChoi.ToString();
+            thachDau.ThoiGianTao = DateTime.Now;
 
             _context.ThachDaus.Add(thachDau);
-            await _context.SaveChangesAsync(); // Lưu để lấy MaThachDau tự tăng
+            await _context.SaveChangesAsync();
 
-            // 2. Tự động thêm người tạo vào danh sách người chơi (ThachDauNguoiChoi)
-            var creator = new ThachDauNguoiChoi
+            // 2. Ghi trực tiếp người tạo vào bảng LỊCH SỬ (Diem = null để đánh dấu đang thi)
+            var creatorEntry = new LichSuThachDau
             {
-                MaThachDau = thachDau.MaThachDau,
-                MaNguoiDung = request.NguoiTao // Lấy từ UserSession gửi xuống
+                MaThachDauGoc = thachDau.MaThachDau,
+                MaNguoiDung = request.NguoiTao,
+                MaBoDe = thachDau.MaBoDe,
+                Diem = null, // NULL nghĩa là trận đấu đang diễn ra
+                ThoiGianKetThuc = DateTime.Now // Sẽ cập nhật lại lúc hoàn thành
             };
-            _context.ThachDauNguoiChois.Add(creator);
+            _context.LichSuThachDaus.Add(creatorEntry);
             await _context.SaveChangesAsync();
 
             return _mapper.Map<ThachDauResponse>(thachDau);
         }
 
+        public async Task<bool> JoinChallengeAsync(LichSuThachDauRequest request)
+        {
+            // 1. Kiểm tra phòng chờ trong bảng ThachDau
+            var room = await _context.ThachDaus.FindAsync(request.MaThachDau);
+            if (room == null || room.TrangThai != "ChoNguoiChoi") return false;
+
+            // 2. Kiểm tra xem người dùng đã được đăng ký trong lịch sử trận này chưa
+            bool isExist = await _context.LichSuThachDaus
+                .AnyAsync(x => x.MaThachDauGoc == request.MaThachDau && x.MaNguoiDung == request.MaNguoiDung);
+
+            if (isExist) return true;
+
+            // 3. Ghi trực tiếp vào bảng Lịch sử (Diem = null để đánh dấu đang thi)
+            var entry = _mapper.Map<LichSuThachDau>(request);
+            entry.Diem = null;
+            entry.ThoiGianKetThuc = DateTime.Now;
+
+            _context.LichSuThachDaus.Add(entry);
+
+            // 4. Nếu là người thứ 2, đổi trạng thái phòng sang "DangDau"
+            var participantCount = await _context.LichSuThachDaus
+                .CountAsync(x => x.MaThachDauGoc == request.MaThachDau);
+
+            if (participantCount >= 1) // Tính cả người mới add ở trên là 2
+            {
+                room.TrangThai = "DangDau";
+            }
+
+            return await _context.SaveChangesAsync() > 0;
+        }
+
         public async Task<bool> UpdateChallengeResultAsync(CapNhatKetQuaThachDauRequest request)
         {
-            // 1. Tìm bản ghi người chơi cụ thể trong phòng
-            var participant = await _context.ThachDauNguoiChois
-                .FirstOrDefaultAsync(x => x.MaThachDau == request.MaThachDau && x.MaNguoiDung == request.MaNguoiDung);
+            // Tìm bản ghi lịch sử đang treo của người chơi này
+            var record = await _context.LichSuThachDaus
+                .FirstOrDefaultAsync(x => x.MaThachDauGoc == request.MaThachDau && x.MaNguoiDung == request.MaNguoiDung);
 
-            if (participant == null) return false;
+            if (record == null) return false;
 
-            // 2. Map kết quả thi vào Entity
-            _mapper.Map(request, participant);
+            // Cập nhật kết quả cuối cùng vào bảng Lịch sử
+            record.Diem = request.Diem;
+            record.SoTheDung = request.SoTheDung;
+            record.SoTheSai = request.SoTheSai;
+            record.ThoiGianKetThuc = DateTime.Now;
+
             await _context.SaveChangesAsync();
 
-            // 3. Logic phân định thắng thua (Xử lý khi có từ 2 người nộp bài)
-            await DetermineWinnerAsync(request.MaThachDau);
+            // Kiểm tra xem cả 2 đã xong chưa để phân định thắng thua và dọn dẹp phòng
+            await DetermineWinnerAndCleanupAsync(request.MaThachDau);
             return true;
         }
 
-        private async Task DetermineWinnerAsync(int maThachDau)
+        private async Task DetermineWinnerAndCleanupAsync(int maThachDau)
         {
-            var players = await _context.ThachDauNguoiChois
-                .Where(x => x.MaThachDau == maThachDau && x.Diem != null) // Chỉ lấy người đã nộp bài
+            var entries = await _context.LichSuThachDaus
+                .Where(x => x.MaThachDauGoc == maThachDau)
                 .ToListAsync();
 
-            if (players.Count >= 2)
+            // Chỉ xử lý khi đủ 2 người và cả 2 đã nộp bài (Diem != null)
+            if (entries.Count >= 2 && entries.All(e => e.Diem != null))
             {
-                // Sắp xếp: Điểm cao thắng -> Nếu bằng điểm, thời gian ngắn thắng
-                var winner = players
+                var winner = entries
                     .OrderByDescending(p => p.Diem)
-                    .ThenBy(p => p.ThoiGianLamBaiGiay)
+                    .ThenBy(p => p.ThoiGianKetThuc) // Ai nộp bài trước thắng nếu bằng điểm
                     .First();
 
-                foreach (var p in players)
+                foreach (var entry in entries)
                 {
-                    p.LaNguoiThang = (p == winner); // Gán cờ thắng/thua
+                    entry.LaNguoiThang = (entry == winner);
                 }
 
-                // Cập nhật trạng thái phòng thành "DaKetThuc"
+                // Xóa phòng chờ ở bảng ThachDaus (Dữ liệu vĩnh viễn đã nằm ở LichSuThachDau)
                 var challenge = await _context.ThachDaus.FindAsync(maThachDau);
-                if (challenge != null) challenge.TrangThai = "DaKetThuc";
+                if (challenge != null) _context.ThachDaus.Remove(challenge);
 
                 await _context.SaveChangesAsync();
             }
         }
-        public async Task<bool> JoinChallengeAsync(ThamGiaThachDauRequest request)
-        {
-            // 1. Kiểm tra sự tồn tại của trận thách đấu và trạng thái phòng
-            var challenge = await _context.ThachDaus
-                .Include(x => x.ThachDauNguoiChois)
-                .FirstOrDefaultAsync(x => x.MaThachDau == request.MaThachDau);
 
-            // Kiểm tra phòng có tồn tại không và có đang ở trạng thái chờ người chơi không
-            if (challenge == null || challenge.TrangThai != TrangThaiThachDauEnum.ChoNguoiChoi.ToString())
-            {
-                return false;
-            }
 
-            // 2. Kiểm tra xem người dùng đã có trong phòng chưa để tránh trùng lặp
-            var isAlreadyJoined = challenge.ThachDauNguoiChois
-                .Any(x => x.MaNguoiDung == request.MaNguoiDung);
-
-            if (isAlreadyJoined) return true; // Nếu đã tham gia rồi thì trả về true để tiếp tục vào học
-
-            // 3. Sử dụng AutoMapper để ánh xạ từ Request sang Entity ThachDauNguoiChoi
-            // Profile đã cấu hình sẽ bỏ qua (Ignore) các trường Diem, ThoiGian... vì người chơi mới tham gia
-            var participant = _mapper.Map<ThachDauNguoiChoi>(request);
-
-            _context.ThachDauNguoiChois.Add(participant);
-
-            // Lưu thay đổi vào Database
-            return await _context.SaveChangesAsync() > 0;
-        }
         public async Task<bool> UpdateCardProgressAsync(CapNhatTienDoHocTapRequest request)
         {
             // 1. Tìm bản ghi tiến độ
@@ -710,56 +725,66 @@ namespace StudyApp.BLL.Services.Learn
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                // ... (Giữ nguyên logic lưu PhienHoc và LichSuHocBoDe của bạn)
+                // 1. Kiểm tra đầu vào (Chặn đứng lỗi từ WinForms)
+                if (phienHoc == null) throw new ArgumentNullException(nameof(phienHoc));
+
+                // 2. ÉP BUỘC EF CORE NHẬN DIỆN DỮ LIỆU
+                // Đôi khi Add() không đủ nếu object được tạo từ bên ngoài Context
                 _context.PhienHocs.Add(phienHoc);
+
+                // Lưu lần 1 để lấy MaPhien (Identity) cho các bảng liên quan
                 await _context.SaveChangesAsync();
 
-                // ✅ SỬA: Xóa các dòng throw thừa, giữ logic rõ ràng
-                if (phienHoc.MaBoDe == null) 
-                    throw new InvalidOperationException("MaBoDe must not be null when saving LichSuHocBoDe.");
-
-                var boDe = await _context.BoDeHocs.FindAsync(phienHoc.MaBoDe);
-                if (boDe != null)
+                // 3. XỬ LÝ LỊCH SỬ BỘ ĐỀ
+                if (phienHoc.MaBoDe.HasValue)
                 {
-                    boDe.SoLuotHoc = (boDe.SoLuotHoc ?? 0) + 1;
+                    var boDe = await _context.BoDeHocs.FindAsync(phienHoc.MaBoDe);
+                    if (boDe != null)
+                    {
+                        boDe.SoLuotHoc = (boDe.SoLuotHoc ?? 0) + 1;
+                        _context.BoDeHocs.Update(boDe);
+                    }
+
+                    var lichSu = new LichSuHocBoDe
+                    {
+                        MaBoDe = phienHoc.MaBoDe.Value,
+                        MaPhien = phienHoc.MaPhien,
+                        MaNguoiDung = phienHoc.MaNguoiDung,
+                        ThoiGian = DateTime.Now,
+                        ThoiGianHocPhut = phienHoc.ThoiGianHocGiay / 60,
+                        SoTheHoc = phienHoc.SoTheDung + phienHoc.SoTheSai,
+                        TyLeDung = phienHoc.TyLeDung
+                    };
+                    _context.LichSuHocBoDes.Add(lichSu);
                 }
 
-                var lichSu = new LichSuHocBoDe
-                {
-                    // ... các field cũ của bạn
-                    MaBoDe = phienHoc.MaBoDe.Value,
-                    MaPhien = phienHoc.MaPhien
-                };
-                _context.LichSuHocBoDes.Add(lichSu);
-
+                // Lưu lần 2 cho các bảng phụ thuộc
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
-                // 4. KÍCH HOẠT GAMIFICATION
-                if (phienHoc.TongSoThe == null)
-                    throw new InvalidOperationException("TongSoThe must not be null when calculating XP.");
-                
-                var tyLeDung = phienHoc.TyLeDung ?? 0;
-                var tongSoThe = phienHoc.TongSoThe ?? 0;
-
-                int questionsCorrect = (int)(tongSoThe * (tyLeDung / 100.0));
+                // 4. XỬ LÝ GAMIFICATION (XP/STREAK)
+                // Tính toán XP theo công thức: $XP = CorrectQuestions \times 10$
+                double ratio = (phienHoc.TyLeDung ?? 0) / 100.0;
+                int questionsCorrect = (int)((phienHoc.TongSoThe ?? 0) * ratio);
                 int xpEarned = questionsCorrect * 10;
 
                 try
                 {
+                    // Thực hiện cộng điểm và streak
                     await _gamificationService.ProcessLessonCompletionAsync(phienHoc.MaNguoiDung, xpEarned);
+                    await _dailyStreakService.MarkLessonCompletedTodayAsync(phienHoc.MaNguoiDung);
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-                    // bỏ qua để không crash luồng chính
+                    Debug.WriteLine($"[Gamification Error] {ex.Message}");
+                    // Không throw ở đây để user vẫn thấy lưu kết quả học thành công
                 }
-
-                await _dailyStreakService.MarkLessonCompletedTodayAsync(phienHoc.MaNguoiDung);
             }
-            catch
+            catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                throw;
+                Debug.WriteLine($"[Critical Error] LuuKetQua Fail: {ex.Message}");
+                throw; // Throw để WinForms biết mà báo lỗi cho User
             }
         }
     }

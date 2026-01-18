@@ -23,8 +23,7 @@ namespace StudyApp.BLL.Mappings.Learn
                 .ForMember(dest => dest.ThoiGianBatDau, opt => opt.Ignore())
                 .ForMember(dest => dest.ThoiGianKetThuc, opt => opt.Ignore())
                 .ForMember(dest => dest.MaBoDeNavigation, opt => opt.Ignore())
-                .ForMember(dest => dest.PhienHocs, opt => opt.Ignore())
-                .ForMember(dest => dest.ThachDauNguoiChois, opt => opt.Ignore());
+                .ForMember(dest => dest.PhienHocs, opt => opt.Ignore());
 
             // =================================================
             // START (BatDauThachDauRequest -> Entity)
@@ -39,8 +38,7 @@ namespace StudyApp.BLL.Mappings.Learn
                 .ForMember(dest => dest.ThoiGianTao, opt => opt.Ignore())
                 .ForMember(dest => dest.ThoiGianKetThuc, opt => opt.Ignore())
                 .ForMember(dest => dest.MaBoDeNavigation, opt => opt.Ignore())
-                .ForMember(dest => dest.PhienHocs, opt => opt.Ignore())
-                .ForMember(dest => dest.ThachDauNguoiChois, opt => opt.Ignore());
+                .ForMember(dest => dest.PhienHocs, opt => opt.Ignore());
 
             // =================================================
             // END (KetThucThachDauRequest -> Entity)
@@ -55,8 +53,7 @@ namespace StudyApp.BLL.Mappings.Learn
                 .ForMember(dest => dest.ThoiGianTao, opt => opt.Ignore())
                 .ForMember(dest => dest.ThoiGianBatDau, opt => opt.Ignore())
                 .ForMember(dest => dest.MaBoDeNavigation, opt => opt.Ignore())
-                .ForMember(dest => dest.PhienHocs, opt => opt.Ignore())
-                .ForMember(dest => dest.ThachDauNguoiChois, opt => opt.Ignore());
+                .ForMember(dest => dest.PhienHocs, opt => opt.Ignore());
 
             // =================================================
             // CANCEL (HuyThachDauRequest -> Entity)
@@ -71,8 +68,7 @@ namespace StudyApp.BLL.Mappings.Learn
                 .ForMember(dest => dest.ThoiGianTao, opt => opt.Ignore())
                 .ForMember(dest => dest.ThoiGianBatDau, opt => opt.Ignore())
                 .ForMember(dest => dest.MaBoDeNavigation, opt => opt.Ignore())
-                .ForMember(dest => dest.PhienHocs, opt => opt.Ignore())
-                .ForMember(dest => dest.ThachDauNguoiChois, opt => opt.Ignore());
+                .ForMember(dest => dest.PhienHocs, opt => opt.Ignore());
 
             // =================================================
             // ENTITY -> RESPONSE (FULL)

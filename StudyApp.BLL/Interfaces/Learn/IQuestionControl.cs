@@ -9,6 +9,8 @@ namespace StudyApp.BLL.Interfaces.Learn
         // Kiểm tra xem người dùng đã chọn đúng/sai chưa
         bool IsCorrect { get; }
 
+        bool HasAnswered { get; }
+
         // Hiển thị đáp án đúng/sai (đổi màu nút xanh/đỏ) sau khi người dùng nhấn "Kiểm tra"
         void ShowResult();
     }

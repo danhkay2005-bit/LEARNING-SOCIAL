@@ -12,37 +12,38 @@ namespace StudyApp.BLL.Interfaces.Learn
         // ==========================================
 
         /// <summary>
-        /// Tạo phòng mới với mã PIN 6 số ngẫu nhiên và gán chủ phòng (User A).
+        /// Tạo phòng đấu và ghi nhận Chủ phòng vào bảng LichSuThachDau với Diem = null.
         /// </summary>
         Task<ThachDauResponse> TaoThachDauAsync(TaoThachDauRequest request);
 
         /// <summary>
-        /// Khóa phòng, chuyển trạng thái sang "DangDau" khi đủ người.
+        /// Chuyển trạng thái bảng ThachDau sang "DangDau".
         /// </summary>
         Task<bool> BatDauThachDauAsync(int maThachDau);
 
         /// <summary>
-        /// Kết thúc trận đấu: Tính toán hạng, lưu vào Lịch sử và XÓA dữ liệu tại bảng Thách Đấu tạm.
+        /// Xác định thắng thua, cập nhật bảng NguoiDung và XÓA bản ghi tại bảng ThachDau.
         /// </summary>
         Task<bool> HoanThanhVaCleanupAsync(int maThachDau);
 
         /// <summary>
-        /// Hủy phòng đấu khi chủ phòng thoát hoặc không có người tham gia.
+        /// Xóa phòng tại bảng ThachDau và dọn dẹp các bản ghi chưa có điểm trong LichSuThachDau.
         /// </summary>
         Task<bool> HuyThachDauAsync(int maThachDau);
 
 
         // ==========================================
-        // QUẢN LÝ NGƯỜI CHƠI
+        // QUẢN LÝ NGƯỜI CHƠI (Ghi trực tiếp vào Lịch sử)
         // ==========================================
 
         /// <summary>
-        /// Đối thủ (User B) nhập mã PIN để tham gia phòng.
+        /// Ghi nhận Đối thủ tham gia vào bảng LichSuThachDau (Diem = null).
         /// </summary>
-        Task<bool> ThamGiaThachDauAsync(ThamGiaThachDauRequest request);
+        /// <param name="request">Sử dụng DTO LichSuThachDauRequest mới</param>
+        Task<bool> ThamGiaThachDauAsync(LichSuThachDauRequest request);
 
         /// <summary>
-        /// Cập nhật điểm số và thời gian làm bài của từng người chơi.
+        /// Cập nhật kết quả cuối cùng vào dòng tương ứng trong bảng LichSuThachDau.
         /// </summary>
         Task<bool> CapNhatKetQuaNguoiChoiAsync(CapNhatKetQuaThachDauRequest request);
 
@@ -52,14 +53,18 @@ namespace StudyApp.BLL.Interfaces.Learn
         // ==========================================
 
         /// <summary>
-        /// Kiểm tra trạng thái phòng (đang chờ, đang đấu) để đồng bộ UI.
+        /// Lấy thông tin phòng từ bảng ThachDau.
         /// </summary>
         Task<ThachDauResponse?> GetByIdAsync(int maThachDau);
 
         /// <summary>
-        /// Lấy bảng điểm hiện tại của các thành viên trong phòng.
+        /// Truy vấn danh sách người chơi từ bảng LichSuThachDau dựa trên mã PIN (MaThachDauGoc).
         /// </summary>
         Task<IEnumerable<ThachDauNguoiChoiResponse>> GetBangXepHangAsync(int maThachDau);
+
+        /// <summary>
+        /// Đồng bộ trạng thái câu hỏi qua SignalR.
+        /// </summary>
         Task<bool> BaoCaoReadyNextAsync(int maThachDau, Guid userId, int questionIndex);
     }
 }

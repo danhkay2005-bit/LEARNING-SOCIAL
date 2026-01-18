@@ -22,6 +22,8 @@ namespace WinForms.UserControls.Quiz
         private readonly IThachDauService _thachDauService;
         private readonly HubConnection _hubConnection;
 
+        private bool _isStartingMatch = false;
+
         private BoDeHocResponse? _currentBoDe;
         private int _currentPin = 0;
         private LobbyRole _currentRole = LobbyRole.None;
@@ -248,6 +250,7 @@ namespace WinForms.UserControls.Quiz
 
         private async Task ExecuteStart()
         {
+            _isStartingMatch = true;
             var data = await _boDeHocService.GetFullDataToLearnAsync(_currentBoDe!.MaBoDe);
             NavigateToQuiz(data, CheDoHocEnum.ThachDau, _currentPin);
         }
@@ -266,25 +269,20 @@ namespace WinForms.UserControls.Quiz
         }
         protected override void OnHandleDestroyed(EventArgs e)
         {
-            if (_currentPin != 0)
+            // Chỉ xóa phòng nếu KHÔNG PHẢI đang vào trận và pin vẫn còn
+            if (!_isStartingMatch && _currentPin != 0)
             {
                 int pinToCleanup = _currentPin;
-                // Chạy một luồng tách biệt hoàn toàn với UI
-                Task.Run(async () => {
-                    try
-                    {
-                        // Tạo một bản sao Service mới từ ServiceProvider để tránh lỗi Dispose
-                        if (Program.ServiceProvider != null)
+                if (Program.ServiceProvider != null)
+                {
+                    Task.Run(async () => {
+                        using (var scope = Program.ServiceProvider.CreateScope())
                         {
-                            using (var scope = Program.ServiceProvider.CreateScope())
-                            {
-                                var thachDauService = scope.ServiceProvider.GetRequiredService<IThachDauService>();
-                                await thachDauService.HuyThachDauAsync(pinToCleanup);
-                            }
+                            var service = scope.ServiceProvider.GetRequiredService<IThachDauService>();
+                            await service.HuyThachDauAsync(pinToCleanup);
                         }
-                    }
-                    catch { /* Tránh crash app khi tắt */ }
-                });
+                    });
+                }
             }
             base.OnHandleDestroyed(e);
         }
@@ -329,37 +327,31 @@ namespace WinForms.UserControls.Quiz
         // 3. Hàm dọn dẹp (Dùng chung cho cả Back và Destroyed)
         private async Task CleanupLobbyAsync()
         {
-            if (_currentPin == 0) return;
+            // Nếu đang chuyển sang màn hình thi đấu, tuyệt đối không được xóa phòng!
+            if (_isStartingMatch || _currentPin == 0) return;
 
-            // Lưu lại PIN vào biến tạm để tránh bị reset mất giá trị khi đang xử lý
             int pinToCancel = _currentPin;
-            _currentPin = 0;
+            _currentPin = 0; // Reset ngay để tránh các luồng khác gọi trùng
 
             try
             {
-                // 1. Cố gắng thông báo qua SignalR (nhưng không để nó chặn việc xóa DB)
+                // SignalR: Thông báo rời phòng
                 if (_hubConnection.State == HubConnectionState.Connected)
                 {
-                    try
+                    await _hubConnection.InvokeAsync("LeaveRoom", pinToCancel.ToString());
+                    if (_currentRole == LobbyRole.Host)
                     {
-                        await _hubConnection.InvokeAsync("LeaveRoom", pinToCancel.ToString());
-                        if (_currentRole == LobbyRole.Host)
-                        {
-                            await _hubConnection.InvokeAsync("NotifyOpponentLeft", pinToCancel.ToString());
-                        }
+                        await _hubConnection.InvokeAsync("NotifyOpponentLeft", pinToCancel.ToString());
                     }
-                    catch { /* Bỏ qua lỗi SignalR để tiếp tục xóa DB */ }
                 }
 
-                // 2. QUAN TRỌNG: Gọi Service xóa phòng trong Database
-                // Phải đảm bảo hàm này chạy bất kể SignalR có kết nối hay không
+                // Database: Xóa phòng tạm
                 await _thachDauService.HuyThachDauAsync(pinToCancel);
-
-                System.Diagnostics.Debug.WriteLine($"[Success] Đã xóa phòng {pinToCancel} khỏi DB.");
+                System.Diagnostics.Debug.WriteLine($"[Cleanup] Đã hủy phòng chờ {pinToCancel}");
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[Error] Không thể xóa phòng: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[Error] CleanupLobby: {ex.Message}");
             }
         }
 

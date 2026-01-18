@@ -28,20 +28,17 @@ public partial class LearningDbContext : DbContext
 
     public virtual DbSet<LichSuHocBoDe> LichSuHocBoDes { get; set; }
 
-    public virtual DbSet<LogsGenerateAi> LogsGenerateAis { get; set; }
+    public virtual DbSet<LichSuThachDau> LichSuThachDaus { get; set; }
 
     public virtual DbSet<PhanTuSapXep> PhanTuSapXeps { get; set; }
 
     public virtual DbSet<PhienHoc> PhienHocs { get; set; }
-    public virtual DbSet<LichSuThachDau> LichSuThachDaus { get; set; }
 
     public virtual DbSet<Tag> Tags { get; set; }
 
     public virtual DbSet<TagBoDe> TagBoDes { get; set; }
 
     public virtual DbSet<ThachDau> ThachDaus { get; set; }
-
-    public virtual DbSet<ThachDauNguoiChoi> ThachDauNguoiChois { get; set; }
 
     public virtual DbSet<TheFlashcard> TheFlashcards { get; set; }
 
@@ -55,7 +52,7 @@ public partial class LearningDbContext : DbContext
     {
         modelBuilder.Entity<BoDeHoc>(entity =>
         {
-            entity.HasKey(e => e.MaBoDe).HasName("PK__BoDeHoc__86C69C248D6D551D");
+            entity.HasKey(e => e.MaBoDe).HasName("PK__BoDeHoc__86C69C2412F77F90");
 
             entity.ToTable("BoDeHoc");
 
@@ -92,7 +89,7 @@ public partial class LearningDbContext : DbContext
 
         modelBuilder.Entity<CapGhep>(entity =>
         {
-            entity.HasKey(e => e.MaCap).HasName("PK__CapGhep__3DCA8D353D0DEACC");
+            entity.HasKey(e => e.MaCap).HasName("PK__CapGhep__3DCA8D353A577AA4");
 
             entity.ToTable("CapGhep");
 
@@ -105,35 +102,9 @@ public partial class LearningDbContext : DbContext
                 .HasConstraintName("FK_CapGhep_The");
         });
 
-        modelBuilder.Entity<LichSuThachDau>(entity =>
-        {
-            entity.HasKey(e => e.MaLichSu).HasName("PK_LichSuThachDau");
-
-            entity.ToTable("LichSuThachDau");
-
-            entity.Property(e => e.Diem).HasDefaultValue(0);
-            entity.Property(e => e.SoTheDung).HasDefaultValue(0);
-            entity.Property(e => e.SoTheSai).HasDefaultValue(0);
-            entity.Property(e => e.ThoiGianLamBaiGiay).HasDefaultValue(0);
-            entity.Property(e => e.LaNguoiThang).HasDefaultValue(false);
-
-            entity.Property(e => e.ThoiGianKetThuc)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime");
-
-            // Cấu hình Khóa ngoại với Bộ Đề
-            entity.HasOne(d => d.MaBoDeNavigation)
-                .WithMany(p => p.LichSuThachDaus) // Đảm bảo đã thêm ICollection này vào class BoDeHoc
-                .HasForeignKey(d => d.MaBoDe)
-                .OnDelete(DeleteBehavior.Cascade) // Xóa bộ đề thì xóa luôn lịch sử liên quan
-                .HasConstraintName("FK_LichSuTD_BoDe");
-
-            // Lưu ý: MaNguoiDung không cấu hình HasOne vì nằm khác Database
-        });
-
         modelBuilder.Entity<ChiTietTraLoi>(entity =>
         {
-            entity.HasKey(e => e.MaTraLoi).HasName("PK__ChiTietT__33F7A78D7F9EDFA1");
+            entity.HasKey(e => e.MaTraLoi).HasName("PK__ChiTietT__33F7A78DB5FE1E33");
 
             entity.ToTable("ChiTietTraLoi");
 
@@ -149,11 +120,11 @@ public partial class LearningDbContext : DbContext
 
         modelBuilder.Entity<ChuDe>(entity =>
         {
-            entity.HasKey(e => e.MaChuDe).HasName("PK__ChuDe__358545113C49C5A6");
+            entity.HasKey(e => e.MaChuDe).HasName("PK__ChuDe__3585451185FA7700");
 
             entity.ToTable("ChuDe");
 
-            entity.HasIndex(e => e.TenChuDe, "UQ__ChuDe__19B17CFBE8CF1638").IsUnique();
+            entity.HasIndex(e => e.TenChuDe, "UQ__ChuDe__19B17CFBBD062E8D").IsUnique();
 
             entity.Property(e => e.MoTa).HasMaxLength(500);
             entity.Property(e => e.SoLuotDung).HasDefaultValue(0);
@@ -165,7 +136,7 @@ public partial class LearningDbContext : DbContext
 
         modelBuilder.Entity<DapAnTracNghiem>(entity =>
         {
-            entity.HasKey(e => e.MaDapAn).HasName("PK__DapAnTra__6F78E57DA4518E19");
+            entity.HasKey(e => e.MaDapAn).HasName("PK__DapAnTra__6F78E57DBE32426C");
 
             entity.ToTable("DapAnTracNghiem");
 
@@ -179,7 +150,7 @@ public partial class LearningDbContext : DbContext
 
         modelBuilder.Entity<LichSuHocBoDe>(entity =>
         {
-            entity.HasKey(e => e.MaLichSu).HasName("PK__LichSuHo__C443222A0CECB319");
+            entity.HasKey(e => e.MaLichSu).HasName("PK__LichSuHo__C443222A670165F4");
 
             entity.ToTable("LichSuHocBoDe");
 
@@ -200,29 +171,26 @@ public partial class LearningDbContext : DbContext
                 .HasConstraintName("FK_LichSu_Phien");
         });
 
-        modelBuilder.Entity<LogsGenerateAi>(entity =>
+        modelBuilder.Entity<LichSuThachDau>(entity =>
         {
-            entity.HasKey(e => e.MaLog).HasName("PK__LogsGene__3B98D24AABFA6384");
+            entity.HasKey(e => e.MaLichSu).HasName("PK__LichSuTh__C443222A5ADA2C89");
 
-            entity.ToTable("LogsGenerateAI");
+            entity.ToTable("LichSuThachDau");
 
-            entity.Property(e => e.Loi).HasMaxLength(500);
-            entity.Property(e => e.ThoiGian)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime");
-            entity.Property(e => e.TrangThai)
-                .HasMaxLength(20)
-                .IsUnicode(false)
-                .HasDefaultValue("ThanhCong");
-
-            entity.HasOne(d => d.MaTheNavigation).WithMany(p => p.LogsGenerateAis)
-                .HasForeignKey(d => d.MaThe)
-                .HasConstraintName("FK_LogsAI_The");
+            entity.Property(e => e.Diem).HasDefaultValue(0);
+            entity.Property(e => e.LaNguoiThang).HasDefaultValue(false);
+            entity.Property(e => e.SoTheDung).HasDefaultValue(0);
+            entity.Property(e => e.SoTheSai).HasDefaultValue(0);
+            entity.Property(e => e.ThoiGianKetThuc).HasColumnType("datetime");
+            entity.HasOne(d => d.MaBoDeNavigation)
+                    .WithMany() // Một bộ đề có nhiều lịch sử
+                    .HasForeignKey(d => d.MaBoDe)
+                    .IsRequired(false);
         });
 
         modelBuilder.Entity<PhanTuSapXep>(entity =>
         {
-            entity.HasKey(e => e.MaPhanTu).HasName("PK__PhanTuSa__6EEFCD0EC028A096");
+            entity.HasKey(e => e.MaPhanTu).HasName("PK__PhanTuSa__6EEFCD0E0A9E8D3E");
 
             entity.ToTable("PhanTuSapXep");
 
@@ -235,7 +203,7 @@ public partial class LearningDbContext : DbContext
 
         modelBuilder.Entity<PhienHoc>(entity =>
         {
-            entity.HasKey(e => e.MaPhien).HasName("PK__PhienHoc__2660BFEF29BC62C9");
+            entity.HasKey(e => e.MaPhien).HasName("PK__PhienHoc__2660BFEF340857FE");
 
             entity.ToTable("PhienHoc");
 
@@ -266,11 +234,11 @@ public partial class LearningDbContext : DbContext
 
         modelBuilder.Entity<Tag>(entity =>
         {
-            entity.HasKey(e => e.MaTag).HasName("PK__Tag__314EC214BECCEE2B");
+            entity.HasKey(e => e.MaTag).HasName("PK__Tag__314EC214968ED1BB");
 
             entity.ToTable("Tag");
 
-            entity.HasIndex(e => e.TenTag, "UQ__Tag__CD4F893E04AE1748").IsUnique();
+            entity.HasIndex(e => e.TenTag, "UQ__Tag__CD4F893E9F28D1AC").IsUnique();
 
             entity.Property(e => e.SoLuotDung).HasDefaultValue(0);
             entity.Property(e => e.TenTag).HasMaxLength(50);
@@ -281,7 +249,7 @@ public partial class LearningDbContext : DbContext
 
         modelBuilder.Entity<TagBoDe>(entity =>
         {
-            entity.HasKey(e => new { e.MaBoDe, e.MaTag }).HasName("PK__TagBoDe__D5D27005A470EFF9");
+            entity.HasKey(e => new { e.MaBoDe, e.MaTag }).HasName("PK__TagBoDe__D5D270053CC98C6E");
 
             entity.ToTable("TagBoDe");
 
@@ -300,10 +268,11 @@ public partial class LearningDbContext : DbContext
 
         modelBuilder.Entity<ThachDau>(entity =>
         {
-            entity.HasKey(e => e.MaThachDau).HasName("PK__ThachDau__EE11E59184EC6E15");
+            entity.HasKey(e => e.MaThachDau).HasName("PK__ThachDau__EE11E591AF3E212A");
 
             entity.ToTable("ThachDau");
 
+            entity.Property(e => e.MaThachDau).ValueGeneratedNever();
             entity.Property(e => e.ThoiGianBatDau).HasColumnType("datetime");
             entity.Property(e => e.ThoiGianKetThuc).HasColumnType("datetime");
             entity.Property(e => e.ThoiGianTao)
@@ -320,26 +289,9 @@ public partial class LearningDbContext : DbContext
                 .HasConstraintName("FK_ThachDau_BoDe");
         });
 
-        modelBuilder.Entity<ThachDauNguoiChoi>(entity =>
-        {
-            entity.HasKey(e => new { e.MaThachDau, e.MaNguoiDung }).HasName("PK__ThachDau__D24278E77C2D1BBE");
-
-            entity.ToTable("ThachDauNguoiChoi");
-
-            entity.Property(e => e.Diem).HasDefaultValue(0);
-            entity.Property(e => e.LaNguoiThang).HasDefaultValue(false);
-            entity.Property(e => e.SoTheDung).HasDefaultValue(0);
-            entity.Property(e => e.SoTheSai).HasDefaultValue(0);
-            entity.Property(e => e.ThoiGianLamBaiGiay).HasDefaultValue(0);
-
-            entity.HasOne(d => d.MaThachDauNavigation).WithMany(p => p.ThachDauNguoiChois)
-                .HasForeignKey(d => d.MaThachDau)
-                .HasConstraintName("FK_TDN_ThachDau");
-        });
-
         modelBuilder.Entity<TheFlashcard>(entity =>
         {
-            entity.HasKey(e => e.MaThe).HasName("PK__TheFlash__314EEAAF2605BA93");
+            entity.HasKey(e => e.MaThe).HasName("PK__TheFlash__314EEAAFA6256C57");
 
             entity.ToTable("TheFlashcard");
 
@@ -366,7 +318,7 @@ public partial class LearningDbContext : DbContext
 
         modelBuilder.Entity<ThuMuc>(entity =>
         {
-            entity.HasKey(e => e.MaThuMuc).HasName("PK__ThuMuc__3BE7F0B1144C89BE");
+            entity.HasKey(e => e.MaThuMuc).HasName("PK__ThuMuc__3BE7F0B1218A35E8");
 
             entity.ToTable("ThuMuc");
 
@@ -387,7 +339,7 @@ public partial class LearningDbContext : DbContext
 
         modelBuilder.Entity<TienDoHocTap>(entity =>
         {
-            entity.HasKey(e => e.MaTienDo).HasName("PK__TienDoHo__C5D04CAE586BCF91");
+            entity.HasKey(e => e.MaTienDo).HasName("PK__TienDoHo__C5D04CAEB458AD9C");
 
             entity.ToTable("TienDoHocTap");
 
@@ -414,7 +366,7 @@ public partial class LearningDbContext : DbContext
 
         modelBuilder.Entity<TuDienKhuyet>(entity =>
         {
-            entity.HasKey(e => e.MaTuDienKhuyet).HasName("PK__TuDienKh__32677EA45AAE19E8");
+            entity.HasKey(e => e.MaTuDienKhuyet).HasName("PK__TuDienKh__32677EA4E1771C75");
 
             entity.ToTable("TuDienKhuyet");
 

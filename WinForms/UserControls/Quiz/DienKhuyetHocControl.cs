@@ -66,6 +66,8 @@ namespace WinForms.UserControls.Quiz
             }
         }
 
+        public bool HasAnswered => _listInputs.Any(txt => !string.IsNullOrWhiteSpace(txt.Text));
+
         public void ShowResult()
         {
             bool allCorrect = true;
