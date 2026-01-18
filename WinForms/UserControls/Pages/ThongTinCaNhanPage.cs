@@ -5,6 +5,7 @@ using StudyApp.DTO;
 using StudyApp.DTO.Responses.Social;
 using System;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -18,8 +19,8 @@ namespace WinForms.UserControls
     /// CHỨC NĂNG:
     /// 1. Hiển thị thông tin cá nhân đầy đủ
     /// 2. Chỉnh sửa thông tin (Avatar, Bio, v.v.)
-    /// 3. Thống kê: Followers, Following, Số bài viết
-    /// 4. Tab: Bài viết / Followers / Following
+    /// 3. Thống kê:  Followers, Following, Số bài viết
+    /// 4. Tab:  Bài viết / Followers / Following
     /// </summary>
     public partial class ThongTinCaNhanPage : UserControl
     {
@@ -54,7 +55,7 @@ namespace WinForms.UserControls
         {
             InitializeComponent();
 
-            // Lấy services từ Program.ServiceProvider
+            // Lấy services từ Program. ServiceProvider
             if (Program.ServiceProvider != null)
             {
                 _userProfileService = Program.ServiceProvider.GetService<IUserProfileService>();
@@ -79,16 +80,42 @@ namespace WinForms.UserControls
                 Padding = new Padding(30)
             };
 
-            // Avatar
+            // ✅ Avatar - CẢI TIẾN:  Bo tròn, viền đẹp hơn
             pbAvatar = new PictureBox
             {
                 Width = 150,
                 Height = 150,
                 Location = new Point(30, 30),
                 SizeMode = PictureBoxSizeMode.StretchImage,
-                BackColor = Color.LightGray,
-                BorderStyle = BorderStyle.FixedSingle
+                BackColor = Color.FromArgb(240, 242, 245),
+                BorderStyle = BorderStyle.None, // ✅ Bỏ border cũ
+                Cursor = Cursors.Hand
             };
+
+            // ✅ Vẽ viền tròn cho avatar
+            pbAvatar.Paint += (s, e) =>
+            {
+                if (pbAvatar == null) return;
+
+                // Tạo GraphicsPath hình tròn
+                using (GraphicsPath path = new GraphicsPath())
+                {
+                    path.AddEllipse(0, 0, pbAvatar.Width - 1, pbAvatar.Height - 1);
+                    pbAvatar.Region = new Region(path);
+
+                    // Vẽ viền tròn
+                    e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                    using (Pen pen = new Pen(Color.FromArgb(24, 119, 242), 3))
+                    {
+                        e.Graphics.DrawEllipse(pen, 1, 1, pbAvatar.Width - 3, pbAvatar.Height - 3);
+                    }
+                }
+            };
+
+            // ✅ Tooltip cho avatar
+            var tooltip = new ToolTip();
+            tooltip.SetToolTip(pbAvatar, "Click để thay đổi ảnh đại diện");
+            pbAvatar.Click += BtnChangeAvatar_Click;
 
             // Tên
             lblName = new Label
@@ -146,7 +173,6 @@ namespace WinForms.UserControls
             lblFollowers = CreateStatLabel("0 Followers", 150);
             lblFollowing = CreateStatLabel("0 Following", 300);
 
-            // ✅ SỬA: Kiểm tra null đầy đủ trước khi SelectTab
             lblFollowers.Click += (s, e) =>
             {
                 if (tabControl != null && tabFollowers != null)
@@ -176,7 +202,7 @@ namespace WinForms.UserControls
                 Font = new Font("Segoe UI", 10F, FontStyle.Regular)
             };
 
-            // Tab Bài viết
+            // Tab Bài vi���t
             tabPosts = new TabPage("📝 Bài viết của tôi");
             flowPosts = new FlowLayoutPanel
             {
@@ -257,9 +283,12 @@ namespace WinForms.UserControls
                 // 1. Hiển thị thông tin cơ bản
                 if (lblName != null) lblName.Text = UserSession.CurrentUser.HoVaTen ?? "Người dùng";
                 if (lblEmail != null) lblEmail.Text = UserSession.CurrentUser.Email ?? "";
-                if (lblBio != null) lblBio.Text = "🎓 Đang học tập trên StudyApp"; // TieuSu không có trong DTO
+                if (lblBio != null) lblBio.Text = "🎓 Đang học tập trên StudyApp";
 
-                // 2. Lấy thống kê
+                // ✅ 2. Load avatar
+                LoadAvatar(UserSession.CurrentUser.HinhDaiDien);
+
+                // 3. Lấy thống kê
                 if (_followService != null)
                 {
                     var stats = await _followService.LayThongKeTheoDoiAsync(UserSession.CurrentUser.MaNguoiDung);
@@ -267,12 +296,164 @@ namespace WinForms.UserControls
                     if (lblFollowing != null) lblFollowing.Text = $"{stats.SoDangTheoDoi} Following";
                 }
 
-                // 3. Tải bài viết (tab đầu tiên)
+                // 4. Tải bài viết
                 await LoadMyPostsAsync();
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Lỗi tải thông tin: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Lỗi tải thông tin:  {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        /// <summary>
+        /// ✅ THÊM MỚI:  Load avatar với xử lý nâng cao
+        /// </summary>
+        private void LoadAvatar(string? avatarPath)
+        {
+            if (pbAvatar == null) return;
+
+            try
+            {
+                // Nếu có đường dẫn avatar
+                if (!string.IsNullOrEmpty(avatarPath) && System.IO.File.Exists(avatarPath))
+                {
+                    using (var fs = new System.IO.FileStream(avatarPath, System.IO.FileMode.Open, System.IO.FileAccess.Read))
+                    {
+                        pbAvatar.Image = Image.FromStream(fs);
+                    }
+                }
+                else
+                {
+                    // ✅ Tạo avatar placeholder với chữ cái đầu
+                    pbAvatar.Image = CreatePlaceholderAvatar();
+                }
+
+                pbAvatar.Invalidate(); // ✅ Vẽ lại để hiển thị viền tròn
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[LoadAvatar Error] {ex.Message}");
+                pbAvatar.Image = CreatePlaceholderAvatar();
+                pbAvatar.Invalidate();
+            }
+        }
+
+        /// <summary>
+        /// ✅ THÊM MỚI:  Tạo avatar placeholder với chữ cái đầu
+        /// </summary>
+        private Image CreatePlaceholderAvatar()
+        {
+            if (UserSession.CurrentUser == null) return CreateDefaultAvatar();
+
+            var size = 150;
+            var bitmap = new Bitmap(size, size);
+            using (var g = Graphics.FromImage(bitmap))
+            {
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
+
+                // ✅ Vẽ background gradient
+                using (var brush = new LinearGradientBrush(
+                    new Rectangle(0, 0, size, size),
+                    Color.FromArgb(24, 119, 242),
+                    Color.FromArgb(66, 153, 225),
+                    LinearGradientMode.ForwardDiagonal))
+                {
+                    g.FillEllipse(brush, 0, 0, size, size);
+                }
+
+                // ✅ Lấy chữ cái đầu
+                string initials = GetInitials(UserSession.CurrentUser.HoVaTen ?? UserSession.CurrentUser.TenDangNhap);
+
+                // ✅ Vẽ chữ
+                using (var font = new Font("Segoe UI", 50, FontStyle.Bold))
+                using (var textBrush = new SolidBrush(Color.White))
+                {
+                    var textSize = g.MeasureString(initials, font);
+                    var x = (size - textSize.Width) / 2;
+                    var y = (size - textSize.Height) / 2;
+                    g.DrawString(initials, font, textBrush, x, y);
+                }
+            }
+
+            return bitmap;
+        }
+
+        /// <summary>
+        /// ✅ THÊM MỚI:  Tạo avatar mặc định (khi không có tên)
+        /// </summary>
+        private Image CreateDefaultAvatar()
+        {
+            var size = 150;
+            var bitmap = new Bitmap(size, size);
+            using (var g = Graphics.FromImage(bitmap))
+            {
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                using (var brush = new SolidBrush(Color.FromArgb(200, 200, 200)))
+                {
+                    g.FillEllipse(brush, 0, 0, size, size);
+                }
+
+                // ✅ Vẽ icon user
+                using (var font = new Font("Segoe UI", 60, FontStyle.Regular))
+                using (var textBrush = new SolidBrush(Color.White))
+                {
+                    var text = "👤";
+                    var textSize = g.MeasureString(text, font);
+                    var x = (size - textSize.Width) / 2;
+                    var y = (size - textSize.Height) / 2;
+                    g.DrawString(text, font, textBrush, x, y);
+                }
+            }
+
+            return bitmap;
+        }
+
+        /// <summary>
+        /// ✅ THÊM MỚI: Lấy chữ cái đầu từ tên
+        /// </summary>
+        private string GetInitials(string? name)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                return "? ";
+
+            var parts = name.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+            if (parts.Length == 1)
+                return parts[0].Substring(0, Math.Min(2, parts[0].Length)).ToUpper();
+
+            // Lấy chữ cái đầu của 2 từ đầu tiên
+            return (parts[0][0].ToString() + parts[parts.Length - 1][0].ToString()).ToUpper();
+        }
+
+        /// <summary>
+        /// ✅ THÊM MỚI: Xử lý thay đổi avatar
+        /// </summary>
+        private void BtnChangeAvatar_Click(object? sender, EventArgs e)
+        {
+            try
+            {
+                using (var openFileDialog = new OpenFileDialog())
+                {
+                    openFileDialog.Filter = "Image Files|*.jpg;*.jpeg;*.png;*.bmp;*.gif";
+                    openFileDialog.Title = "Chọn ảnh đại diện";
+
+                    if (openFileDialog.ShowDialog() == DialogResult.OK)
+                    {
+                        // ✅ Load ảnh mới
+                        LoadAvatar(openFileDialog.FileName);
+
+                        // ✅ TODO: Gọi API để upload ảnh
+                        // await _userProfileService.UpdateAvatarAsync(UserSession. CurrentUser.MaNguoiDung, openFileDialog.FileName);
+
+                        MessageBox.Show("Đã cập nhật ảnh đại diện!\n(Chức năng lưu vào server đang phát triển)",
+                            "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi thay đổi avatar: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -296,7 +477,7 @@ namespace WinForms.UserControls
                 {
                     var lblEmpty = new Label
                     {
-                        Text = "📭 Bạn chưa có bài viết nào.\nHãy tạo bài viết đầu tiên!",
+                        Text = "📭 Bạn chưa có bài viết nào.\nHãy tạo bài viết đầu tiên! ",
                         AutoSize = true,
                         Font = new Font("Segoe UI", 12F, FontStyle.Italic),
                         ForeColor = Color.Gray,
@@ -311,7 +492,7 @@ namespace WinForms.UserControls
                 {
                     if (_reactionService != null && _commentService != null)
                     {
-                        var postCard = new PostCardControl(
+                        var postCard = new Components.Social.PostCardControl(
                             _postService,
                             _reactionService,
                             _commentService
@@ -539,18 +720,16 @@ namespace WinForms.UserControls
 
             try
             {
-                // Mở dialog chỉnh sửa
                 var editDialog = new Forms.Social.EditProfileDialog(_userProfileService);
 
                 if (editDialog.ShowDialog() == DialogResult.OK)
                 {
-                    // Reload profile sau khi cập nhật
                     LoadProfileAsync();
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Lỗi mở dialog: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Lỗi mở dialog:  {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
     }

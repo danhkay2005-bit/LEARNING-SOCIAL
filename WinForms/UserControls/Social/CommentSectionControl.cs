@@ -1,4 +1,5 @@
 ﻿using StudyApp.BLL.Interfaces.Social;
+using StudyApp.BLL.Interfaces.User;
 using StudyApp.DTO;
 using StudyApp.DTO.Enums;
 using StudyApp.DTO.Requests.Social;
@@ -9,6 +10,7 @@ using System.Drawing;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using WinForms.Helpers; // ✅ THÊM để dùng AvatarHelper
 
 namespace WinForms.UserControls.Social
 {
@@ -16,21 +18,29 @@ namespace WinForms.UserControls.Social
     {
         private readonly ICommentService? _commentService;
         private readonly IReactionService? _reactionService;
+        private readonly IUserProfileService? _userProfileService; // ✅ THÊM
 
         private int _postId;
         private List<BinhLuanBaiDangResponse> _comments = new List<BinhLuanBaiDangResponse>();
+        private Dictionary<int, List<BinhLuanBaiDangResponse>> _repliesCache = new(); // ✅ THÊM cache
 
         // Controls
         private Panel? pnlHeader;
         private Label? lblTitle;
         private Button? btnClose;
-
         private FlowLayoutPanel? flowComments;
-
         private Panel? pnlInputArea;
         private PictureBox? pbUserAvatar;
         private TextBox? txtComment;
         private Button? btnSendComment;
+
+        // Reply mode
+        private int? _replyToCommentId = null;
+        private Label? lblReplyMode;
+        private Button? btnCancelReply;
+
+        // ✅ THÊM:  Loading indicator
+        private Label? lblLoading;
 
         // Constructor mặc định
         public CommentSectionControl()
@@ -38,13 +48,15 @@ namespace WinForms.UserControls.Social
             InitializeComponent();
         }
 
-        // Constructor với DI
+        // ✅ SỬA: Constructor với DI
         public CommentSectionControl(
             ICommentService commentService,
-            IReactionService reactionService) : this()
+            IReactionService reactionService,
+            IUserProfileService userProfileService) : this()
         {
             _commentService = commentService;
             _reactionService = reactionService;
+            _userProfileService = userProfileService;
 
             InitializeControls();
         }
@@ -108,41 +120,82 @@ namespace WinForms.UserControls.Social
                 Padding = new Padding(10)
             };
 
+            // ✅ THÊM: Loading label
+            lblLoading = new Label
+            {
+                Text = "⏳ Đang tải bình luận...",
+                AutoSize = true,
+                Font = new Font("Segoe UI", 10F, FontStyle.Italic),
+                ForeColor = Color.Gray,
+                Visible = false
+            };
+
             // ===== INPUT AREA =====
             pnlInputArea = new Panel
             {
                 Dock = DockStyle.Bottom,
-                Height = 70,
+                Height = 100, // ✅ Tăng height
                 BackColor = Color.White,
-                Padding = new Padding(10)
+                Padding = new Padding(10),
+                BorderStyle = BorderStyle.FixedSingle
             };
+
+            // Reply mode indicator
+            lblReplyMode = new Label
+            {
+                Text = "Đang trả lời.. .",
+                Location = new Point(60, 8),
+                AutoSize = true,
+                Font = new Font("Segoe UI", 8F, FontStyle.Italic),
+                ForeColor = Color.FromArgb(24, 119, 242),
+                Visible = false
+            };
+
+            btnCancelReply = new Button
+            {
+                Text = "✖",
+                Location = new Point(200, 5),
+                Width = 20,
+                Height = 20,
+                BackColor = Color.Transparent,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 8F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(200, 50, 50),
+                Cursor = Cursors.Hand,
+                Visible = false
+            };
+            btnCancelReply.FlatAppearance.BorderSize = 0;
+            btnCancelReply.Click += (s, e) => CancelReplyMode();
 
             pbUserAvatar = new PictureBox
             {
                 Width = 40,
                 Height = 40,
-                Location = new Point(10, 15),
+                Location = new Point(10, 35),
                 SizeMode = PictureBoxSizeMode.StretchImage,
                 BackColor = Color.LightGray,
                 BorderStyle = BorderStyle.FixedSingle
             };
 
+            // ✅ SỬA: Multiline TextBox
             txtComment = new TextBox
             {
-                Location = new Point(60, 15),
+                Location = new Point(60, 35),
                 Width = this.Width - 140,
-                Height = 40,
+                Height = 50,
+                Multiline = true, // ✅ THÊM
                 Font = new Font("Segoe UI", 9F, FontStyle.Regular),
-                PlaceholderText = "Viết bình luận..."
+                PlaceholderText = "Viết bình luận...  (Enter để gửi, Shift+Enter để xuống dòng)",
+                ScrollBars = ScrollBars.Vertical // ✅ THÊM
             };
             txtComment.KeyDown += TxtComment_KeyDown;
 
             btnSendComment = new Button
             {
                 Text = "➤",
-                Location = new Point(this.Width - 60, 15),
+                Location = new Point(this.Width - 60, 35),
                 Width = 40,
-                Height = 40,
+                Height = 50,
                 BackColor = Color.FromArgb(24, 119, 242),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
@@ -159,6 +212,15 @@ namespace WinForms.UserControls.Social
                     btnSendComment.Enabled = !string.IsNullOrWhiteSpace(txtComment.Text);
             };
 
+            // ✅ THÊM: Load avatar của user hiện tại
+            if (UserSession.IsLoggedIn && UserSession.CurrentUser != null && pbUserAvatar != null)
+            {
+                var initials = UserSession.CurrentUser.HoVaTen?.Substring(0, 1) ?? "U";
+                AvatarHelper.SetAvatar(pbUserAvatar, UserSession.CurrentUser.HinhDaiDien, initials);
+            }
+
+            pnlInputArea.Controls.Add(lblReplyMode);
+            pnlInputArea.Controls.Add(btnCancelReply);
             pnlInputArea.Controls.Add(pbUserAvatar);
             pnlInputArea.Controls.Add(txtComment);
             pnlInputArea.Controls.Add(btnSendComment);
@@ -169,32 +231,64 @@ namespace WinForms.UserControls.Social
             this.Controls.Add(pnlHeader);
 
             this.BackColor = Color.White;
-            this.Size = new Size(600, 500);
+            this.Size = new Size(600, 600); // ✅ Tăng height
 
             this.ResumeLayout(false);
         }
 
         /// <summary>
-        /// Refresh danh sách comments
+        /// ✅ SỬA: Refresh danh sách comments với loading state
         /// </summary>
         private async Task RefreshCommentsAsync()
         {
-            if (_commentService == null) return;
+            if (_commentService == null || flowComments == null) return;
 
             try
             {
+                // Show loading
+                flowComments.Controls.Clear();
+                if (lblLoading != null)
+                {
+                    lblLoading.Visible = true;
+                    flowComments.Controls.Add(lblLoading);
+                }
+
+                // Load comments
                 _comments = await _commentService.GetCommentsByPostAsync(_postId);
+
+                // ✅ THÊM: Load tất cả replies cùng lúc (better performance)
+                _repliesCache.Clear();
+                var commentIds = _comments.Select(c => c.MaBinhLuan).ToList();
+
+                foreach (var commentId in commentIds)
+                {
+                    var replies = await _commentService.GetRepliesAsync(commentId);
+                    if (replies.Any())
+                    {
+                        _repliesCache[commentId] = replies.ToList();
+                    }
+                }
+
+                // Hide loading
+                if (lblLoading != null)
+                {
+                    lblLoading.Visible = false;
+                }
 
                 RenderComments();
             }
             catch (Exception ex)
             {
+                if (lblLoading != null)
+                {
+                    lblLoading.Visible = false;
+                }
                 MessageBox.Show($"Lỗi khi tải bình luận: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
         /// <summary>
-        /// Hiển thị danh sách comments
+        /// ✅ SỬA: Render comments với replies
         /// </summary>
         private void RenderComments()
         {
@@ -204,11 +298,12 @@ namespace WinForms.UserControls.Social
             {
                 var lblEmpty = new Label
                 {
-                    Text = "Chưa có bình luận nào.  Hãy là người đầu tiên bình luận! ",
+                    Text = "💬 Chưa có bình luận nào.\nHãy là người đầu tiên bình luận!",
                     AutoSize = true,
                     Font = new Font("Segoe UI", 10F, FontStyle.Italic),
                     ForeColor = Color.Gray,
-                    Margin = new Padding(10, 20, 10, 10)
+                    Margin = new Padding(10, 20, 10, 10),
+                    TextAlign = ContentAlignment.MiddleCenter
                 };
                 flowComments?.Controls.Add(lblEmpty);
                 return;
@@ -216,28 +311,55 @@ namespace WinForms.UserControls.Social
 
             foreach (var comment in _comments)
             {
-                var commentCard = CreateCommentCard(comment);
+                // Add comment chính
+                var commentCard = CreateCommentCard(comment, isReply: false);
                 flowComments?.Controls.Add(commentCard);
+
+                // ✅ THÊM:  Add replies từ cache
+                if (_repliesCache.TryGetValue(comment.MaBinhLuan, out var replies))
+                {
+                    foreach (var reply in replies)
+                    {
+                        var replyCard = CreateCommentCard(reply, isReply: true);
+                        flowComments?.Controls.Add(replyCard);
+                    }
+                }
             }
 
             // Update title
             if (lblTitle != null)
-                lblTitle.Text = $"Bình luận ({_comments.Count})";
+            {
+                var totalCount = _comments.Count + _repliesCache.Values.Sum(r => r.Count);
+                lblTitle.Text = $"Bình luận ({totalCount})";
+            }
         }
 
         /// <summary>
-        /// Tạo 1 comment card
+        /// ✅ SỬA: Tạo comment card với đầy đủ thông tin user
         /// </summary>
-        private Panel CreateCommentCard(BinhLuanBaiDangResponse comment)
+        private Panel CreateCommentCard(BinhLuanBaiDangResponse comment, bool isReply)
         {
             var pnlComment = new Panel
             {
                 Width = 560,
                 AutoSize = true,
                 Padding = new Padding(10),
-                Margin = new Padding(5),
-                BackColor = Color.White
+                Margin = new Padding(isReply ? 50 : 5, 5, 5, 5),
+                BackColor = isReply ? Color.FromArgb(250, 250, 250) : Color.White,
+                Tag = comment.MaBinhLuan.ToString()
             };
+
+            // ✅ THÊM: Border cho reply
+            if (isReply)
+            {
+                pnlComment.Paint += (s, e) =>
+                {
+                    e.Graphics.DrawLine(
+                        new Pen(Color.FromArgb(200, 200, 200), 2),
+                        0, 0, 0, pnlComment.Height
+                    );
+                };
+            }
 
             var pbAvatar = new PictureBox
             {
@@ -249,13 +371,20 @@ namespace WinForms.UserControls.Social
                 BorderStyle = BorderStyle.FixedSingle
             };
 
+            // ✅ THÊM: Load avatar thật
+            _ = LoadUserAvatarAsync(comment.MaNguoiDung, pbAvatar);
+
             var lblUsername = new Label
             {
-                Text = "Người dùng", // TODO: Load from UserService
+                Text = "Đang tải...",
                 Location = new Point(55, 10),
                 AutoSize = true,
-                Font = new Font("Segoe UI", 9F, FontStyle.Bold)
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                Cursor = Cursors.Hand
             };
+
+            // ✅ THÊM: Load username thật
+            _ = LoadUsernameAsync(comment.MaNguoiDung, lblUsername);
 
             var lblContent = new Label
             {
@@ -275,26 +404,128 @@ namespace WinForms.UserControls.Social
                 ForeColor = Color.Gray
             };
 
+            // ✅ SỬA: Reaction button với số lượng chính xác
             var btnLike = new Label
             {
-                Text = $"👍 {comment.SoLuotReactions}",
+                Text = $"👍 {comment.SoLuotReactions }",
                 Location = new Point(150, lblContent.Bottom + 5),
                 AutoSize = true,
-                Font = new Font("Segoe UI", 8F, FontStyle.Regular),
-                ForeColor = Color.Gray,
+                Font = new Font("Segoe UI", 8F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(100, 100, 100),
                 Cursor = Cursors.Hand
             };
+            btnLike.MouseEnter += (s, e) => btnLike.ForeColor = Color.FromArgb(24, 119, 242);
+            btnLike.MouseLeave += (s, e) => btnLike.ForeColor = Color.FromArgb(100, 100, 100);
             btnLike.Click += async (s, e) => await LikeCommentAsync(comment.MaBinhLuan);
+
+            // ✅ SỬA: Reply button
+            var btnReply = new Label
+            {
+                Text = "↩️ Trả lời",
+                Location = new Point(250, lblContent.Bottom + 5),
+                AutoSize = true,
+                Font = new Font("Segoe UI", 8F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(100, 100, 100),
+                Cursor = Cursors.Hand,
+                Visible = !isReply
+            };
+            btnReply.MouseEnter += (s, e) => btnReply.ForeColor = Color.FromArgb(24, 119, 242);
+            btnReply.MouseLeave += (s, e) => btnReply.ForeColor = Color.FromArgb(100, 100, 100);
+            btnReply.Click += (s, e) => EnterReplyMode(comment.MaBinhLuan, lblUsername.Text);
 
             pnlComment.Controls.Add(pbAvatar);
             pnlComment.Controls.Add(lblUsername);
             pnlComment.Controls.Add(lblContent);
             pnlComment.Controls.Add(lblTime);
             pnlComment.Controls.Add(btnLike);
+            pnlComment.Controls.Add(btnReply);
 
             pnlComment.Height = lblTime.Bottom + 15;
 
             return pnlComment;
+        }
+
+        /// <summary>
+        /// ✅ THÊM: Load avatar của user
+        /// </summary>
+        private async Task LoadUserAvatarAsync(Guid userId, PictureBox pbAvatar)
+        {
+            if (_userProfileService == null) return;
+
+            try
+            {
+                var user = await _userProfileService.GetProfileAsync(userId);
+                if (user != null && pbAvatar != null)
+                {
+                    var initials = user.HoVaTen?.Substring(0, 1) ?? user.Email?.Substring(0, 1) ?? "U";
+                    AvatarHelper.SetAvatar(pbAvatar, user.HinhDaiDien, initials);
+                }
+            }
+            catch { /* Bỏ qua lỗi load avatar */ }
+        }
+
+        /// <summary>
+        /// ✅ THÊM: Load username của user
+        /// </summary>
+        private async Task LoadUsernameAsync(Guid userId, Label lblUsername)
+        {
+            if (_userProfileService == null) return;
+
+            try
+            {
+                var user = await _userProfileService.GetProfileAsync(userId);
+                if (user != null && lblUsername != null)
+                {
+                    lblUsername.Text = user.HoVaTen ?? user.TenDangNhap ?? "Người dùng";
+                }
+            }
+            catch
+            {
+                if (lblUsername != null)
+                {
+                    lblUsername.Text = "Người dùng";
+                }
+            }
+        }
+
+        /// <summary>
+        /// ✅ Bật chế độ reply
+        /// </summary>
+        private void EnterReplyMode(int commentId, string username)
+        {
+            _replyToCommentId = commentId;
+
+            if (lblReplyMode != null && btnCancelReply != null)
+            {
+                lblReplyMode.Text = $"↩️ Đang trả lời @{username}";
+                lblReplyMode.Visible = true;
+                btnCancelReply.Visible = true;
+            }
+
+            if (txtComment != null)
+            {
+                txtComment.PlaceholderText = $"Trả lời @{username}... ";
+                txtComment.Focus();
+            }
+        }
+
+        /// <summary>
+        /// ✅ Hủy chế độ reply
+        /// </summary>
+        private void CancelReplyMode()
+        {
+            _replyToCommentId = null;
+
+            if (lblReplyMode != null && btnCancelReply != null)
+            {
+                lblReplyMode.Visible = false;
+                btnCancelReply.Visible = false;
+            }
+
+            if (txtComment != null)
+            {
+                txtComment.PlaceholderText = "Viết bình luận...  (Enter để gửi, Shift+Enter để xuống dòng)";
+            }
         }
 
         private string GetRelativeTime(DateTime dateTime)
@@ -316,15 +547,30 @@ namespace WinForms.UserControls.Social
             await SendCommentAsync();
         }
 
+        /// <summary>
+        /// ✅ SỬA: Xử lý Enter và Shift+Enter
+        /// </summary>
         private async void TxtComment_KeyDown(object? sender, KeyEventArgs e)
         {
-            if (e.KeyCode == Keys.Enter && !string.IsNullOrWhiteSpace(txtComment?.Text))
+            if (txtComment == null) return;
+
+            // Shift+Enter: Xuống dòng (mặc định)
+            if (e.KeyCode == Keys.Enter && e.Shift)
+            {
+                return; // Để TextBox xử lý
+            }
+
+            // Enter:  Gửi comment
+            if (e.KeyCode == Keys.Enter && !string.IsNullOrWhiteSpace(txtComment.Text))
             {
                 e.SuppressKeyPress = true;
                 await SendCommentAsync();
             }
         }
 
+        /// <summary>
+        /// ✅ SỬA: Gửi comment hoặc reply
+        /// </summary>
         private async Task SendCommentAsync()
         {
             if (_commentService == null || txtComment == null || !UserSession.IsLoggedIn || UserSession.CurrentUser == null)
@@ -335,18 +581,26 @@ namespace WinForms.UserControls.Social
 
             try
             {
+                // Disable button để tránh spam
+                if (btnSendComment != null)
+                {
+                    btnSendComment.Enabled = false;
+                    btnSendComment.Text = "⏳";
+                }
+
                 var request = new TaoBinhLuanRequest
                 {
                     MaBaiDang = _postId,
                     MaNguoiDung = UserSession.CurrentUser.MaNguoiDung,
                     NoiDung = txtComment.Text.Trim(),
-                    MaBinhLuanCha = null
+                    MaBinhLuanCha = _replyToCommentId
                 };
 
                 await _commentService.CreateCommentAsync(request);
 
                 // Clear input
                 txtComment.Clear();
+                CancelReplyMode();
 
                 // Reload comments
                 await RefreshCommentsAsync();
@@ -354,6 +608,15 @@ namespace WinForms.UserControls.Social
             catch (Exception ex)
             {
                 MessageBox.Show($"Lỗi khi gửi bình luận: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                // Re-enable button
+                if (btnSendComment != null)
+                {
+                    btnSendComment.Enabled = true;
+                    btnSendComment.Text = "➤";
+                }
             }
         }
 
@@ -373,7 +636,7 @@ namespace WinForms.UserControls.Social
 
                 await _reactionService.ReactToCommentAsync(request);
 
-                // Reload comments
+                // ✅ SỬA: Chỉ reload 1 lần, không spam
                 await RefreshCommentsAsync();
             }
             catch (Exception ex)
