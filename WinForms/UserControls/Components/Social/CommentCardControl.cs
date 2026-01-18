@@ -26,6 +26,7 @@ namespace WinForms.UserControls.Components.Social
         private PictureBox? pbAvatar;
         private Label? lblAuthorName;
         private Label? lblTimestamp;
+        private Label? lblReplyIndicator;
         private Button? btnMenu;
         private Label? lblContent;
         private Label? lblReactionCount;
@@ -62,6 +63,7 @@ namespace WinForms.UserControls.Components.Social
             pbAvatar = new PictureBox { Location = new Point(10, 10), Size = new Size(40, 40), SizeMode = PictureBoxSizeMode.StretchImage, BackColor = Color.LightGray, BorderStyle = BorderStyle.FixedSingle };
             lblAuthorName = new Label { Location = new Point(60, 12), AutoSize = true, Text = "Author", Font = new Font("Segoe UI", 9F, FontStyle.Bold), ForeColor = Color.FromArgb(24, 119, 242) };
             lblTimestamp = new Label { Location = new Point(60, 32), AutoSize = true, Text = "Just now", Font = new Font("Segoe UI", 8F), ForeColor = Color.Gray };
+            lblReplyIndicator = new Label { Location = new Point(60, 32), AutoSize = true, Text = "", Font = new Font("Segoe UI", 8F, FontStyle.Italic), ForeColor = Color.FromArgb(100, 100, 100), Visible = false };
             btnMenu = new Button { Location = new Point(510, 10), Size = new Size(30, 30), Text = "?", Font = new Font("Segoe UI", 14F, FontStyle.Bold), FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, BackColor = Color.Transparent, Visible = false };
             btnMenu.FlatAppearance.BorderSize = 0;
             btnMenu.Click += BtnMenu_Click;
@@ -85,6 +87,7 @@ namespace WinForms.UserControls.Components.Social
             this.Controls.Add(pbAvatar);
             this.Controls.Add(lblAuthorName);
             this.Controls.Add(lblTimestamp);
+            this.Controls.Add(lblReplyIndicator);
             this.Controls.Add(btnMenu);
             this.Controls.Add(lblContent);
             this.Controls.Add(lblReactionCount);
@@ -105,12 +108,43 @@ namespace WinForms.UserControls.Components.Social
         private void RenderComment()
         {
             if (_comment == null) return;
-            if (pbAvatar != null) AvatarHelper.SetAvatar(pbAvatar, null, "U");
-            if (lblAuthorName != null) lblAuthorName.Text = "Người dùng";
-            if (lblTimestamp != null && _comment.ThoiGianTao.HasValue) lblTimestamp.Text = GetRelativeTime(_comment.ThoiGianTao.Value);
-            if (lblContent != null) lblContent.Text = _comment.NoiDung ?? "";
+            
+            // Hiển thị ảnh đại diện
+            if (pbAvatar != null)
+            {
+                string displayName = !string.IsNullOrWhiteSpace(_comment.HoVaTen) 
+                    ? _comment.HoVaTen 
+                    : (!string.IsNullOrWhiteSpace(_comment.TenDangNhap) ? _comment.TenDangNhap : "U");
+                string firstLetter = string.IsNullOrWhiteSpace(displayName) ? "U" : displayName.Substring(0, 1).ToUpper();
+                AvatarHelper.SetAvatar(pbAvatar, _comment.HinhDaiDien, firstLetter);
+            }
+            
+            // Hiển thị tên người dùng
+            if (lblAuthorName != null)
+            {
+                lblAuthorName.Text = !string.IsNullOrWhiteSpace(_comment.HoVaTen) 
+                    ? _comment.HoVaTen 
+                    : (!string.IsNullOrWhiteSpace(_comment.TenDangNhap) ? _comment.TenDangNhap : "Người dùng");
+            }
+            
+            if (lblTimestamp != null && _comment.ThoiGianTao.HasValue) 
+                lblTimestamp.Text = GetRelativeTime(_comment.ThoiGianTao.Value);
+            
+            // Hiển thị reply indicator nếu là comment con
+            if (lblReplyIndicator != null && _comment.MaBinhLuanCha.HasValue)
+            {
+                lblReplyIndicator.Text = "↩ Đã trả lời";
+                lblReplyIndicator.Visible = true;
+                lblReplyIndicator.Location = new Point(lblTimestamp?.Right + 10 ?? 120, 32);
+            }
+            
+            if (lblContent != null) 
+                lblContent.Text = _comment.NoiDung ?? "";
+            
             UpdateReactionDisplay();
-            if (btnMenu != null && UserSession.CurrentUser != null) btnMenu.Visible = (_comment.MaNguoiDung == UserSession.CurrentUser.MaNguoiDung);
+            
+            if (btnMenu != null && UserSession.CurrentUser != null) 
+                btnMenu.Visible = (_comment.MaNguoiDung == UserSession.CurrentUser.MaNguoiDung);
         }
 
         private async void LoadCurrentReactionAsync()

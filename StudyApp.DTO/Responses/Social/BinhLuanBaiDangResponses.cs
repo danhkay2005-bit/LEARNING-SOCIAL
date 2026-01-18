@@ -11,6 +11,11 @@ namespace StudyApp.DTO.Responses.Social
         public int MaBaiDang { get; set; }
         public Guid MaNguoiDung { get; set; }
 
+        // Thông tin người dùng
+        public string? TenDangNhap { get; set; }
+        public string? HoVaTen { get; set; }
+        public string? HinhDaiDien { get; set; }
+
         public string NoiDung { get; set; } = null!;
         public string? HinhAnh { get; set; }
 
