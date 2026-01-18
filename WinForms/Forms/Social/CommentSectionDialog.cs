@@ -1,4 +1,4 @@
-using StudyApp.BLL.Interfaces.Social;
+﻿using StudyApp.BLL.Interfaces.Social;
 using StudyApp.DTO;
 using StudyApp.DTO.Requests.Social;
 using StudyApp.DTO.Responses.Social;
@@ -11,7 +11,7 @@ using WinForms.UserControls.Components.Social;
 namespace WinForms.Forms.Social
 {
     /// <summary>
-    /// Dialog hi?n th? danh s�ch b�nh lu?n v?i reactions
+    /// Dialog hi?n th? danh sách bình lu?n v?i reactions
     /// </summary>
     public partial class CommentSectionDialog : Form
     {
@@ -48,7 +48,7 @@ namespace WinForms.Forms.Social
             this.SuspendLayout();
 
             // Form properties
-            this.Text = "B�nh lu?n";
+            this.Text = "Bình luận";
             this.Size = new Size(600, 700);
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -65,7 +65,7 @@ namespace WinForms.Forms.Social
 
             lblTitle = new Label
             {
-                Text = "?? B�nh lu?n",
+                Text = "bình luận",
                 Location = new Point(15, 12),
                 AutoSize = true,
                 Font = new Font("Segoe UI", 14F, FontStyle.Bold),
@@ -74,7 +74,7 @@ namespace WinForms.Forms.Social
 
             btnClose = new Button
             {
-                Text = "?",
+                Text = ". . .",
                 Width = 35,
                 Height = 35,
                 Location = new Point(this.Width - 50, 8),
@@ -106,7 +106,7 @@ namespace WinForms.Forms.Social
                 Height = 30,
                 Anchor = AnchorStyles.Left | AnchorStyles.Right,
                 Font = new Font("Segoe UI", 10F),
-                PlaceholderText = "Vi?t b�nh lu?n..."
+                PlaceholderText = "Viết bình luận..."
             };
             txtComment.KeyDown += TxtComment_KeyDown;
 
@@ -158,7 +158,7 @@ namespace WinForms.Forms.Social
 
                 var lblLoading = new Label
                 {
-                    Text = "? ?ang t?i b�nh lu?n...",
+                    Text = "đang tải bình luận...",
                     AutoSize = true,
                     Font = new Font("Segoe UI", 10F, FontStyle.Italic),
                     ForeColor = Color.Gray,
@@ -174,7 +174,7 @@ namespace WinForms.Forms.Social
                 {
                     var lblEmpty = new Label
                     {
-                        Text = "?? Ch?a c� b�nh lu?n n�o.\nH�y l� ng??i ??u ti�n b�nh lu?n!",
+                        Text = "chưa có bình luận nào.\nHãy là người đầu tiên bình luận!",
                         AutoSize = true,
                         Font = new Font("Segoe UI", 11F, FontStyle.Italic),
                         ForeColor = Color.Gray,
@@ -198,13 +198,13 @@ namespace WinForms.Forms.Social
                     // Event handlers
                     commentCard.OnReplyClicked += (commentId) =>
                     {
-                        MessageBox.Show($"Tr? l?i b�nh lu?n #{commentId}", "Reply", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show($"Trả lời bình luận #{commentId}", "Reply", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         // TODO: Implement reply functionality
                     };
 
                     commentCard.OnEditClicked += async (commentId) =>
                     {
-                        var editDialog = new InputDialog("Ch?nh s?a b�nh lu?n", comment.NoiDung ?? "");
+                        var editDialog = new InputDialog("Chỉnh sửa bình luận", comment.NoiDung ?? "");
                         if (editDialog.ShowDialog() == DialogResult.OK && !string.IsNullOrWhiteSpace(editDialog.InputText))
                         {
                             try
@@ -218,7 +218,7 @@ namespace WinForms.Forms.Social
                             }
                             catch (Exception ex)
                             {
-                                MessageBox.Show($"L?i: {ex.Message}", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                MessageBox.Show($"Lỗi: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                             }
                         }
                     };
@@ -226,8 +226,8 @@ namespace WinForms.Forms.Social
                     commentCard.OnDeleteClicked += async (commentId) =>
                     {
                         var result = MessageBox.Show(
-                            "B?n c� ch?c mu?n x�a b�nh lu?n n�y?",
-                            "X�c nh?n",
+                            "bạn có chắc muốn xoá bình luận này",
+                            "Xác nhận",
                             MessageBoxButtons.YesNo,
                             MessageBoxIcon.Question
                         );
@@ -241,18 +241,21 @@ namespace WinForms.Forms.Social
                             }
                             catch (Exception ex)
                             {
-                                MessageBox.Show($"L?i: {ex.Message}", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                MessageBox.Show($"Lỗi: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                             }
                         }
                     };
 
                     flowComments.Controls.Add(commentCard);
+
+                    // ✅ FIX: Delay để tránh DbContext conflict
+                    await System.Threading.Tasks.Task.Delay(50);
                 }
             }
             catch (Exception ex)
             {
                 flowComments.Controls.Clear();
-                MessageBox.Show($"L?i khi t?i b�nh lu?n: {ex.Message}", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Lỗi khi tải bình luận: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -277,7 +280,7 @@ namespace WinForms.Forms.Social
 
             if (!UserSession.IsLoggedIn || UserSession.CurrentUser == null)
             {
-                MessageBox.Show("Vui l�ng ??ng nh?p ?? b�nh lu?n", "Th�ng b�o", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Vui lòng đăng nhập để bình luận", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
@@ -299,7 +302,7 @@ namespace WinForms.Forms.Social
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"L?i khi g?i b�nh lu?n: {ex.Message}", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"lỗi khi gửi bình luận: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {
@@ -351,7 +354,7 @@ namespace WinForms.Forms.Social
 
             btnCancel = new Button
             {
-                Text = "H?y",
+                Text = "Hủy",
                 DialogResult = DialogResult.Cancel,
                 Location = new Point(290, 80),
                 Width = 80

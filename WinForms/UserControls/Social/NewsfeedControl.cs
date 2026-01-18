@@ -232,7 +232,7 @@ namespace WinForms.UserControls.Social
 
         private async Task PerformSearchAsync()
         {
-            if (_userProfileService == null || flowPosts == null || txtSearch == null)
+            if (flowPosts == null || txtSearch == null)
                 return;
 
             var keyword = txtSearch.Text.Trim();
@@ -245,64 +245,120 @@ namespace WinForms.UserControls.Social
 
             try
             {
-                // ✅ Xóa nội dung cũ
-                flowPosts.Controls.Clear();
-
-                // ✅ Hiển thị loading
-                var lblLoading = new Label
+                // ✅ PHÁT HIỆN LOẠI TÌM KIẾM
+                if (keyword.StartsWith("#"))
                 {
-                    Text = "🔍 Đang tìm kiếm...",
-                    AutoSize = true,
-                    Font = new Font("Segoe UI", 10F, FontStyle.Italic),
-                    ForeColor = Color.Gray,
-                    Margin = new Padding(10, 20, 10, 10)
-                };
-                flowPosts.Controls.Add(lblLoading);
-
-                // ✅ Gọi API tìm kiếm
-                var results = await _userProfileService.TimKiemNguoiDungAsync(keyword);
-
-                // ✅ Xóa loading
-                flowPosts.Controls.Clear();
-
-                // ✅ Hiển thị kết quả
-                if (results == null || !results.Any())
-                {
-                    var lblEmpty = new Label
-                    {
-                        Text = $"❌ Không tìm thấy người dùng với từ khóa: \"{keyword}\"",
-                        AutoSize = true,
-                        Font = new Font("Segoe UI", 11F, FontStyle.Italic),
-                        ForeColor = Color.Gray,
-                        Margin = new Padding(10, 50, 10, 10)
-                    };
-                    flowPosts.Controls.Add(lblEmpty);
+                    // Tìm kiếm HASHTAG
+                    await SearchHashtagAsync(keyword);
                 }
                 else
                 {
-                    // ✅ Header
-                    var lblHeader = new Label
-                    {
-                        Text = $"🔍 Kết quả tìm kiếm: \"{keyword}\" ({results.Count} người dùng)",
-                        AutoSize = true,
-                        Font = new Font("Segoe UI", 12F, FontStyle.Bold),
-                        ForeColor = Color.FromArgb(24, 119, 242),
-                        Margin = new Padding(10, 10, 10, 20)
-                    };
-                    flowPosts.Controls.Add(lblHeader);
-
-                    // ✅ Danh sách user
-                    foreach (var user in results)
-                    {
-                        var userCard = CreateUserCard(user);
-                        flowPosts.Controls.Add(userCard);
-                    }
+                    // Tìm kiếm NGƯỜI DÙNG (mặc định)
+                    await SearchUserAsync(keyword);
                 }
             }
             catch (Exception ex)
             {
                 flowPosts?.Controls.Clear();
-                MessageBox.Show($"Lỗi khi tìm kiếm: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                var lblError = new Label
+                {
+                    Text = $"❌ Lỗi tìm kiếm:\n{ex.Message}",
+                    AutoSize = true,
+                    Font = new Font("Segoe UI", 10F),
+                    ForeColor = Color.Red,
+                    Margin = new Padding(10, 50, 10, 10)
+                };
+                flowPosts?.Controls.Add(lblError);
+            }
+        }
+
+        /// <summary>
+        /// 🔍 Tìm kiếm HASHTAG
+        /// </summary>
+        private async Task SearchHashtagAsync(string keyword)
+        {
+            if (flowPosts == null) return;
+
+            // Lấy HashtagService
+            var hashtagService = _serviceProvider?.GetService(typeof(IHashtagService)) as IHashtagService;
+            if (hashtagService == null)
+            {
+                MessageBox.Show("Không thể tải dịch vụ tìm kiếm hashtag", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            // Bỏ dấu # để tìm kiếm
+            var hashtag = keyword.TrimStart('#');
+
+            // Chuyển đến HashtagSearchPage
+            var mainForm = this.FindForm();
+            if (mainForm is Forms.MainForm mf)
+            {
+                var searchPage = new HashtagSearchPage(hashtagService, hashtag);
+                mf.LoadPage(searchPage);
+            }
+        }
+
+        /// <summary>
+        /// 👤 Tìm kiếm NGƯỜI DÙNG
+        /// </summary>
+        private async Task SearchUserAsync(string keyword)
+        {
+            if (_userProfileService == null || flowPosts == null)
+                return;
+
+            // ✅ Xóa nội dung cũ
+            flowPosts.Controls.Clear();
+
+            // ✅ Hiển thị loading
+            var lblLoading = new Label
+            {
+                Text = "🔍 Đang tìm kiếm người dùng...",
+                AutoSize = true,
+                Font = new Font("Segoe UI", 10F, FontStyle.Italic),
+                ForeColor = Color.Gray,
+                Margin = new Padding(10, 20, 10, 10)
+            };
+            flowPosts.Controls.Add(lblLoading);
+
+            // ✅ Gọi API tìm kiếm
+            var results = await _userProfileService.TimKiemNguoiDungAsync(keyword);
+
+            // ✅ Xóa loading
+            flowPosts.Controls.Clear();
+
+            // ✅ Hiển thị kết quả
+            if (results == null || !results.Any())
+            {
+                var lblEmpty = new Label
+                {
+                    Text = $"❌ Không tìm thấy người dùng với từ khóa: \"{keyword}\"",
+                    AutoSize = true,
+                    Font = new Font("Segoe UI", 11F, FontStyle.Italic),
+                    ForeColor = Color.Gray,
+                    Margin = new Padding(10, 50, 10, 10)
+                };
+                flowPosts.Controls.Add(lblEmpty);
+            }
+            else
+            {
+                // ✅ Header
+                var lblHeader = new Label
+                {
+                    Text = $"🔍 Kết quả tìm kiếm: \"{keyword}\" ({results.Count} người dùng)",
+                    AutoSize = true,
+                    Font = new Font("Segoe UI", 12F, FontStyle.Bold),
+                    ForeColor = Color.FromArgb(24, 119, 242),
+                    Margin = new Padding(10, 10, 10, 20)
+                };
+                flowPosts.Controls.Add(lblHeader);
+
+                // ✅ Danh sách user
+                foreach (var user in results)
+                {
+                    var userCard = CreateUserCard(user);
+                    flowPosts.Controls.Add(userCard);
+                }
             }
         }
 
@@ -330,6 +386,9 @@ namespace WinForms.UserControls.Social
                 BackColor = Color.LightGray,
                 BorderStyle = BorderStyle.FixedSingle
             };
+
+            // ✅ FIX: Load avatar
+            LoadAvatarForSearchResult(pbAvatar, user.HinhDaiDien, user.HoVaTen ?? user.Email);
 
             var lblName = new Label
             {
@@ -511,6 +570,85 @@ namespace WinForms.UserControls.Social
         {
             _currentPage++;
             await LoadPostsAsync(isRefresh: false);
+        }
+
+        /// <summary>
+        /// ✅ Load avatar cho search result (60x60)
+        /// </summary>
+        private void LoadAvatarForSearchResult(PictureBox pictureBox, string? avatarPath, string? displayName)
+        {
+            if (pictureBox == null) return;
+
+            try
+            {
+                if (!string.IsNullOrEmpty(avatarPath) && System.IO.File.Exists(avatarPath))
+                {
+                    using (var fs = new System.IO.FileStream(avatarPath, System.IO.FileMode.Open, System.IO.FileAccess.Read))
+                    {
+                        pictureBox.Image = Image.FromStream(fs);
+                    }
+                }
+                else
+                {
+                    pictureBox.Image = CreateSmallPlaceholderAvatar(displayName);
+                }
+            }
+            catch
+            {
+                pictureBox.Image = CreateSmallPlaceholderAvatar(displayName);
+            }
+        }
+
+        /// <summary>
+        /// ✅ Tạo avatar placeholder 60x60
+        /// </summary>
+        private Image CreateSmallPlaceholderAvatar(string? name)
+        {
+            var size = 60;
+            var bitmap = new Bitmap(size, size);
+            using (var g = Graphics.FromImage(bitmap))
+            {
+                g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
+
+                using (var brush = new System.Drawing.Drawing2D.LinearGradientBrush(
+                    new Rectangle(0, 0, size, size),
+                    Color.FromArgb(24, 119, 242),
+                    Color.FromArgb(66, 153, 225),
+                    System.Drawing.Drawing2D.LinearGradientMode.ForwardDiagonal))
+                {
+                    g.FillEllipse(brush, 0, 0, size, size);
+                }
+
+                string initials = GetInitials(name);
+
+                using (var font = new Font("Segoe UI", 20, FontStyle.Bold))
+                using (var textBrush = new SolidBrush(Color.White))
+                {
+                    var textSize = g.MeasureString(initials, font);
+                    var x = (size - textSize.Width) / 2;
+                    var y = (size - textSize.Height) / 2;
+                    g.DrawString(initials, font, textBrush, x, y);
+                }
+            }
+
+            return bitmap;
+        }
+
+        /// <summary>
+        /// ✅ Lấy chữ cái đầu
+        /// </summary>
+        private string GetInitials(string? name)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                return "?";
+
+            var parts = name.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+            if (parts.Length == 1)
+                return parts[0].Substring(0, Math.Min(2, parts[0].Length)).ToUpper();
+
+            return (parts[0][0].ToString() + parts[parts.Length - 1][0].ToString()).ToUpper();
         }
     }
 }

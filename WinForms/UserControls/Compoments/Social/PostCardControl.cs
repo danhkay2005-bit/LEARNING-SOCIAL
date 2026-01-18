@@ -6,6 +6,7 @@ using StudyApp.DTO.Requests.Social;
 using StudyApp.DTO.Responses.Social;
 using System;
 using System.Drawing;
+using System.Threading;
 using System.Windows.Forms;
 using WinForms.Forms.Social;
 
@@ -13,6 +14,9 @@ namespace WinForms.UserControls.Components.Social
 {
     public partial class PostCardControl : UserControl
     {
+        // ✅ THÊM: Semaphore để giới hạn concurrent DB operations
+        private static readonly SemaphoreSlim _dbSemaphore = new SemaphoreSlim(2, 2); // Max 2 operations cùng lúc
+
         // ✅ SỬA:  Thêm nullable cho các service (vì constructor mặc định không inject)
         private readonly IPostService? _postService;
         private readonly IReactionService? _reactionService;
@@ -35,7 +39,7 @@ namespace WinForms.UserControls.Components.Social
         private Label? lblTimestamp;
         private Button? btnMenu; // ✅ THÊM: Nút menu 3 chấm
         private Panel? pnlContent;
-        private Label? lblContent;
+        private RichTextBox? rtbContent; // ✅ SỬA: Đổi từ Label sang RichTextBox
         private PictureBox? pbImage;
         private Panel? pnlStats;
         private Label? lblReactionCount;
@@ -87,6 +91,9 @@ namespace WinForms.UserControls.Components.Social
             if (_post == null || !UserSession.IsLoggedIn || UserSession.CurrentUser == null || _reactionBaiDangService == null)
                 return;
 
+            // ✅ FIX: Chờ lượt để tránh DbContext conflict
+            await _dbSemaphore.WaitAsync();
+
             try
             {
                 var myReaction = await _reactionBaiDangService.KiemTraReactionCuaNguoiDungAsync(
@@ -105,6 +112,11 @@ namespace WinForms.UserControls.Components.Social
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"⚠️ Lỗi load reaction: {ex.Message}");
+            }
+            finally
+            {
+                // ✅ QUAN TRỌNG: Luôn release semaphore
+                _dbSemaphore.Release();
             }
         }
 
@@ -201,15 +213,33 @@ namespace WinForms.UserControls.Components.Social
                 BackColor = Color.White
             };
 
-            lblContent = new Label
+            // ✅ SỬA: Thay Label bằng RichTextBox để highlight hashtag
+            rtbContent = new RichTextBox
             {
                 Dock = DockStyle.Top,
-                AutoSize = true,
-                MaximumSize = new Size(560, 0),
-                Font = new Font("Segoe UI", 9.5F, FontStyle.Regular), // ✅ SỬA
+                BorderStyle = BorderStyle.None,
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Regular),
                 ForeColor = Color.Black,
-                Padding = new Padding(0, 0, 0, 10)
+                BackColor = Color.White,
+                ReadOnly = true,
+                ScrollBars = RichTextBoxScrollBars.None,
+                Cursor = Cursors.Arrow, // ✅ Mặc định là Arrow (vì ReadOnly)
+                DetectUrls = false, // ✅ Tắt auto-detect URL để tự xử lý hashtag
+                Margin = new Padding(0, 0, 0, 10)
             };
+            
+            // ✅ QUAN TRỌNG: Tự động tính chiều cao
+            rtbContent.ContentsResized += (s, e) =>
+            {
+                if (rtbContent != null)
+                    rtbContent.Height = e.NewRectangle.Height + 5;
+            };
+
+            // ✅ Click handler cho hashtag
+            rtbContent.MouseClick += RtbContent_MouseClick;
+            
+            // ✅ MỚI: Hover detection để đổi cursor
+            rtbContent.MouseMove += RtbContent_MouseMove;
 
             pbImage = new PictureBox
             {
@@ -220,7 +250,7 @@ namespace WinForms.UserControls.Components.Social
             };
 
             pnlContent.Controls.Add(pbImage);
-            pnlContent.Controls.Add(lblContent);
+            pnlContent.Controls.Add(rtbContent); // ✅ SỬA: Đổi từ lblContent
 
             // ===== STATS =====
             pnlStats = new Panel
@@ -337,8 +367,11 @@ namespace WinForms.UserControls.Components.Social
             if (lblTimestamp != null)
                 lblTimestamp.Text = GetRelativeTime(_post.ThoiGianTao ?? DateTime.Now);
 
-            if (lblContent != null)
-                lblContent.Text = _post.NoiDung ?? "(Không có nội dung)";
+            // ✅ SỬA: Highlight hashtag trong RichTextBox
+            if (rtbContent != null)
+            {
+                RenderContentWithHashtags(rtbContent, _post.NoiDung ?? "(Không có nội dung)");
+            }
 
             if (!string.IsNullOrEmpty(_post.HinhAnh) && pbImage != null)
             {
@@ -366,6 +399,9 @@ namespace WinForms.UserControls.Components.Social
         private async void RenderSharedPost()
         {
             if (_post == null || _chiaSeBaiDangService == null) return;
+
+            // ✅ FIX: Chờ lượt để tránh DbContext conflict
+            await _dbSemaphore.WaitAsync();
 
             try
             {
@@ -397,18 +433,16 @@ namespace WinForms.UserControls.Components.Social
                 }
 
                 // 3. Nội dung thêm của người share
-                if (lblContent != null)
+                if (rtbContent != null)
                 {
                     var noiDungShare = shareInfo.NoiDungThem;
                     if (!string.IsNullOrWhiteSpace(noiDungShare))
                     {
-                        lblContent.Text = noiDungShare;
-                        lblContent.Font = new Font("Segoe UI", 10F, FontStyle.Regular);
-                        lblContent.ForeColor = Color.Black;
+                        RenderContentWithHashtags(rtbContent, noiDungShare);
                     }
                     else
                     {
-                        lblContent.Visible = false;
+                        rtbContent.Visible = false;
                     }
                 }
 
@@ -432,6 +466,11 @@ namespace WinForms.UserControls.Components.Social
                 System.Diagnostics.Debug.WriteLine($"❌ Lỗi render shared post: {ex.Message}");
                 // Fallback
                 RenderNormalPost();
+            }
+            finally
+            {
+                // ✅ QUAN TRỌNG: Luôn release semaphore
+                _dbSemaphore.Release();
             }
         }
 
@@ -1045,6 +1084,8 @@ namespace WinForms.UserControls.Components.Social
             {
                 // ✅ Lỗi thật sự → Rollback UI
                 System.Diagnostics.Debug.WriteLine($"❌ Lỗi: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"❌ Stack Trace: {ex.StackTrace}");
+                System.Diagnostics.Debug.WriteLine($"❌ Inner Exception: {ex.InnerException?.Message}");
                 
                 _currentReaction = oldReaction;
                 if (btnLike != null)
@@ -1299,6 +1340,189 @@ namespace WinForms.UserControls.Components.Social
             {
                 pictureBox.BackColor = Color.LightGray;
             }
+        }
+
+        /// <summary>
+        /// ✅ HOÀN THIỆN: Render nội dung với hashtag được highlight trong RichTextBox
+        /// 
+        /// CÁCH HOẠT ĐỘNG:
+        /// 1. Set text vào RichTextBox
+        /// 2. Dùng Regex tìm vị trí các hashtag
+        /// 3. Highlight hashtag bằng màu xanh (Color.Blue) và Bold
+        /// 4. Click detection trong RtbContent_MouseClick
+        /// </summary>
+        private void RenderContentWithHashtags(RichTextBox rtbContent, string content)
+        {
+            if (rtbContent == null || string.IsNullOrEmpty(content))
+                return;
+
+            // 1. Set text thuần
+            rtbContent.Text = content;
+
+            // 2. Reset format
+            rtbContent.SelectAll();
+            rtbContent.SelectionColor = Color.Black;
+            rtbContent.SelectionFont = new Font("Segoe UI", 9.5F, FontStyle.Regular);
+            rtbContent.DeselectAll();
+
+            // 3. Tìm và highlight các hashtag
+            var regex = new System.Text.RegularExpressions.Regex(@"#[\p{L}\p{N}_]+");
+            var matches = regex.Matches(content);
+
+            foreach (System.Text.RegularExpressions.Match match in matches)
+            {
+                // Select hashtag
+                rtbContent.Select(match.Index, match.Length);
+                
+                // ✅ Highlight: Màu xanh + Bold + Underline (giống link)
+                rtbContent.SelectionColor = Color.FromArgb(24, 119, 242); // Facebook blue
+                rtbContent.SelectionFont = new Font("Segoe UI", 9.5F, FontStyle.Bold | FontStyle.Underline);
+            }
+
+            // 4. Deselect để không hiện selection
+            rtbContent.DeselectAll();
+
+            // 5. Đặt cursor về đầu
+            rtbContent.SelectionStart = 0;
+            rtbContent.SelectionLength = 0;
+        }
+
+        /// <summary>
+        /// ✅ MỚI: Xử lý click vào hashtag
+        /// </summary>
+        private void RtbContent_MouseClick(object? sender, MouseEventArgs e)
+        {
+            if (rtbContent == null) return;
+
+            // Lấy vị trí click
+            int clickIndex = rtbContent.GetCharIndexFromPosition(e.Location);
+
+            // Lấy text
+            string text = rtbContent.Text;
+            if (clickIndex < 0 || clickIndex >= text.Length) return;
+
+            // Tìm hashtag tại vị trí click
+            var regex = new System.Text.RegularExpressions.Regex(@"#[\p{L}\p{N}_]+");
+            var matches = regex.Matches(text);
+
+            foreach (System.Text.RegularExpressions.Match match in matches)
+            {
+                // Check xem click có nằm trong hashtag không
+                if (clickIndex >= match.Index && clickIndex < match.Index + match.Length)
+                {
+                    // Lấy hashtag (bỏ dấu #)
+                    string hashtag = match.Value.TrimStart('#');
+
+                    // ✅ Mở trang tìm kiếm hashtag
+                    OpenHashtagSearch(hashtag);
+                    return;
+                }
+            }
+        }
+
+        /// <summary>
+        /// ✅ MỚI: Detect hover vào hashtag và đổi cursor
+        /// 
+        /// CÁCH HOẠT ĐỘNG:
+        /// 1. Lấy index của ký tự tại vị trí chuột
+        /// 2. Kiểm tra xem index có nằm trong hashtag không
+        /// 3. Nếu có → Cursor = Hand (👆)
+        /// 4. Nếu không → Cursor = Arrow (mặc định)
+        /// </summary>
+        private void RtbContent_MouseMove(object? sender, MouseEventArgs e)
+        {
+            if (rtbContent == null) return;
+
+            try
+            {
+                // Lấy index của ký tự tại vị trí chuột
+                int hoverIndex = rtbContent.GetCharIndexFromPosition(e.Location);
+                string text = rtbContent.Text;
+
+                if (hoverIndex < 0 || hoverIndex >= text.Length)
+                {
+                    rtbContent.Cursor = Cursors.Arrow;
+                    return;
+                }
+
+                // Tìm tất cả hashtag
+                var regex = new System.Text.RegularExpressions.Regex(@"#[\p{L}\p{N}_]+");
+                var matches = regex.Matches(text);
+
+                // Kiểm tra xem đang hover hashtag không
+                bool isOverHashtag = false;
+                foreach (System.Text.RegularExpressions.Match match in matches)
+                {
+                    if (hoverIndex >= match.Index && hoverIndex < match.Index + match.Length)
+                    {
+                        isOverHashtag = true;
+                        break;
+                    }
+                }
+
+                // Đổi cursor tương ứng
+                rtbContent.Cursor = isOverHashtag ? Cursors.Hand : Cursors.Arrow;
+            }
+            catch
+            {
+                rtbContent.Cursor = Cursors.Arrow;
+            }
+        }
+
+        /// <summary>
+        /// ✅ MỚI: Mở trang tìm kiếm hashtag
+        /// </summary>
+        private void OpenHashtagSearch(string hashtag)
+        {
+            try
+            {
+                // Tìm MainForm
+                var mainForm = this.FindForm();
+                if (mainForm is Forms.MainForm mf && Program.ServiceProvider != null)
+                {
+                    // ✅ Lấy HashtagService
+                    var hashtagService = Program.ServiceProvider.GetService(typeof(IHashtagService)) as IHashtagService;
+                    if (hashtagService != null)
+                    {
+                        // ✅ Tạo HashtagSearchPage và load
+                        var searchPage = new WinForms.UserControls.Social.HashtagSearchPage(hashtagService, hashtag);
+                        mf.LoadPage(searchPage);
+                        
+                        System.Diagnostics.Debug.WriteLine($"✅ Đã mở HashtagSearchPage cho #{hashtag}");
+                    }
+                    else
+                    {
+                        MessageBox.Show(
+                            "Không thể tải dịch vụ tìm kiếm hashtag",
+                            "Lỗi",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Error
+                        );
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi mở tìm kiếm: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                System.Diagnostics.Debug.WriteLine($"❌ Lỗi OpenHashtagSearch: {ex.Message}\n{ex.StackTrace}");
+            }
+        }
+
+        /// <summary>
+        /// ✅ MỚI: Tách hashtag từ nội dung
+        /// </summary>
+        private List<string> ExtractHashtags(string content)
+        {
+            if (string.IsNullOrEmpty(content))
+                return new List<string>();
+
+            var regex = new System.Text.RegularExpressions.Regex(@"#([\p{L}\p{N}_]+)");
+            var matches = regex.Matches(content);
+
+            return matches.Cast<System.Text.RegularExpressions.Match>()
+                         .Select(m => m.Groups[1].Value.ToLower())
+                         .Distinct()
+                         .ToList();
         }
 
         private void PostCardControl_Load(object sender, EventArgs e)

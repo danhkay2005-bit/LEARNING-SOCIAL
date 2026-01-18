@@ -245,7 +245,32 @@ namespace StudyApp.BLL.Services.Social
                 .Take(20)
                 .ToListAsync();
 
-            return _mapper.Map<List<BaiDangResponse>>(posts);
+            var result = _mapper.Map<List<BaiDangResponse>>(posts);
+
+            // ✅ FIX: Load thông tin người dùng (avatar, tên) - Giống như GetNewsfeedAsync
+            var userIds = result.Select(x => x.MaNguoiDung).Distinct().ToList();
+            var users = await _userContext.NguoiDungs
+                .Where(u => userIds.Contains(u.MaNguoiDung))
+                .Select(u => new
+                {
+                    u.MaNguoiDung,
+                    u.HoVaTen,
+                    u.TenDangNhap,
+                    u.HinhDaiDien
+                })
+                .ToListAsync();
+
+            foreach (var post in result)
+            {
+                var user = users.FirstOrDefault(u => u.MaNguoiDung == post.MaNguoiDung);
+                if (user != null)
+                {
+                    post.TenNguoiDung = user.HoVaTen ?? user.TenDangNhap;
+                    post.HinhDaiDien = user.HinhDaiDien;
+                }
+            }
+
+            return result;
         }
 
         #endregion

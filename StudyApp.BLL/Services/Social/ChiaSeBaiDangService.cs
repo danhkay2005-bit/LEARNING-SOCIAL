@@ -229,6 +229,26 @@ namespace StudyApp.BLL.Services.Social
 
             var result = _mapper.Map<ChiaSeBaiDangResponse>(chiaSe);
 
+            // ✅ FIX: Load thông tin người CHIA SẺ (BaiDangMoi)
+            if (result.BaiDangMoi != null)
+            {
+                var nguoiChiaSe = await _userContext.NguoiDungs
+                    .Where(u => u.MaNguoiDung == result.BaiDangMoi.MaNguoiDung)
+                    .Select(u => new
+                    {
+                        u.HoVaTen,
+                        u.TenDangNhap,
+                        u.HinhDaiDien
+                    })
+                    .FirstOrDefaultAsync();
+
+                if (nguoiChiaSe != null)
+                {
+                    result.BaiDangMoi.TenNguoiDung = nguoiChiaSe.HoVaTen ?? nguoiChiaSe.TenDangNhap;
+                    result.BaiDangMoi.HinhDaiDien = nguoiChiaSe.HinhDaiDien;
+                }
+            }
+
             // ✅ Load thông tin người đăng gốc từ UserDbContext
             if (result.BaiDangGoc != null)
             {

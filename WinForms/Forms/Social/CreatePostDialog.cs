@@ -102,9 +102,20 @@ namespace WinForms.Forms.Social
                 Font = new Font("Segoe UI", 10F, FontStyle.Regular),
                 BorderStyle = BorderStyle.FixedSingle,
                 ScrollBars = ScrollBars.Vertical,
-                PlaceholderText = "Bạn đang nghĩ gì?"
+                PlaceholderText = "Bạn đang nghĩ gì? (Dùng #hashtag để phân loại bài viết)"
             };
             txtContent.TextChanged += TxtContent_TextChanged;
+
+            // ✅ THÊM: Label hướng dẫn hashtag
+            var lblHashtagHint = new Label
+            {
+                Text = "💡 Mẹo: Dùng #hashtag để phân loại (vd: #học_tập #lập_trình)",
+                Location = new Point(15, 305),
+                AutoSize = true,
+                Font = new Font("Segoe UI", 8F, FontStyle.Italic),
+                ForeColor = Color.Gray
+            };
+            this.Controls.Add(lblHashtagHint);
 
             // ===== IMAGE PREVIEW =====
             pbPreview = new PictureBox

@@ -1,4 +1,4 @@
-using StudyApp.BLL.Interfaces.Social;
+ï»¿using StudyApp.BLL.Interfaces.Social;
 using StudyApp.DTO;
 using StudyApp.DTO.Enums;
 using StudyApp.DTO.Requests.Social;
@@ -12,7 +12,7 @@ using WinForms.Helpers;
 namespace WinForms.UserControls.Components.Social
 {
     /// <summary>
-    /// SIMPLIFIED - Card hi?n th? m?t bình lu?n v?i reaction
+    /// SIMPLIFIED - Card hi?n th? m?t bÃ¬nh lu?n v?i reaction
     /// </summary>
     public partial class CommentCardControl : UserControl
     {
@@ -70,14 +70,14 @@ namespace WinForms.UserControls.Components.Social
             lblReactionCount = new Label { Location = new Point(60, 100), AutoSize = true, Text = "", Font = new Font("Segoe UI", 8F), ForeColor = Color.Gray, Cursor = Cursors.Hand, Visible = false };
             lblReactionCount.Click += LblReactionCount_Click;
 
-            btnReact = new Button { Location = new Point(60, 120), Size = new Size(85, 24), Text = "?? Thích", Font = new Font("Segoe UI", 8F), FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, BackColor = Color.White, ForeColor = Color.FromArgb(100, 100, 100), TabStop = false };
+            btnReact = new Button { Location = new Point(60, 120), Size = new Size(85, 24), Text = "Like", Font = new Font("Segoe UI", 8F), FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, BackColor = Color.White, ForeColor = Color.FromArgb(100, 100, 100), TabStop = false };
             btnReact.FlatAppearance.BorderSize = 0;
             btnReact.FlatAppearance.MouseOverBackColor = Color.FromArgb(240, 242, 245);
             btnReact.Click += BtnReact_Click;
             btnReact.MouseEnter += BtnReact_MouseEnter;
             btnReact.MouseLeave += BtnReact_MouseLeave;
 
-            btnReply = new Button { Location = new Point(155, 120), Size = new Size(85, 24), Text = "?? Tr? l?i", Font = new Font("Segoe UI", 8F), FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, BackColor = Color.White, ForeColor = Color.FromArgb(100, 100, 100), TabStop = false };
+            btnReply = new Button { Location = new Point(155, 120), Size = new Size(85, 24), Text = "Reply", Font = new Font("Segoe UI", 8F), FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, BackColor = Color.White, ForeColor = Color.FromArgb(100, 100, 100), TabStop = false };
             btnReply.FlatAppearance.BorderSize = 0;
             btnReply.FlatAppearance.MouseOverBackColor = Color.FromArgb(240, 242, 245);
             btnReply.Click += BtnReply_Click;
@@ -106,7 +106,7 @@ namespace WinForms.UserControls.Components.Social
         {
             if (_comment == null) return;
             if (pbAvatar != null) AvatarHelper.SetAvatar(pbAvatar, null, "U");
-            if (lblAuthorName != null) lblAuthorName.Text = "Ng??i dùng";
+            if (lblAuthorName != null) lblAuthorName.Text = "NgÆ°á»i dÃ¹ng";
             if (lblTimestamp != null && _comment.ThoiGianTao.HasValue) lblTimestamp.Text = GetRelativeTime(_comment.ThoiGianTao.Value);
             if (lblContent != null) lblContent.Text = _comment.NoiDung ?? "";
             UpdateReactionDisplay();
@@ -122,7 +122,7 @@ namespace WinForms.UserControls.Components.Social
                 if (myReaction != null && btnReact != null)
                 {
                     _currentReaction = myReaction.LoaiReaction;
-                    btnReact.Text = $"{GetEmojiFromReactionType(myReaction.LoaiReaction)} {GetReactionName(myReaction.LoaiReaction)}";
+                    btnReact.Text = GetReactionName(myReaction.LoaiReaction);
                     btnReact.BackColor = Color.FromArgb(230, 240, 255);
                     btnReact.ForeColor = Color.FromArgb(24, 119, 242);
                 }
@@ -133,7 +133,7 @@ namespace WinForms.UserControls.Components.Social
         private void UpdateReactionDisplay()
         {
             if (_comment == null || lblReactionCount == null) return;
-            if (_comment.SoLuotReactions > 0) { lblReactionCount.Text = $"?? {_comment.SoLuotReactions} ng??i ?ã th? c?m xúc"; lblReactionCount.Visible = true; } else { lblReactionCount.Visible = false; }
+            if (_comment.SoLuotReactions > 0) { lblReactionCount.Text = $"?? {_comment.SoLuotReactions} ngÆ°á»i Ä‘Ã£ tháº£ cáº£m xÃºc"; lblReactionCount.Visible = true; } else { lblReactionCount.Visible = false; }
         }
 
         private void BtnReact_MouseEnter(object? sender, EventArgs e) { if (pnlReactionPicker == null || !pnlReactionPicker.Visible) ShowReactionPicker(); }
@@ -142,18 +142,36 @@ namespace WinForms.UserControls.Components.Social
         private void ShowReactionPicker()
         {
             if (btnReact == null) return;
-            pnlReactionPicker = new Panel { Location = new Point(btnReact.Left, btnReact.Top - 60), Size = new Size(320, 55), BackColor = Color.White, BorderStyle = BorderStyle.FixedSingle };
-            var reactions = new[] { (LoaiReactionEnum.Thich, "??"), (LoaiReactionEnum.YeuThich, "??"), (LoaiReactionEnum.Haha, "??"), (LoaiReactionEnum.Wow, "??"), (LoaiReactionEnum.Buon, "??"), (LoaiReactionEnum.TucGian, "??") };
+            pnlReactionPicker = new Panel { Location = new Point(btnReact.Left, btnReact.Top - 60), Size = new Size(360, 55), BackColor = Color.White, BorderStyle = BorderStyle.FixedSingle };
+            
+            // âœ… DÃ¹ng Unicode emoji vá»›i Segoe UI Emoji font
+            var reactions = new[] 
+            { 
+                (LoaiReactionEnum.Thich, "\uD83D\uDC4D", "Like"),      // ðŸ‘
+                (LoaiReactionEnum.YeuThich, "\u2764\uFE0F", "Love"),   // â¤ï¸
+                (LoaiReactionEnum.Haha, "\uD83D\uDE02", "Haha"),       // ðŸ˜‚
+                (LoaiReactionEnum.Wow, "\uD83D\uDE2E", "Wow"),         // ðŸ˜®
+                (LoaiReactionEnum.Buon, "\uD83D\uDE22", "Sad"),        // ðŸ˜¢
+                (LoaiReactionEnum.TucGian, "\uD83D\uDE21", "Angry")    // ðŸ˜¡
+            };
+            
             int x = 5;
-            foreach (var (type, emoji) in reactions)
+            foreach (var (type, icon, name) in reactions)
             {
-                var btn = new Button { Text = emoji, Size = new Size(48, 48), Location = new Point(x, 3), FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 22F), Cursor = Cursors.Hand, Tag = type, BackColor = Color.White, TabStop = false };
+                var btn = new Button { Text = icon, Size = new Size(56, 48), Location = new Point(x, 3), FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI Emoji", 20F), Cursor = Cursors.Hand, Tag = type, BackColor = Color.White, TabStop = false };
                 btn.FlatAppearance.BorderSize = 0;
+                
+                // Tooltip
+                var tooltip = new ToolTip();
+                tooltip.SetToolTip(btn, name);
+                
+                // Events
                 btn.MouseEnter += (s, e) => btn.BackColor = Color.FromArgb(240, 242, 245);
                 btn.MouseLeave += (s, e) => btn.BackColor = Color.White;
                 btn.Click += (s, e) => HandleReactionClick(type);
+                
                 pnlReactionPicker.Controls.Add(btn);
-                x += 52;
+                x += 60;
             }
             var hideTimer = new System.Windows.Forms.Timer { Interval = 2000 };
             hideTimer.Tick += (s, e) => { hideTimer.Stop(); HideReactionPicker(); };
@@ -176,7 +194,7 @@ namespace WinForms.UserControls.Components.Social
                 {
                     await _reactionBinhLuanService.XoaReactionAsync(new XoaReactionBinhLuanRequest { MaBinhLuan = _comment.MaBinhLuan, MaNguoiDung = UserSession.CurrentUser.MaNguoiDung });
                     _currentReaction = null;
-                    if (btnReact != null) { btnReact.Text = "?? Thích"; btnReact.BackColor = Color.White; btnReact.ForeColor = Color.FromArgb(100, 100, 100); }
+                    if (btnReact != null) { btnReact.Text = "Like"; btnReact.BackColor = Color.White; btnReact.ForeColor = Color.FromArgb(100, 100, 100); }
                     if (_comment.SoLuotReactions > 0) _comment.SoLuotReactions--;
                 }
                 else
@@ -184,20 +202,32 @@ namespace WinForms.UserControls.Components.Social
                     await _reactionBinhLuanService.TaoHoacCapNhatReactionAsync(new TaoHoacCapNhatReactionBinhLuanRequest { MaBinhLuan = _comment.MaBinhLuan, MaNguoiDung = UserSession.CurrentUser.MaNguoiDung, LoaiReaction = reactionType });
                     var oldReaction = _currentReaction;
                     _currentReaction = reactionType;
-                    if (btnReact != null) { btnReact.Text = $"{GetEmojiFromReactionType(reactionType)} {GetReactionName(reactionType)}"; btnReact.BackColor = Color.FromArgb(230, 240, 255); btnReact.ForeColor = Color.FromArgb(24, 119, 242); }
+                    if (btnReact != null) { btnReact.Text = GetReactionName(reactionType); btnReact.BackColor = Color.FromArgb(230, 240, 255); btnReact.ForeColor = Color.FromArgb(24, 119, 242); }
                     if (oldReaction == null) _comment.SoLuotReactions++;
                 }
                 UpdateReactionDisplay();
             }
-            catch (Exception ex) { MessageBox.Show($"L?i: {ex.Message}", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+            catch (Exception ex) { MessageBox.Show($"Lá»—i: {ex.Message}", "Lá»—i", MessageBoxButtons.OK, MessageBoxIcon.Error); }
         }
 
-        private void BtnMenu_Click(object? sender, EventArgs e) { if (_comment == null || btnMenu == null) return; var menu = new ContextMenuStrip(); menu.Items.Add("?? Ch?nh s?a", null, (s, ev) => OnEditClicked?.Invoke(_comment.MaBinhLuan)); menu.Items.Add("??? Xóa", null, (s, ev) => OnDeleteClicked?.Invoke(_comment.MaBinhLuan)); menu.Show(btnMenu, new Point(0, btnMenu.Height)); }
+        private void BtnMenu_Click(object? sender, EventArgs e) { if (_comment == null || btnMenu == null) return; var menu = new ContextMenuStrip(); menu.Items.Add("?? Chá»‰nh sá»­a", null, (s, ev) => OnEditClicked?.Invoke(_comment.MaBinhLuan)); menu.Items.Add(" XÃ³a", null, (s, ev) => OnDeleteClicked?.Invoke(_comment.MaBinhLuan)); menu.Show(btnMenu, new Point(0, btnMenu.Height)); }
         private void BtnReply_Click(object? sender, EventArgs e) { if (_comment != null) OnReplyClicked?.Invoke(_comment.MaBinhLuan); }
-        private void LblReactionCount_Click(object? sender, EventArgs e) { if (_comment == null) return; MessageBox.Show($"{_comment.SoLuotReactions} ng??i ?ã th? c?m xúc", "Danh sách", MessageBoxButtons.OK, MessageBoxIcon.Information); }
+        private void LblReactionCount_Click(object? sender, EventArgs e) { if (_comment == null) return; MessageBox.Show($"{_comment.SoLuotReactions} nguoi da bieu cam xuc", "Danh sach", MessageBoxButtons.OK, MessageBoxIcon.Information); }
 
-        private string GetEmojiFromReactionType(LoaiReactionEnum type) => type switch { LoaiReactionEnum.Thich => "??", LoaiReactionEnum.YeuThich => "??", LoaiReactionEnum.Haha => "??", LoaiReactionEnum.Wow => "??", LoaiReactionEnum.Buon => "??", LoaiReactionEnum.TucGian => "??", _ => "??" };
-        private string GetReactionName(LoaiReactionEnum type) => type switch { LoaiReactionEnum.Thich => "Thích", LoaiReactionEnum.YeuThich => "Yêu thích", LoaiReactionEnum.Haha => "Haha", LoaiReactionEnum.Wow => "Wow", LoaiReactionEnum.Buon => "Bu?n", LoaiReactionEnum.TucGian => "T?c gi?n", _ => "Thích" };
-        private string GetRelativeTime(DateTime dateTime) { var timeSpan = DateTime.Now - dateTime; if (timeSpan.TotalMinutes < 1) return "V?a xong"; if (timeSpan.TotalMinutes < 60) return $"{(int)timeSpan.TotalMinutes} phút tr??c"; if (timeSpan.TotalHours < 24) return $"{(int)timeSpan.TotalHours} gi? tr??c"; if (timeSpan.TotalDays < 7) return $"{(int)timeSpan.TotalDays} ngày tr??c"; return dateTime.ToString("dd/MM/yyyy"); }
+        // ? S?A: B? emoji, tr? v? text r?ng
+        private string GetEmojiFromReactionType(LoaiReactionEnum type) => string.Empty;
+        
+        private string GetReactionName(LoaiReactionEnum type) => type switch 
+        { 
+            LoaiReactionEnum.Thich => "Like", 
+            LoaiReactionEnum.YeuThich => "Love", 
+            LoaiReactionEnum.Haha => "Haha", 
+            LoaiReactionEnum.Wow => "Wow", 
+            LoaiReactionEnum.Buon => "Sad", 
+            LoaiReactionEnum.TucGian => "Angry", 
+            _ => "Like" 
+        };
+        
+        private string GetRelativeTime(DateTime dateTime) { var timeSpan = DateTime.Now - dateTime; if (timeSpan.TotalMinutes < 1) return "Vua xong"; if (timeSpan.TotalMinutes < 60) return $"{(int)timeSpan.TotalMinutes} phut truoc"; if (timeSpan.TotalHours < 24) return $"{(int)timeSpan.TotalHours} gio truoc"; if (timeSpan.TotalDays < 7) return $"{(int)timeSpan.TotalDays} ngay truoc"; return dateTime.ToString("dd/MM/yyyy"); }
     }
 }

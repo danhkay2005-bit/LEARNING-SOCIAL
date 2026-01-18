@@ -202,7 +202,7 @@ namespace WinForms.UserControls
                 Font = new Font("Segoe UI", 10F, FontStyle.Regular)
             };
 
-            // Tab Bài vi���t
+            // Tab Bài viết
             tabPosts = new TabPage("📝 Bài viết của tôi");
             flowPosts = new FlowLayoutPanel
             {
@@ -280,15 +280,35 @@ namespace WinForms.UserControls
 
             try
             {
-                // 1. Hiển thị thông tin cơ bản
+                // 1. Hiển thị thông tin cơ bản từ UserSession
                 if (lblName != null) lblName.Text = UserSession.CurrentUser.HoVaTen ?? "Người dùng";
                 if (lblEmail != null) lblEmail.Text = UserSession.CurrentUser.Email ?? "";
-                if (lblBio != null) lblBio.Text = "🎓 Đang học tập trên StudyApp";
 
                 // ✅ 2. Load avatar
                 LoadAvatar(UserSession.CurrentUser.HinhDaiDien);
 
-                // 3. Lấy thống kê
+                // ✅ 3. Load tiểu sử từ API (không hard-code)
+                if (_userProfileService != null && lblBio != null)
+                {
+                    try
+                    {
+                        var fullProfile = await _userProfileService.GetProfileAsync(UserSession.CurrentUser.MaNguoiDung);
+                        if (fullProfile != null && !string.IsNullOrEmpty(fullProfile.TieuSu))
+                        {
+                            lblBio.Text = fullProfile.TieuSu;
+                        }
+                        else
+                        {
+                            lblBio.Text = "🎓 Đang học tập trên StudyApp";
+                        }
+                    }
+                    catch
+                    {
+                        lblBio.Text = "🎓 Đang học tập trên StudyApp";
+                    }
+                }
+
+                // 4. Lấy thống kê
                 if (_followService != null)
                 {
                     var stats = await _followService.LayThongKeTheoDoiAsync(UserSession.CurrentUser.MaNguoiDung);
@@ -458,6 +478,74 @@ namespace WinForms.UserControls
         }
 
         /// <summary>
+        /// ✅ Load avatar cho user card (size nhỏ 60x60)
+        /// </summary>
+        private void LoadAvatarForCard(PictureBox pictureBox, string? avatarPath, string? displayName)
+        {
+            if (pictureBox == null) return;
+
+            try
+            {
+                // Nếu có đường dẫn avatar local
+                if (!string.IsNullOrEmpty(avatarPath) && System.IO.File.Exists(avatarPath))
+                {
+                    using (var fs = new System.IO.FileStream(avatarPath, System.IO.FileMode.Open, System.IO.FileAccess.Read))
+                    {
+                        pictureBox.Image = Image.FromStream(fs);
+                    }
+                }
+                else
+                {
+                    // ✅ Tạo avatar placeholder nhỏ
+                    pictureBox.Image = CreateSmallPlaceholderAvatar(displayName);
+                }
+            }
+            catch
+            {
+                pictureBox.Image = CreateSmallPlaceholderAvatar(displayName);
+            }
+        }
+
+        /// <summary>
+        /// ✅ Tạo avatar placeholder nhỏ (60x60) cho user cards
+        /// </summary>
+        private Image CreateSmallPlaceholderAvatar(string? name)
+        {
+            var size = 60;
+            var bitmap = new Bitmap(size, size);
+            using (var g = Graphics.FromImage(bitmap))
+            {
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
+
+                // Background gradient
+                using (var brush = new LinearGradientBrush(
+                    new Rectangle(0, 0, size, size),
+                    Color.FromArgb(24, 119, 242),
+                    Color.FromArgb(66, 153, 225),
+                    LinearGradientMode.ForwardDiagonal))
+                {
+                    g.FillEllipse(brush, 0, 0, size, size);
+                }
+
+                // Chữ cái đầu
+                string initials = GetInitials(name);
+
+                // Vẽ chữ (font nhỏ hơn)
+                using (var font = new Font("Segoe UI", 20, FontStyle.Bold))
+                using (var textBrush = new SolidBrush(Color.White))
+                {
+                    var textSize = g.MeasureString(initials, font);
+                    var x = (size - textSize.Width) / 2;
+                    var y = (size - textSize.Height) / 2;
+                    g.DrawString(initials, font, textBrush, x, y);
+                }
+            }
+
+            return bitmap;
+        }
+
+        /// <summary>
         /// 📝 Tải bài viết của tôi
         /// </summary>
         private async Task LoadMyPostsAsync()
@@ -504,6 +592,9 @@ namespace WinForms.UserControls
 
                         postCard.LoadPost(post);
                         flowPosts.Controls.Add(postCard);
+
+                        // ✅ FIX: Delay nhỏ để tránh DbContext conflict
+                        await Task.Delay(50);
                     }
                 }
             }
@@ -546,7 +637,14 @@ namespace WinForms.UserControls
 
                 foreach (var follower in followers)
                 {
-                    var card = CreateUserCard(follower.MaNguoiDung, follower.HoVaTen, follower.TenDangNhap, follower.DangTheoDoiLai);
+                    // ✅ FIX: Truyền thêm avatar
+                    var card = CreateUserCard(
+                        follower.MaNguoiDung, 
+                        follower.HoVaTen, 
+                        follower.TenDangNhap, 
+                        follower.DangTheoDoiLai,
+                        follower.HinhDaiDien  // ← Avatar path
+                    );
                     flowFollowers.Controls.Add(card);
                 }
             }
@@ -589,7 +687,14 @@ namespace WinForms.UserControls
 
                 foreach (var user in following)
                 {
-                    var card = CreateUserCard(user.MaNguoiDung, user.HoVaTen, user.TenDangNhap, true);
+                    // ✅ FIX: Truyền thêm avatar
+                    var card = CreateUserCard(
+                        user.MaNguoiDung, 
+                        user.HoVaTen, 
+                        user.TenDangNhap, 
+                        true,
+                        user.HinhDaiDien  // ← Avatar path
+                    );
                     flowFollowing.Controls.Add(card);
                 }
             }
@@ -602,7 +707,7 @@ namespace WinForms.UserControls
         /// <summary>
         /// 🃏 Tạo user card
         /// </summary>
-        private Panel CreateUserCard(Guid userId, string? name, string? email, bool isFollowing)
+        private Panel CreateUserCard(Guid userId, string? name, string? email, bool isFollowing, string? avatarPath = null)
         {
             var pnlUser = new Panel
             {
@@ -622,6 +727,9 @@ namespace WinForms.UserControls
                 BackColor = Color.LightGray,
                 BorderStyle = BorderStyle.FixedSingle
             };
+
+            // ✅ FIX: Load avatar
+            LoadAvatarForCard(pbAvatar, avatarPath, name);
 
             var lblName = new Label
             {
