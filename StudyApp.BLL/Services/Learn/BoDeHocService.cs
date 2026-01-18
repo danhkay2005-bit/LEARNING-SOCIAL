@@ -772,7 +772,9 @@ namespace StudyApp.BLL.Services.Learn
                 {
                     // Thực hiện cộng điểm và streak
                     await _gamificationService.ProcessLessonCompletionAsync(phienHoc.MaNguoiDung, xpEarned);
+
                     await _dailyStreakService.MarkLessonCompletedTodayAsync(phienHoc.MaNguoiDung);
+                  //  await _gamificationService.CheckAndGrantAchievementsAsync(phienHoc.MaNguoiDung);
                 }
                 catch (Exception ex)
                 {

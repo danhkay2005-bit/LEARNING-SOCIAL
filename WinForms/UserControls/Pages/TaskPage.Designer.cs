@@ -81,6 +81,7 @@
             // 
             // tbHangTuan
             // 
+            
             tbHangTuan.Controls.Add(flpWeekly);
             tbHangTuan.Location = new Point(4, 24);
             tbHangTuan.Name = "tbHangTuan";
