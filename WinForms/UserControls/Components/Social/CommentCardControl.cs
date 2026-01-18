@@ -105,12 +105,35 @@ namespace WinForms.UserControls.Components.Social
         private void RenderComment()
         {
             if (_comment == null) return;
-            if (pbAvatar != null) AvatarHelper.SetAvatar(pbAvatar, null, "U");
-            if (lblAuthorName != null) lblAuthorName.Text = "Người dùng";
-            if (lblTimestamp != null && _comment.ThoiGianTao.HasValue) lblTimestamp.Text = GetRelativeTime(_comment.ThoiGianTao.Value);
-            if (lblContent != null) lblContent.Text = _comment.NoiDung ?? "";
+            
+            // Hiển thị ảnh đại diện
+            if (pbAvatar != null)
+            {
+                string displayName = !string.IsNullOrWhiteSpace(_comment.HoVaTen) 
+                    ? _comment.HoVaTen 
+                    : (!string.IsNullOrWhiteSpace(_comment.TenDangNhap) ? _comment.TenDangNhap : "U");
+                string firstLetter = string.IsNullOrWhiteSpace(displayName) ? "U" : displayName.Substring(0, 1).ToUpper();
+                AvatarHelper.SetAvatar(pbAvatar, _comment.HinhDaiDien, firstLetter);
+            }
+            
+            // Hiển thị tên người dùng
+            if (lblAuthorName != null)
+            {
+                lblAuthorName.Text = !string.IsNullOrWhiteSpace(_comment.HoVaTen) 
+                    ? _comment.HoVaTen 
+                    : (!string.IsNullOrWhiteSpace(_comment.TenDangNhap) ? _comment.TenDangNhap : "Người dùng");
+            }
+            
+            if (lblTimestamp != null && _comment.ThoiGianTao.HasValue) 
+                lblTimestamp.Text = GetRelativeTime(_comment.ThoiGianTao.Value);
+            
+            if (lblContent != null) 
+                lblContent.Text = _comment.NoiDung ?? "";
+            
             UpdateReactionDisplay();
-            if (btnMenu != null && UserSession.CurrentUser != null) btnMenu.Visible = (_comment.MaNguoiDung == UserSession.CurrentUser.MaNguoiDung);
+            
+            if (btnMenu != null && UserSession.CurrentUser != null) 
+                btnMenu.Visible = (_comment.MaNguoiDung == UserSession.CurrentUser.MaNguoiDung);
         }
 
         private async void LoadCurrentReactionAsync()
