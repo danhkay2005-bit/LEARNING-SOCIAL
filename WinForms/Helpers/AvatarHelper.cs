@@ -46,8 +46,37 @@ namespace WinForms.Helpers
         {
             try
             {
-                var fullUrl = $"https://localhost:7001{avatarUrl}";
-                var imageBytes = await _httpClient.GetByteArrayAsync(fullUrl);
+                // Xác định URL đầy đủ
+                string fullUrl;
+                if (avatarUrl.StartsWith("http://") || avatarUrl.StartsWith("https://"))
+                {
+                    // URL đầy đủ (online hoặc external)
+                    fullUrl = avatarUrl;
+                }
+                else if (avatarUrl.StartsWith("/"))
+                {
+                    // Relative path - thêm API base URL
+                    fullUrl = $"https://localhost:7001{avatarUrl}";
+                }
+                else
+                {
+                    // Local file path
+                    fullUrl = avatarUrl;
+                }
+
+                System.Diagnostics.Debug.WriteLine($"Loading avatar from: {fullUrl}");
+
+                byte[] imageBytes;
+                if (File.Exists(fullUrl))
+                {
+                    // Load từ file local
+                    imageBytes = File.ReadAllBytes(fullUrl);
+                }
+                else
+                {
+                    // Load từ URL
+                    imageBytes = await _httpClient.GetByteArrayAsync(fullUrl);
+                }
 
                 using (var ms = new MemoryStream(imageBytes))
                 {
@@ -63,9 +92,13 @@ namespace WinForms.Helpers
                         pictureBox.Image = circularImage;
                     }
                 }
+
+                System.Diagnostics.Debug.WriteLine("Avatar loaded successfully!");
             }
-            catch
+            catch (Exception ex)
             {
+                System.Diagnostics.Debug.WriteLine($"Error loading avatar: {ex.Message}");
+                
                 var fallbackImage = ImageHelper.CreateInitialsAvatar(initials, pictureBox.Width);
 
                 if (pictureBox.InvokeRequired)
@@ -101,8 +134,7 @@ namespace WinForms.Helpers
                     if (response.IsSuccessStatusCode)
                     {
                         var json = await response.Content.ReadAsStringAsync();
-                        // Parse JSON để lấy avatarUrl
-                        return json; // Bạn cần thêm JSON parser ở đây
+                        return json;
                     }
                 }
 
