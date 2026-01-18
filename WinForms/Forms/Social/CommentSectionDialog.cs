@@ -5,6 +5,7 @@ using StudyApp.DTO.Responses.Social;
 using System;
 using System.Drawing;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using WinForms.UserControls.Components.Social;
 
@@ -19,11 +20,18 @@ namespace WinForms.Forms.Social
         private readonly IReactionBinhLuanService _reactionBinhLuanService;
         private readonly int _postId;
 
+        // Reply state
+        private int? _replyingToCommentId = null;
+        private string? _replyingToUserName = null;
+
         // Controls
         private Panel? pnlHeader;
         private Label? lblTitle;
         private Button? btnClose;
         private Panel? pnlCommentInput;
+        private Panel? pnlReplyIndicator;
+        private Label? lblReplyingTo;
+        private Button? btnCancelReply;
         private TextBox? txtComment;
         private Button? btnSend;
         private FlowLayoutPanel? flowComments;
@@ -94,14 +102,52 @@ namespace WinForms.Forms.Social
             pnlCommentInput = new Panel
             {
                 Dock = DockStyle.Bottom,
-                Height = 60,
+                Height = 90,
                 BackColor = Color.White,
                 Padding = new Padding(10)
             };
 
+            // Reply indicator panel
+            pnlReplyIndicator = new Panel
+            {
+                Location = new Point(10, 5),
+                Width = this.Width - 30,
+                Height = 25,
+                BackColor = Color.FromArgb(240, 242, 245),
+                Visible = false,
+                Anchor = AnchorStyles.Left | AnchorStyles.Right
+            };
+
+            lblReplyingTo = new Label
+            {
+                Location = new Point(5, 4),
+                AutoSize = true,
+                Font = new Font("Segoe UI", 9F, FontStyle.Italic),
+                ForeColor = Color.FromArgb(100, 100, 100),
+                Text = "Đang trả lời..."
+            };
+
+            btnCancelReply = new Button
+            {
+                Text = "✕",
+                Size = new Size(20, 20),
+                Location = new Point(pnlReplyIndicator.Width - 25, 2),
+                Anchor = AnchorStyles.Right,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 8F),
+                Cursor = Cursors.Hand,
+                BackColor = Color.Transparent,
+                ForeColor = Color.Gray
+            };
+            btnCancelReply.FlatAppearance.BorderSize = 0;
+            btnCancelReply.Click += BtnCancelReply_Click;
+
+            pnlReplyIndicator.Controls.Add(lblReplyingTo);
+            pnlReplyIndicator.Controls.Add(btnCancelReply);
+
             txtComment = new TextBox
             {
-                Location = new Point(10, 15),
+                Location = new Point(10, 35),
                 Width = this.Width - 110,
                 Height = 30,
                 Anchor = AnchorStyles.Left | AnchorStyles.Right,
@@ -112,10 +158,10 @@ namespace WinForms.Forms.Social
 
             btnSend = new Button
             {
-                Text = "??",
+                Text = "➤",
                 Width = 80,
                 Height = 30,
-                Location = new Point(this.Width - 95, 15),
+                Location = new Point(this.Width - 95, 35),
                 Anchor = AnchorStyles.Right,
                 BackColor = Color.FromArgb(24, 119, 242),
                 ForeColor = Color.White,
@@ -126,6 +172,7 @@ namespace WinForms.Forms.Social
             btnSend.FlatAppearance.BorderSize = 0;
             btnSend.Click += BtnSend_Click;
 
+            pnlCommentInput.Controls.Add(pnlReplyIndicator);
             pnlCommentInput.Controls.Add(txtComment);
             pnlCommentInput.Controls.Add(btnSend);
 
@@ -185,71 +232,21 @@ namespace WinForms.Forms.Social
                     return;
                 }
 
-                foreach (var comment in comments)
+                // Tách comments thành cha và con
+                var parentComments = comments.Where(c => c.MaBinhLuanCha == null).ToList();
+                var replyComments = comments.Where(c => c.MaBinhLuanCha != null).ToList();
+
+                foreach (var comment in parentComments)
                 {
-                    var commentCard = new CommentCardControl(_commentService, _reactionBinhLuanService)
+                    // Thêm comment cha
+                    await AddCommentCardAsync(comment, isReply: false);
+
+                    // Thêm các replies của comment này
+                    var replies = replyComments.Where(r => r.MaBinhLuanCha == comment.MaBinhLuan).ToList();
+                    foreach (var reply in replies)
                     {
-                        Width = flowComments.Width - 30,
-                        Margin = new Padding(5)
-                    };
-
-                    commentCard.LoadComment(comment);
-
-                    // Event handlers
-                    commentCard.OnReplyClicked += (commentId) =>
-                    {
-                        MessageBox.Show($"Trả lời bình luận #{commentId}", "Reply", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        // TODO: Implement reply functionality
-                    };
-
-                    commentCard.OnEditClicked += async (commentId) =>
-                    {
-                        var editDialog = new InputDialog("Chỉnh sửa bình luận", comment.NoiDung ?? "");
-                        if (editDialog.ShowDialog() == DialogResult.OK && !string.IsNullOrWhiteSpace(editDialog.InputText))
-                        {
-                            try
-                            {
-                                await _commentService.UpdateCommentAsync(commentId, new CapNhatBinhLuanRequest
-                                {
-                                    NoiDung = editDialog.InputText
-                                });
-
-                                LoadCommentsAsync();
-                            }
-                            catch (Exception ex)
-                            {
-                                MessageBox.Show($"Lỗi: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                            }
-                        }
-                    };
-
-                    commentCard.OnDeleteClicked += async (commentId) =>
-                    {
-                        var result = MessageBox.Show(
-                            "bạn có chắc muốn xoá bình luận này",
-                            "Xác nhận",
-                            MessageBoxButtons.YesNo,
-                            MessageBoxIcon.Question
-                        );
-
-                        if (result == DialogResult.Yes)
-                        {
-                            try
-                            {
-                                await _commentService.DeleteCommentAsync(commentId);
-                                LoadCommentsAsync();
-                            }
-                            catch (Exception ex)
-                            {
-                                MessageBox.Show($"Lỗi: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                            }
-                        }
-                    };
-
-                    flowComments.Controls.Add(commentCard);
-
-                    // ✅ FIX: Delay để tránh DbContext conflict
-                    await System.Threading.Tasks.Task.Delay(50);
+                        await AddCommentCardAsync(reply, isReply: true);
+                    }
                 }
             }
             catch (Exception ex)
@@ -257,6 +254,76 @@ namespace WinForms.Forms.Social
                 flowComments.Controls.Clear();
                 MessageBox.Show($"Lỗi khi tải bình luận: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        private async Task AddCommentCardAsync(BinhLuanBaiDangResponse comment, bool isReply)
+        {
+            if (flowComments == null) return;
+
+            var commentCard = new CommentCardControl(_commentService, _reactionBinhLuanService)
+            {
+                Width = isReply ? flowComments.Width - 70 : flowComments.Width - 30,
+                Margin = isReply ? new Padding(40, 5, 5, 5) : new Padding(5)
+            };
+
+            commentCard.LoadComment(comment);
+
+            // Event handlers
+            commentCard.OnReplyClicked += (commentId) =>
+            {
+                // Nếu là reply thì reply về comment cha
+                var replyToId = comment.MaBinhLuanCha ?? commentId;
+                SetReplyMode(replyToId, comment.HoVaTen ?? comment.TenDangNhap ?? "Người dùng");
+            };
+
+            commentCard.OnEditClicked += async (commentId) =>
+            {
+                var editDialog = new InputDialog("Chỉnh sửa bình luận", comment.NoiDung ?? "");
+                if (editDialog.ShowDialog() == DialogResult.OK && !string.IsNullOrWhiteSpace(editDialog.InputText))
+                {
+                    try
+                    {
+                        await _commentService.UpdateCommentAsync(commentId, new CapNhatBinhLuanRequest
+                        {
+                            NoiDung = editDialog.InputText
+                        });
+
+                        LoadCommentsAsync();
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Lỗi: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            };
+
+            commentCard.OnDeleteClicked += async (commentId) =>
+            {
+                var result = MessageBox.Show(
+                    "Bạn có chắc muốn xoá bình luận này?",
+                    "Xác nhận",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Question
+                );
+
+                if (result == DialogResult.Yes)
+                {
+                    try
+                    {
+                        await _commentService.DeleteCommentAsync(commentId);
+                        LoadCommentsAsync();
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Lỗi: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            };
+
+            flowComments.Controls.Add(commentCard);
+
+            // Delay để tránh DbContext conflict
+            await System.Threading.Tasks.Task.Delay(50);
         }
 
         private async void BtnSend_Click(object? sender, EventArgs e)
@@ -294,10 +361,12 @@ namespace WinForms.Forms.Social
                 {
                     MaBaiDang = _postId,
                     MaNguoiDung = UserSession.CurrentUser.MaNguoiDung,
-                    NoiDung = content
+                    NoiDung = content,
+                    MaBinhLuanCha = _replyingToCommentId
                 });
 
                 txtComment.Clear();
+                CancelReplyMode();
                 LoadCommentsAsync();
             }
             catch (Exception ex)
@@ -310,6 +379,41 @@ namespace WinForms.Forms.Social
                 btnSend!.Enabled = true;
                 txtComment.Focus();
             }
+        }
+
+        private void SetReplyMode(int commentId, string userName)
+        {
+            _replyingToCommentId = commentId;
+            _replyingToUserName = userName;
+
+            if (lblReplyingTo != null)
+                lblReplyingTo.Text = $"↩ Đang trả lời {userName}";
+
+            if (pnlReplyIndicator != null)
+                pnlReplyIndicator.Visible = true;
+
+            if (txtComment != null)
+            {
+                txtComment.PlaceholderText = $"Trả lời {userName}...";
+                txtComment.Focus();
+            }
+        }
+
+        private void CancelReplyMode()
+        {
+            _replyingToCommentId = null;
+            _replyingToUserName = null;
+
+            if (pnlReplyIndicator != null)
+                pnlReplyIndicator.Visible = false;
+
+            if (txtComment != null)
+                txtComment.PlaceholderText = "Viết bình luận...";
+        }
+
+        private void BtnCancelReply_Click(object? sender, EventArgs e)
+        {
+            CancelReplyMode();
         }
     }
 

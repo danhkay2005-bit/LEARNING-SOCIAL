@@ -400,17 +400,20 @@ namespace WinForms.UserControls.Components.Social
         {
             if (_post == null || _chiaSeBaiDangService == null) return;
 
-            // ✅ FIX: Chờ lượt để tránh DbContext conflict
             await _dbSemaphore.WaitAsync();
 
             try
             {
-                // 1. Load thông tin chia sẻ
+                // ✅ ADD: Check if control is disposed after await
+                if (this.IsDisposed || this.Disposing) return;
+                
                 var shareInfo = await _chiaSeBaiDangService.LayChiTietChiaSeTheoBaiDangMoiAsync(_post.MaBaiDang);
+
+                // ✅ ADD: Check again after second await
+                if (this.IsDisposed || this.Disposing) return;
 
                 if (shareInfo == null || shareInfo.BaiDangGoc == null)
                 {
-                    // Fallback: Hiển thị như bài thường nếu không tìm thấy
                     RenderNormalPost();
                     return;
                 }
@@ -464,12 +467,15 @@ namespace WinForms.UserControls.Components.Social
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"❌ Lỗi render shared post: {ex.Message}");
-                // Fallback
-                RenderNormalPost();
+                
+                // ✅ ADD: Check before fallback
+                if (!this.IsDisposed && !this.Disposing)
+                {
+                    RenderNormalPost();
+                }
             }
             finally
             {
-                // ✅ QUAN TRỌNG: Luôn release semaphore
                 _dbSemaphore.Release();
             }
         }
