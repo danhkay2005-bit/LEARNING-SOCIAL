@@ -98,13 +98,28 @@ namespace WinForms.UserControls.Components.Social
         public void LoadComment(BinhLuanBaiDangResponse comment)
         {
             _comment = comment;
+            System.Diagnostics.Debug.WriteLine("=== LoadComment được gọi ===");
+            System.Diagnostics.Debug.WriteLine($"Comment ID: {comment?.MaBinhLuan ?? 0}");
+            System.Diagnostics.Debug.WriteLine($"NoiDung: {comment?.NoiDung ?? "NULL"}");
+            System.Diagnostics.Debug.WriteLine($"MaNguoiDung: {comment?.MaNguoiDung}");
+            System.Diagnostics.Debug.WriteLine($"TenDangNhap: {comment?.TenDangNhap ?? "NULL"}");
+            System.Diagnostics.Debug.WriteLine($"HoVaTen: {comment?.HoVaTen ?? "NULL"}");
+            System.Diagnostics.Debug.WriteLine($"HinhDaiDien: {comment?.HinhDaiDien ?? "NULL"}");
+            System.Diagnostics.Debug.WriteLine("========================");
+            
             RenderComment();
             LoadCurrentReactionAsync();
         }
 
         private void RenderComment()
         {
-            if (_comment == null) return;
+            System.Diagnostics.Debug.WriteLine(">>> RenderComment() được gọi");
+            
+            if (_comment == null)
+            {
+                System.Diagnostics.Debug.WriteLine(">>> _comment là NULL!");
+                return;
+            }
             
             // Hiển thị ảnh đại diện
             if (pbAvatar != null)
@@ -113,7 +128,35 @@ namespace WinForms.UserControls.Components.Social
                     ? _comment.HoVaTen 
                     : (!string.IsNullOrWhiteSpace(_comment.TenDangNhap) ? _comment.TenDangNhap : "U");
                 string firstLetter = string.IsNullOrWhiteSpace(displayName) ? "U" : displayName.Substring(0, 1).ToUpper();
-                AvatarHelper.SetAvatar(pbAvatar, _comment.HinhDaiDien, firstLetter);
+                
+                System.Diagnostics.Debug.WriteLine($">>> DisplayName: {displayName}");
+                System.Diagnostics.Debug.WriteLine($">>> FirstLetter: {firstLetter}");
+                System.Diagnostics.Debug.WriteLine($">>> HinhDaiDien: {_comment.HinhDaiDien ?? "NULL"}");
+                
+                // Tạm thời dùng initials để test
+                try
+                {
+                    if (!string.IsNullOrWhiteSpace(_comment.HinhDaiDien))
+                    {
+                        System.Diagnostics.Debug.WriteLine(">>> Loading avatar from URL...");
+                        AvatarHelper.SetAvatar(pbAvatar, _comment.HinhDaiDien, firstLetter);
+                    }
+                    else
+                    {
+                        System.Diagnostics.Debug.WriteLine(">>> Loading initials avatar...");
+                        // Hiển thị ảnh chữ cái mặc định
+                        pbAvatar.Image = ImageHelper.CreateInitialsAvatar(firstLetter, pbAvatar.Width);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($">>> Error loading avatar: {ex.Message}");
+                    pbAvatar.Image = ImageHelper.CreateInitialsAvatar(firstLetter, pbAvatar.Width);
+                }
+            }
+            else
+            {
+                System.Diagnostics.Debug.WriteLine(">>> pbAvatar là NULL!");
             }
             
             // Hiển thị tên người dùng
@@ -122,6 +165,7 @@ namespace WinForms.UserControls.Components.Social
                 lblAuthorName.Text = !string.IsNullOrWhiteSpace(_comment.HoVaTen) 
                     ? _comment.HoVaTen 
                     : (!string.IsNullOrWhiteSpace(_comment.TenDangNhap) ? _comment.TenDangNhap : "Người dùng");
+                System.Diagnostics.Debug.WriteLine($">>> lblAuthorName.Text: {lblAuthorName.Text}");
             }
             
             if (lblTimestamp != null && _comment.ThoiGianTao.HasValue) 

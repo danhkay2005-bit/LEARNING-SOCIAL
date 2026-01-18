@@ -150,6 +150,21 @@ namespace StudyApp.BLL.Services.Social
                 })
                 .ToListAsync();
 
+            // GHI LOG RA FILE
+            var logPath = @"C:\Temp\comment_log.txt";
+            try
+            {
+                var logContent = $"=== {DateTime.Now} ===\n";
+                logContent += $"Số comment: {comments.Count}\n";
+                logContent += $"Số user: {thongTinNguoiDung.Count}\n";
+                foreach (var user in thongTinNguoiDung)
+                {
+                    logContent += $"User: {user.TenDangNhap}, HoVaTen: {user.HoVaTen}, HinhDaiDien: {user.HinhDaiDien ?? "NULL"}\n";
+                }
+                System.IO.File.AppendAllText(logPath, logContent + "\n");
+            }
+            catch { }
+
             // Map và join thông tin
             var result = comments.Select(comment =>
             {
