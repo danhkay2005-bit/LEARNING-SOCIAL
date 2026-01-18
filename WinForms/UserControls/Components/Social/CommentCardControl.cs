@@ -129,8 +129,7 @@ namespace WinForms.UserControls.Components.Social
             
             if (lblTimestamp != null && _comment.ThoiGianTao.HasValue) 
                 lblTimestamp.Text = GetRelativeTime(_comment.ThoiGianTao.Value);
-            
-            // Hiển thị reply indicator nếu là comment con
+
             if (lblReplyIndicator != null && _comment.MaBinhLuanCha.HasValue)
             {
                 lblReplyIndicator.Text = "↩ Đã trả lời";
@@ -138,6 +137,7 @@ namespace WinForms.UserControls.Components.Social
                 lblReplyIndicator.Location = new Point(lblTimestamp?.Right + 10 ?? 120, 32);
             }
             
+
             if (lblContent != null) 
                 lblContent.Text = _comment.NoiDung ?? "";
             
