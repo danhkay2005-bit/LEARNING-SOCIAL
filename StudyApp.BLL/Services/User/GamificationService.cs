@@ -93,6 +93,9 @@ public class GamificationService : IGamificationService
 
         var result = new List<TienDoNhiemVuResponse>();
 
+        
+        var monday = today.AddDays(-(int)DateTime.Now.DayOfWeek + 1);
+
         foreach (var q in quests)
         {
             if (q.LoaiNhiemVu == "SuKien" && q.NgayKetThuc < today)
@@ -108,7 +111,7 @@ public class GamificationService : IGamificationService
                 if (q.LoaiNhiemVu == "HangNgay" && prog.NgayBatDau < today)
                     needReset = true;
 
-                var monday = today.AddDays(-(int)DateTime.Now.DayOfWeek + 1);
+              //  var monday = today.AddDays(-(int)DateTime.Now.DayOfWeek + 1);
                 if (q.LoaiNhiemVu == "HangTuan" && prog.NgayBatDau < monday)
                     needReset = true;
             }
@@ -118,7 +121,7 @@ public class GamificationService : IGamificationService
                 prog.TienDoHienTai = 0;
                 prog.DaHoanThanh = false;
                 prog.DaNhanThuong = false;
-                prog.NgayBatDau = today;
+                prog.NgayBatDau = q.LoaiNhiemVu == "HangTuan" ? monday : today;
                 _context.Entry(prog).State = EntityState.Modified;
             }
 
@@ -129,7 +132,7 @@ public class GamificationService : IGamificationService
                     MaNguoiDung = userId,
                     MaNhiemVu = q.MaNhiemVu,
                     TienDoHienTai = 0,
-                    NgayBatDau = today
+                    NgayBatDau = q.LoaiNhiemVu == "HangTuan" ? monday : today
                 };
                 _context.TienDoNhiemVus.Add(prog);
             }
@@ -156,11 +159,18 @@ public class GamificationService : IGamificationService
         await AddXpAsync(userId, xpEarned);
 
         var activeQuests = await _context.NhiemVus
-            .Where(q => q.ConHieuLuc == true && q.LoaiDieuKien == "CompleteQuiz")
+            .Where(q => q.ConHieuLuc == true
+                && q.LoaiDieuKien == "CompleteQuiz"
+                && (q.LoaiNhiemVu == "HangNgay" || q.LoaiNhiemVu == "HangTuan"))
             .ToListAsync();
 
+        // Thêm log để kiểm tra
+        System.Diagnostics.Debug.WriteLine($"[ProcessLessonCompletion] Found {activeQuests.Count} active quests for user {userId}");
         foreach (var quest in activeQuests)
+        {
+            System.Diagnostics.Debug.WriteLine($"[ProcessLessonCompletion] Updating quest: {quest.TenNhiemVu} ({quest.LoaiNhiemVu})");
             await UpdateProgressInternalAsync(userId, quest, 1);
+        }
     }
     #endregion
 
@@ -453,6 +463,7 @@ public class GamificationService : IGamificationService
                     LoaiDieuKienEnum.ChuoiNgayLienTiep => (user.ChuoiNgayHocLienTiep ?? 0) >= ach.DieuKienGiaTri,
                     LoaiDieuKienEnum.TongDiemXP => (user.TongDiemXp ?? 0) >= ach.DieuKienGiaTri,
                     LoaiDieuKienEnum.SoTranThang => (user.SoTranThang ?? 0) >= ach.DieuKienGiaTri,
+
                     _ => false
                 };
 

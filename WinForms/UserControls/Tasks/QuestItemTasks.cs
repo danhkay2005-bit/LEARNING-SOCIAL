@@ -85,6 +85,7 @@ namespace WinForms.UserControls.Tasks
                 btnAction.ForeColor = Color.Gray;
                 btnAction.Cursor = Cursors.Default;
             }
+            Console.WriteLine($"[QuestItemTasks] {data.TenNhiemVu} - {data.LoaiNhiemVu} - {data.TienDoHienTai}/{data.DieuKienDatDuoc}");
         }
 
         private void btnAction_Click(object sender, EventArgs e)
