@@ -16,11 +16,13 @@ namespace StudyApp.BLL.Services.Social
     public class PostService : IPostService
     {
         private readonly SocialDbContext _context;
+        private readonly UserDbContext _userContext;
         private readonly IMapper _mapper;
 
-        public PostService(SocialDbContext context, IMapper mapper)
+        public PostService(SocialDbContext context, UserDbContext userContext, IMapper mapper)
         {
             _context = context;
+            _userContext = userContext;
             _mapper = mapper;
         }
 
@@ -192,13 +194,12 @@ namespace StudyApp.BLL.Services.Social
 
         public async Task<List<BaiDangResponse>> GetNewsfeedAsync(Guid userId, int page = 1, int pageSize = 20)
         {
-            // Logic:  Lấy bài đăng của user + người mà user follow
             var followingIds = await _context.Set<TheoDoiNguoiDung>()
                 .Where(x => x.MaNguoiTheoDoi == userId)
                 .Select(x => x.MaNguoiDuocTheoDoi)
                 .ToListAsync();
 
-            followingIds.Add(userId); // Bao gồm cả bài của chính mình
+            followingIds.Add(userId);
 
             var posts = await _context.Set<BaiDang>()
                 .Where(x => followingIds.Contains(x.MaNguoiDung) && x.DaXoa != true)
@@ -207,7 +208,32 @@ namespace StudyApp.BLL.Services.Social
                 .Take(pageSize)
                 .ToListAsync();
 
-            return _mapper.Map<List<BaiDangResponse>>(posts);
+            var result = _mapper.Map<List<BaiDangResponse>>(posts);
+
+            // ✅ Load thông tin người dùng (avatar, tên)
+            var userIds = result.Select(x => x.MaNguoiDung).Distinct().ToList();
+            var users = await _userContext.NguoiDungs
+                .Where(u => userIds.Contains(u.MaNguoiDung))
+                .Select(u => new
+                {
+                    u.MaNguoiDung,
+                    u.HoVaTen,
+                    u.TenDangNhap,
+                    u.HinhDaiDien
+                })
+                .ToListAsync();
+
+            foreach (var post in result)
+            {
+                var user = users.FirstOrDefault(u => u.MaNguoiDung == post.MaNguoiDung);
+                if (user != null)
+                {
+                    post.TenNguoiDung = user.HoVaTen ?? user.TenDangNhap;
+                    post.HinhDaiDien = user.HinhDaiDien;
+                }
+            }
+
+            return result;
         }
 
         public async Task<List<BaiDangResponse>> GetUserPostsAsync(Guid userId, int page = 1)

@@ -38,5 +38,9 @@ namespace StudyApp.DTO.Responses.Social
 
         public DateTime? ThoiGianTao { get; set; }
         public DateTime? ThoiGianSua { get; set; }
+
+        // ✅ THÊM: Thông tin người đăng (không map từ entity, set manually)
+        public string? TenNguoiDung { get; set; }
+        public string? HinhDaiDien { get; set; }
     }
 }

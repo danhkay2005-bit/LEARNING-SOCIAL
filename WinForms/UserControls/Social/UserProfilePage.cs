@@ -10,6 +10,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using WinForms.UserControls.Components.Social;
+using WinForms.Forms;
+using WinForms.Helpers;  // ✅ THÊM để dùng AvatarHelper
 
 namespace WinForms.UserControls.Social
 {
@@ -123,6 +125,22 @@ namespace WinForms.UserControls.Social
                 ForeColor = Color.FromArgb(65, 65, 65)
             };
 
+            // ✅ Nút Back (Quay lại)
+            btnBack = new Button
+            {
+                Text = "← Quay lại",
+                Location = new Point(20, 160),
+                Width = 100,
+                Height = 30,
+                BackColor = Color.FromArgb(108, 117, 125),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9F, FontStyle.Regular),
+                Cursor = Cursors.Hand
+            };
+            btnBack.FlatAppearance.BorderSize = 0;
+            btnBack.Click += BtnBack_Click;
+
             // Nút Follow/Unfollow
             btnFollow = new Button
             {
@@ -164,11 +182,11 @@ namespace WinForms.UserControls.Social
             lblFollowing.Click += (s, e) => MessageBox.Show("Chức năng xem danh sách following", "Thông báo");
 
             pnlHeader.Controls.Add(pbAvatar);
-            pnlHeader.Controls.Add(btnBack); // ✅ THÊM
             pnlHeader.Controls.Add(lblName);
             pnlHeader.Controls.Add(lblEmail);
             pnlHeader.Controls.Add(lblBio);
-            pnlHeader.Controls.Add(btnFollow);
+            pnlHeader.Controls.Add(btnBack);    // ✅ Nút quay lại
+            pnlHeader.Controls.Add(btnFollow);  // ✅ Nút theo dõi
             pnlHeader.Controls.Add(lblFollowers);
             pnlHeader.Controls.Add(lblFollowing);
 
@@ -212,6 +230,15 @@ namespace WinForms.UserControls.Social
                 if (lblName != null) lblName.Text = _userInfo.HoVaTen ?? "Người dùng";
                 if (lblEmail != null) lblEmail.Text = _userInfo.Email ?? "";
                 if (lblBio != null) lblBio.Text = _userInfo.TieuSu ?? "Chưa có tiểu sử";
+
+                // ✅ FIX: Hiển thị avatar với AvatarHelper
+                if (pbAvatar != null)
+                {
+                    var initials = !string.IsNullOrEmpty(_userInfo.HoVaTen) 
+                        ? _userInfo.HoVaTen 
+                        : _userInfo.Email?.Substring(0, 1).ToUpper() ?? "?";
+                    AvatarHelper.SetAvatar(pbAvatar, _userInfo.HinhDaiDien, initials);
+                }
 
                 // ✅ FIX: Kiểm tra nếu đang xem profile chính mình
                 if (UserSession.CurrentUser != null && btnFollow != null)
@@ -376,6 +403,35 @@ namespace WinForms.UserControls.Social
             {
                 btnFollow.Text = "➕ Theo dõi";
                 btnFollow.BackColor = Color.FromArgb(24, 119, 242);
+            }
+        }
+
+        /// <summary>
+        /// ← Quay lại trang trước
+        /// </summary>
+        private void BtnBack_Click(object? sender, EventArgs e)
+        {
+            // Tìm MainForm parent
+            var mainForm = this.FindForm();
+            if (mainForm is MainForm mf)
+            {
+                // Load lại Newsfeed
+                try
+                {
+                    // ✅ FIX: Check null trước khi gọi GetRequiredService
+                    if (Program.ServiceProvider == null)
+                    {
+                        MessageBox.Show("Service chưa được khởi tạo", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+
+                    var newsfeedControl = Program.ServiceProvider.GetRequiredService<NewsfeedControl>();
+                    mf.LoadPage(newsfeedControl);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Không thể quay lại: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
         }
     }

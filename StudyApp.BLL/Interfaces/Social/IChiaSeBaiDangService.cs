@@ -45,7 +45,12 @@ namespace StudyApp.BLL.Interfaces.Social
         Task<bool> KiemTraDaChiaSeAsync(int maBaiDang, Guid maNguoiDung);
         /// <summary>
         /// lấy danh sach chia sẻ theo ngu7oiwf dùng
-        
-        Task<List<ChiaSeBaiDangResponse>> LayDanhSachBaiDangDaChiaSeAsync( Guid maNguoiDung,int  skip, int take);
+        /// </summary>
+        Task<List<ChiaSeBaiDangResponse>> LayDanhSachBaiDangDaChiaSeAsync(Guid maNguoiDung, int skip, int take);
+
+        /// <summary>
+        /// Lấy thông tin chia sẻ theo bài đăng mới (để hiển thị UI shared post)
+        /// </summary>
+        Task<ChiaSeBaiDangResponse?> LayChiTietChiaSeTheoBaiDangMoiAsync(int maBaiDangMoi);
     }
 }
