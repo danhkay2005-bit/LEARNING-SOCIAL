@@ -653,14 +653,14 @@ namespace StudyApp.BLL.Services.Learn
                 .FirstOrDefaultAsync(x => (request.MaTienDo.HasValue && x.MaTienDo == request.MaTienDo)
                                        || (x.MaThe == request.MaThe && x.MaNguoiDung == request.MaNguoiDung));
 
-            // 2. Nếu chưa có, khởi tạo (Dùng 2.5 thay vì 2.5m)
+            // 2. Nếu chưa có, khởi tạo 
             if (progress == null)
             {
                 progress = new TienDoHocTap
                 {
                     MaThe = request.MaThe,
                     MaNguoiDung = request.MaNguoiDung,
-                    HeSoDe = 2.5, // Dùng double (không có chữ m)
+                    HeSoDe = 2.5, 
                     SoLanLap = 0,
                     KhoangCachNgay = 0,
                     ThoiGianTao = DateTime.Now
@@ -720,30 +720,42 @@ namespace StudyApp.BLL.Services.Learn
                 await _context.SaveChangesAsync();
             }
         }
-        public async Task LuuKetQuaPhienHocAsync(PhienHoc phienHoc)
+        public async Task LuuKetQuaPhienHocAsync(PhienHoc phienHoc, List<ChiTietTraLoiRequest> chiTiets)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                // 1. Kiểm tra đầu vào (Chặn đứng lỗi từ WinForms)
                 if (phienHoc == null) throw new ArgumentNullException(nameof(phienHoc));
 
-                // 2. ÉP BUỘC EF CORE NHẬN DIỆN DỮ LIỆU
-                // Đôi khi Add() không đủ nếu object được tạo từ bên ngoài Context
+                // 1. LƯU PHIÊN HỌC (Để lấy MaPhien Identity)
                 _context.PhienHocs.Add(phienHoc);
-
-                // Lưu lần 1 để lấy MaPhien (Identity) cho các bảng liên quan
                 await _context.SaveChangesAsync();
 
-                // 3. XỬ LÝ LỊCH SỬ BỘ ĐỀ
+                // 2. DUYỆT CHI TIẾT VÀ CẬP NHẬT TIẾN ĐỘ
+                foreach (var ct in chiTiets)
+                {
+                    // A. Lưu bảng ChiTietTraLoi
+                    var log = new ChiTietTraLoi
+                    {
+                        MaPhien = phienHoc.MaPhien,
+                        MaThe = ct.MaThe,
+                        TraLoiDung = ct.TraLoiDung,
+                        CauTraLoiUser = ct.CauTraLoiUser,
+                        DapAnDung = ct.DapAnDung,
+                        ThoiGianTraLoiGiay = ct.ThoiGianTraLoiGiay,
+                        ThoiGian = DateTime.Now
+                    };
+                    _context.ChiTietTraLois.Add(log);
+
+                    // B. Cập nhật bảng TienDoHocTap (SM-2)
+                    await CapNhatTienDoSM2(ct.MaThe, phienHoc.MaNguoiDung, ct.TraLoiDung);
+                }
+
+                // 3. XỬ LÝ LỊCH SỬ BỘ ĐỀ (Như code cũ của bạn)
                 if (phienHoc.MaBoDe.HasValue)
                 {
                     var boDe = await _context.BoDeHocs.FindAsync(phienHoc.MaBoDe);
-                    if (boDe != null)
-                    {
-                        boDe.SoLuotHoc = (boDe.SoLuotHoc ?? 0) + 1;
-                        _context.BoDeHocs.Update(boDe);
-                    }
+                    if (boDe != null) boDe.SoLuotHoc = (boDe.SoLuotHoc ?? 0) + 1;
 
                     var lichSu = new LichSuHocBoDe
                     {
@@ -758,36 +770,83 @@ namespace StudyApp.BLL.Services.Learn
                     _context.LichSuHocBoDes.Add(lichSu);
                 }
 
-                // Lưu lần 2 cho các bảng phụ thuộc
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
-                // 4. XỬ LÝ GAMIFICATION (XP/STREAK)
-                // Tính toán XP theo công thức: $XP = CorrectQuestions \times 10$
-                double ratio = (phienHoc.TyLeDung ?? 0) / 100.0;
-                int questionsCorrect = (int)((phienHoc.TongSoThe ?? 0) * ratio);
-                int xpEarned = questionsCorrect * 10;
-
-                try
-                {
-                    // Thực hiện cộng điểm và streak
-                    await _gamificationService.ProcessLessonCompletionAsync(phienHoc.MaNguoiDung, xpEarned);
-
-                    await _dailyStreakService.MarkLessonCompletedTodayAsync(phienHoc.MaNguoiDung);
-                  //  await _gamificationService.CheckAndGrantAchievementsAsync(phienHoc.MaNguoiDung);
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"[Gamification Error] {ex.Message}");
-                    // Không throw ở đây để user vẫn thấy lưu kết quả học thành công
-                }
+                await HandleGamification(phienHoc);
             }
-            catch (Exception ex)
+            catch 
             {
                 await transaction.RollbackAsync();
-                Debug.WriteLine($"[Critical Error] LuuKetQua Fail: {ex.Message}");
-                throw; // Throw để WinForms biết mà báo lỗi cho User
+                throw;
             }
+        }
+
+        private async Task HandleGamification(PhienHoc phienHoc)
+        {
+            try
+            {
+                int xpEarned = (int)((phienHoc.SoTheDung ?? 0) * 10);
+                await _gamificationService.ProcessLessonCompletionAsync(phienHoc.MaNguoiDung, xpEarned);
+                await _dailyStreakService.MarkLessonCompletedTodayAsync(phienHoc.MaNguoiDung);
+            }
+            catch (Exception ex) { Debug.WriteLine("Gamification Error: " + ex.Message); }
+        }
+
+        private async Task CapNhatTienDoSM2(int maThe, Guid maNguoiDung, bool isCorrect)
+        {
+            var tienDo = await _context.TienDoHocTaps
+                .FirstOrDefaultAsync(x => x.MaThe == maThe && x.MaNguoiDung == maNguoiDung);
+
+            bool isNew = false;
+            if (tienDo == null)
+            {
+                isNew = true;
+                tienDo = new TienDoHocTap
+                {
+                    MaNguoiDung = maNguoiDung,
+                    MaThe = maThe,
+                    HeSoDe = 1.3, // Giảm hệ số xuống thấp nhất để khoảng cách tăng chậm
+                    SoLanLap = 0,
+                    KhoangCachNgay = 0,
+                    ThoiGianTao = DateTime.Now
+                };
+            }
+
+            if (isCorrect)
+            {
+                // LOGIC MỚI: Ép khoảng cách ngắn (1-2 ngày)
+                if (tienDo.SoLanLap == 0)
+                    tienDo.KhoangCachNgay = 1; // Đúng lần 1: Mai học lại
+                else if (tienDo.SoLanLap == 1)
+                    tienDo.KhoangCachNgay = 2; // Đúng lần 2: Kia học lại
+                else
+                {
+                    // Các lần sau: Khoảng cách = Khoảng cách cũ * 1.2 (Tăng rất chậm)
+                    double nextInterval = (tienDo.KhoangCachNgay ?? 2) * 1.2;
+
+                    // Bạn có thể giới hạn tối đa không quá 3 hoặc 5 ngày nếu muốn cực kỳ gắt gao
+                    tienDo.KhoangCachNgay = (int)Math.Min(Math.Round(nextInterval), 7);
+                }
+
+                tienDo.SoLanLap++;
+                tienDo.SoLanDung++;
+            }
+            else
+            {
+                // Nếu sai: Bắt buộc học lại vào ngay ngày mai
+                tienDo.SoLanLap = 0;
+                tienDo.KhoangCachNgay = 1;
+                tienDo.SoLanSai++;
+                tienDo.HeSoDe = 1.3; // Reset về độ dễ thấp nhất
+            }
+
+            // Cập nhật ngày ôn tập: Hôm nay + số ngày giãn cách
+            tienDo.NgayOnTapTiepTheo = DateTime.Now.AddDays(tienDo.KhoangCachNgay ?? 1);
+            tienDo.LanHocCuoi = DateTime.Now;
+
+            if (isNew) _context.TienDoHocTaps.Add(tienDo);
+            else _context.Entry(tienDo).State = EntityState.Modified;
         }
     }
 }

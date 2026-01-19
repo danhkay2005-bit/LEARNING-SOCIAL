@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using StudyApp.BLL.Interfaces.Learn;
 using StudyApp.DAL.Data;
 using StudyApp.DAL.Entities.Learn;
+using StudyApp.DTO.Enums;
 using StudyApp.DTO.Requests.Learn;
 using StudyApp.DTO.Responses.Learn;
 using System;
@@ -19,13 +20,15 @@ namespace StudyApp.BLL.Services.Learn
         private readonly UserDbContext _userDb;
         private readonly IMapper _mapper;
         private readonly IThachDauNotifier _notifier;
+        private readonly IBoDeHocService _boDeHocService;
 
-        public ThachDauService(LearningDbContext context, UserDbContext userDb, IMapper mapper, IThachDauNotifier notifier)
+        public ThachDauService(LearningDbContext context, UserDbContext userDb, IMapper mapper, IThachDauNotifier notifier, IBoDeHocService boDeHocService)
         {
             _context = context;
             _userDb = userDb;
             _mapper = mapper;
-            _notifier = notifier;
+            _notifier = notifier;     
+            _boDeHocService = boDeHocService;
         }
 
         // ==========================================
@@ -205,47 +208,108 @@ namespace StudyApp.BLL.Services.Learn
             return result;
         }
 
-        public async Task<bool> CapNhatKetQuaNguoiChoiAsync(CapNhatKetQuaThachDauRequest request)
+        public async Task<bool> CapNhatKetQuaNguoiChoiAsync(CapNhatKetQuaThachDauRequest request, List<ChiTietTraLoiRequest> chiTiets)
         {
-            // FIX: Bỏ điều kiện Diem == null để có thể ghi đè dữ liệu test nhiều lần
-            var record = await _context.LichSuThachDaus
-                .FirstOrDefaultAsync(x => x.MaThachDauGoc == request.MaThachDau
-                                       && x.MaNguoiDung == request.MaNguoiDung);
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                // 1. Tạo một Phiên học cho cá nhân người chơi này trong trận đấu
+                var phienHoc = new PhienHoc
+                {
+                    MaNguoiDung = request.MaNguoiDung,
+                    MaBoDe = request.MaBoDe, // Bạn cần thêm MaBoDe vào Request gửi lên
+                    LoaiPhien = "ThachDau",
+                    ThoiGianBatDau = DateTime.Now.AddSeconds(-request.ThoiGianLamBaiGiay ?? 0),
+                    ThoiGianKetThuc = DateTime.Now,
+                    ThoiGianHocGiay = request.ThoiGianLamBaiGiay ?? 0,
+                    TongSoThe = (request.SoTheDung ?? 0) + (request.SoTheSai ?? 0),
+                    SoTheDung = request.SoTheDung,
+                    SoTheSai = request.SoTheSai,
+                    TyLeDung = request.Diem // Giả sử dùng điểm làm tỷ lệ hoặc tính riêng
+                };
 
-            if (record == null) return false;
+                // 2. Tận dụng logic của BoDeHocService để lưu PhienHoc + ChiTiet + SM-2
+                // (Bạn có thể inject IBoDeHocService vào đây hoặc gọi trực tiếp logic)
+                _context.PhienHocs.Add(phienHoc);
+                await _context.SaveChangesAsync();
 
-            record.Diem = request.Diem ?? 0;
-            record.SoTheDung = request.SoTheDung ?? 0;
-            record.SoTheSai = request.SoTheSai ?? 0;
-            record.ThoiGianLamBaiGiay = request.ThoiGianLamBaiGiay ?? 0;
-            record.ThoiGianKetThuc = DateTime.Now;
+                foreach (var ct in chiTiets)
+                {
+                    var detail = new ChiTietTraLoi
+                    {
+                        MaPhien = phienHoc.MaPhien,
+                        MaThe = ct.MaThe,
+                        TraLoiDung = ct.TraLoiDung,
+                        CauTraLoiUser = ct.CauTraLoiUser,
+                        DapAnDung = ct.DapAnDung,
+                        ThoiGianTraLoiGiay = ct.ThoiGianTraLoiGiay,
+                        ThoiGian = DateTime.Now
+                    };
+                    _context.ChiTietTraLois.Add(detail);
 
-            _context.Entry(record).State = EntityState.Modified;
-            return await _context.SaveChangesAsync() > 0;
-        }
+                    // Cập nhật thuật toán SM-2 để ghi nhận tiến độ học tập ngay trong lúc đấu
+                    await _boDeHocService.UpdateCardProgressAsync(new CapNhatTienDoHocTapRequest
+                    {
+                        MaThe = ct.MaThe,
+                        MaNguoiDung = request.MaNguoiDung,
+                        TrangThai = ct.TraLoiDung ? TrangThaiHocEnum.Learning : TrangThaiHocEnum.New
+                    });
+                }
 
-        public async Task<ThachDauResponse?> GetByIdAsync(int maThachDau)
-        {
-            var room = await _context.ThachDaus.AsNoTracking().FirstOrDefaultAsync(x => x.MaThachDau == maThachDau);
-            return _mapper.Map<ThachDauResponse>(room);
-        }
+                // 3. Cập nhật bảng LichSuThachDau (Để hiển thị BXH trận đấu)
+                var record = await _context.LichSuThachDaus
+                    .FirstOrDefaultAsync(x => x.MaThachDauGoc == request.MaThachDau && x.MaNguoiDung == request.MaNguoiDung);
 
-        public async Task<IEnumerable<ThachDauNguoiChoiResponse>> GetBangXepHangAsync(int maThachDau)
-        {
-            var players = await _context.LichSuThachDaus
-                .AsNoTracking()
-                .Where(x => x.MaThachDauGoc == maThachDau)
-                .OrderByDescending(x => x.Diem)
-                .ThenBy(x => x.ThoiGianLamBaiGiay)
-                .ToListAsync();
+                if (record != null)
+                {
+                    record.Diem = request.Diem ?? 0;
+                    record.SoTheDung = request.SoTheDung ?? 0;
+                    record.SoTheSai = request.SoTheSai ?? 0;
+                    record.ThoiGianLamBaiGiay = request.ThoiGianLamBaiGiay ?? 0;
+                    record.ThoiGianKetThuc = DateTime.Now;
+                }
 
-            return _mapper.Map<IEnumerable<ThachDauNguoiChoiResponse>>(players);
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return true;
+            }
+            catch (Exception)
+            {
+                await transaction.RollbackAsync();
+                return false;
+            }
         }
 
         public async Task<bool> BaoCaoReadyNextAsync(int maThachDau, Guid userId, int questionIndex)
         {
             await _notifier.NotifyOpponentReadyNext(maThachDau, userId, questionIndex);
             return true;
+        }
+
+        public async Task<ThachDauResponse?> GetByIdAsync(int maThachDau)
+        {
+            // Tìm phòng trong bảng ThachDaus
+            var room = await _context.ThachDaus
+                .AsNoTracking() // Dùng AsNoTracking để tăng tốc độ nếu chỉ đọc dữ liệu
+                .FirstOrDefaultAsync(x => x.MaThachDau == maThachDau);
+
+            // Sử dụng AutoMapper để chuyển đổi từ Entity sang Response (DTO)
+            return _mapper.Map<ThachDauResponse?>(room);
+        }
+
+        public async Task<IEnumerable<ThachDauNguoiChoiResponse>> GetBangXepHangAsync(int maThachDau)
+        {
+            // 1. Truy vấn danh sách người chơi dựa trên mã phòng thách đấu
+            var players = await _context.LichSuThachDaus
+                .AsNoTracking() // Tối ưu hiệu năng vì chỉ đọc dữ liệu
+                .Where(x => x.MaThachDauGoc == maThachDau)
+                // 2. Sắp xếp: Điểm cao nhất lên đầu, nếu bằng điểm thì ai xong trước (thời gian ít hơn) xếp trên
+                .OrderByDescending(x => x.Diem)
+                .ThenBy(x => x.ThoiGianLamBaiGiay)
+                .ToListAsync();
+
+            // 3. Sử dụng AutoMapper để chuyển đổi từ Entity sang DTO Response
+            return _mapper.Map<IEnumerable<ThachDauNguoiChoiResponse>>(players);
         }
     }
 }

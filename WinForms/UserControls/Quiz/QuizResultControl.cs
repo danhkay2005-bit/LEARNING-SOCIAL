@@ -8,6 +8,7 @@ namespace WinForms.UserControls.Quiz
     {
         // Sự kiện để báo cho MainForm biết người dùng đã nhấn Hoàn thành
         public event Action? OnFinishClicked;
+        public event Action? OnShowDetailsClicked;
 
         public QuizResultControl()
         {
@@ -15,6 +16,7 @@ namespace WinForms.UserControls.Quiz
 
             // Đăng ký sự kiện Click cho nút Hoàn thành
             btnFinish.Click += (s, e) => OnFinishClicked?.Invoke();
+            btnShowDetails.Click += (s, e) => OnShowDetailsClicked?.Invoke();
         }
 
         // Chế độ Solo: Hiển thị % chính xác và thông báo SM-2

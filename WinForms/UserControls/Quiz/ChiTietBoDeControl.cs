@@ -239,8 +239,52 @@ namespace WinForms.UserControls.Quiz
         private async void btnStartSolo_Click(object? sender, EventArgs e)
         {
             if (_currentBoDe == null) return;
-            var data = await _boDeHocService.GetFullDataToLearnAsync(_currentBoDe.MaBoDe);
-            NavigateToQuiz(data, CheDoHocEnum.HocMotMinh);
+
+            try
+            {
+                var data = await _boDeHocService.GetFullDataToLearnAsync(_currentBoDe.MaBoDe);
+                var filteredCards = data.DanhSachCauHoi
+                    .Where(q => q.ThongTinThe.NgayOnTapTiepTheo == null || q.ThongTinThe.NgayOnTapTiepTheo <= DateTime.Now)
+                    .ToList();
+
+                if (filteredCards.Count > 0)
+                {
+                    data.DanhSachCauHoi = filteredCards;
+                    NavigateToQuiz(data, CheDoHocEnum.HocMotMinh);
+                }
+                else
+                {
+                    var nextReviewDate = data.DanhSachCauHoi
+                        .Where(q => q.ThongTinThe.NgayOnTapTiepTheo.HasValue)
+                        .Select(q => q.ThongTinThe.NgayOnTapTiepTheo!.Value)
+                        .OrderBy(d => d) 
+                        .FirstOrDefault();
+
+                    if (nextReviewDate != default)
+                    {
+                        TimeSpan diff = nextReviewDate - DateTime.Now;
+                        string countdownText = diff.TotalDays >= 1
+                            ? $"khoảng {Math.Ceiling(diff.TotalDays)} ngày nữa"
+                            : $"khoảng {Math.Ceiling(diff.TotalHours)} giờ nữa";
+
+                        MessageBox.Show(
+                            $"🎉 Tuyệt vời! Bạn đã ôn tập hoàn tất bộ đề này.\n\n" +
+                            $"📅 Ngày quay lại dự kiến: {nextReviewDate:dd/MM/yyyy HH:mm}\n" +
+                            $"(Tức là {countdownText})",
+                            "Thông báo ôn tập",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Information);
+                    }
+                    else
+                    {
+                        MessageBox.Show("Bộ đề này hiện không có thẻ nào để học!", "Thông báo");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi khi tải dữ liệu học: {ex.Message}");
+            }
         }
 
         public async Task CleanupAsync()
@@ -251,7 +295,9 @@ namespace WinForms.UserControls.Quiz
         private async Task ExecuteStart()
         {
             _isStartingMatch = true;
+
             var data = await _boDeHocService.GetFullDataToLearnAsync(_currentBoDe!.MaBoDe);
+
             NavigateToQuiz(data, CheDoHocEnum.ThachDau, _currentPin);
         }
 

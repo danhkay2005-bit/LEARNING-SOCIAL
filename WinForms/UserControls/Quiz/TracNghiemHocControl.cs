@@ -12,10 +12,13 @@ namespace WinForms.UserControls.Quiz
     {
         public bool IsCorrect { get; private set; } = false;
 
-        // ROOT FIX: Kiểm tra xem có nút nào đang ở trạng thái "đã chọn" (màu highlight) không
-        public bool HasAnswered => _optionButtons.Any(btn => btn.BackColor == Color.FromArgb(40, 70, 80));
+        // 1. THÊM BIẾN NÀY để lưu vết lựa chọn (không phụ thuộc màu sắc UI)
+        private Button? _selectedButton = null;
 
         private List<Button> _optionButtons = new List<Button>();
+
+        // HasAnswered dựa vào biến lưu trữ thay vì quét màu
+        public bool HasAnswered => _selectedButton != null;
 
         public TracNghiemHocControl(TheFlashcardResponse info, List<DapAnTracNghiemResponse> dapAns)
         {
@@ -26,27 +29,34 @@ namespace WinForms.UserControls.Quiz
 
         private void RenderDapAn(List<DapAnTracNghiemResponse> dapAns)
         {
+            // 1. Dọn dẹp giao diện và danh sách cũ
             flpDapAn.Controls.Clear();
             _optionButtons.Clear();
+            _selectedButton = null; // Reset lựa chọn khi nạp câu hỏi mới
 
             foreach (var da in dapAns)
             {
-                Button btn = new Button();
-                btn.Text = da.NoiDung;
-                btn.Tag = da.LaDapAnDung;
+                // 2. Khởi tạo Button cho từng đáp án
+                Button btn = new Button
+                {
+                    Text = da.NoiDung,
+                    Tag = da.LaDapAnDung, // Lưu flag đúng/sai vào Tag
+                    Size = new Size(600, 65),
+                    FlatStyle = FlatStyle.Flat,
+                    ForeColor = Color.White,
+                    BackColor = Color.FromArgb(25, 45, 50),
+                    Font = new Font("Segoe UI", 12F),
+                    Cursor = Cursors.Hand,
+                    Margin = new Padding(0, 10, 0, 10)
+                };
 
-                btn.Size = new Size(600, 65);
-                btn.FlatStyle = FlatStyle.Flat;
                 btn.FlatAppearance.BorderSize = 1;
                 btn.FlatAppearance.BorderColor = Color.FromArgb(60, 80, 85);
-                btn.ForeColor = Color.White;
-                btn.BackColor = Color.FromArgb(25, 45, 50);
-                btn.Font = new Font("Segoe UI", 12F);
-                btn.Cursor = Cursors.Hand;
-                btn.Margin = new Padding(0, 10, 0, 10);
 
+                // 3. Gán sự kiện Click
                 btn.Click += OptionButton_Click;
 
+                // 4. Thêm vào danh sách quản lý và Panel hiển thị
                 _optionButtons.Add(btn);
                 flpDapAn.Controls.Add(btn);
             }
@@ -56,13 +66,15 @@ namespace WinForms.UserControls.Quiz
         {
             Button clickedBtn = (Button)sender!;
 
+            // Lưu vết nút được chọn vào biến
+            _selectedButton = clickedBtn;
+
             foreach (var btn in _optionButtons)
             {
                 btn.BackColor = Color.FromArgb(25, 45, 50);
                 btn.FlatAppearance.BorderColor = Color.FromArgb(60, 80, 85);
             }
 
-            // Đánh dấu nút được chọn
             clickedBtn.BackColor = Color.FromArgb(40, 70, 80);
             clickedBtn.FlatAppearance.BorderColor = Color.FromArgb(193, 225, 127);
 
@@ -80,7 +92,8 @@ namespace WinForms.UserControls.Quiz
                     btn.BackColor = Color.FromArgb(46, 125, 50);
                     btn.FlatAppearance.BorderColor = Color.Lime;
                 }
-                else if (btn.BackColor == Color.FromArgb(40, 70, 80))
+                // Nếu nút này là nút user đã chọn (_selectedButton) nhưng nó sai
+                else if (btn == _selectedButton)
                 {
                     btn.BackColor = Color.FromArgb(183, 28, 28);
                     btn.FlatAppearance.BorderColor = Color.Red;
@@ -88,6 +101,12 @@ namespace WinForms.UserControls.Quiz
 
                 btn.Enabled = false;
             }
+        }
+
+        public string GetUserAnswer()
+        {
+            // Trả về Text của biến đã lưu, đảm bảo dữ liệu luôn chính xác
+            return _selectedButton != null ? _selectedButton.Text : "Không trả lời";
         }
     }
 }

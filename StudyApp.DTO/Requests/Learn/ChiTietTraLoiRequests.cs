@@ -10,8 +10,10 @@ namespace StudyApp.DTO.Requests.Learn
 
         [Required]
         public int MaThe { get; set; }
-
         public string? CauTraLoiUser { get; set; }
+        public string? DapAnDung { get; set; }
+
+        public bool TraLoiDung { get; set; }
         public int? ThoiGianTraLoiGiay { get; set; }
     }
 }

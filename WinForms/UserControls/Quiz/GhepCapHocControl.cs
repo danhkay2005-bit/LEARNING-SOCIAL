@@ -22,6 +22,8 @@ namespace WinForms.UserControls.Quiz
         private int _totalPairs = 0;
         private bool _isProcessing = false; // Biến khóa để tránh nhấn nhanh gây lỗi
 
+        private List<string> _matchedPairsLog = new List<string>();
+
         private readonly Color NormalColor = Color.FromArgb(40, 70, 80);
         private readonly Color SelectedColor = Color.FromArgb(193, 225, 127);
         private readonly Color MatchedColor = Color.FromArgb(46, 125, 50);
@@ -68,7 +70,7 @@ namespace WinForms.UserControls.Quiz
 
         private async void HandleButtonClick(Button clickedBtn, bool isLeft)
         {
-            if (_isProcessing) return; // Nếu đang chờ hiệu ứng sai thì không cho nhấn
+            if (_isProcessing) return;
 
             if (isLeft)
             {
@@ -87,11 +89,9 @@ namespace WinForms.UserControls.Quiz
 
             if (_selectedLeft != null && _selectedRight != null)
             {
-                // Lưu vào biến cục bộ để an toàn luồng (Local capture)
                 Button left = _selectedLeft;
                 Button right = _selectedRight;
-
-                _selectedLeft = null; // Giải phóng biến toàn cục ngay
+                _selectedLeft = null;
                 _selectedRight = null;
 
                 if (left.Tag?.ToString() == right.Tag?.ToString())
@@ -101,25 +101,35 @@ namespace WinForms.UserControls.Quiz
                     left.ForeColor = right.ForeColor = Color.White;
                     left.Enabled = right.Enabled = false;
                     _totalMatched++;
+
+                    // GHI NHẬT KÝ: Lưu lại cặp vừa ghép đúng
+                    _matchedPairsLog.Add($"[{left.Text} == {right.Text}]");
                 }
                 else
                 {
                     // SAI
-                    _isProcessing = true; // Bắt đầu khóa
+                    _isProcessing = true;
                     left.BackColor = right.BackColor = WrongColor;
                     left.ForeColor = right.ForeColor = Color.White;
 
-                    await Task.Delay(500); // Chờ hiệu ứng đỏ
+                    await Task.Delay(500);
 
-                    // Kiểm tra xem control có bị hủy (Dispose) trong lúc chờ không
                     if (!left.IsDisposed && !right.IsDisposed)
                     {
                         left.BackColor = right.BackColor = NormalColor;
                         left.ForeColor = right.ForeColor = Color.White;
                     }
-                    _isProcessing = false; // Mở khóa
+                    _isProcessing = false;
                 }
             }
+        }
+
+        public string GetUserAnswer()
+        {
+            if (_matchedPairsLog.Count == 0) return "Chưa ghép được cặp nào";
+
+            // Trả về chuỗi danh sách các cặp đã ghép, ví dụ: "[Hanoi == Vietnam] | [Paris == France]"
+            return string.Join(" | ", _matchedPairsLog);
         }
 
         public void ShowResult()
