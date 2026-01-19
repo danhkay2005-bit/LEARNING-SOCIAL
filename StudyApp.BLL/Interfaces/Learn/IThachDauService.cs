@@ -45,7 +45,7 @@ namespace StudyApp.BLL.Interfaces.Learn
         /// <summary>
         /// Cập nhật kết quả cuối cùng vào dòng tương ứng trong bảng LichSuThachDau.
         /// </summary>
-        Task<bool> CapNhatKetQuaNguoiChoiAsync(CapNhatKetQuaThachDauRequest request);
+        Task<bool> CapNhatKetQuaNguoiChoiAsync(CapNhatKetQuaThachDauRequest request, List<ChiTietTraLoiRequest> chiTiets);
 
 
         // ==========================================

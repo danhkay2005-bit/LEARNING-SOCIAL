@@ -96,5 +96,10 @@
                     lblContent.Font = new Font("Segoe UI", 12);
                 }
             }
+
+        public string GetUserAnswer()
+        {
+            return IsCorrect ? "Đúng" : "Sai";
+        }
         }
     }

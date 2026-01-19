@@ -20,7 +20,8 @@
             lblTitle = new Label();
             lblMainStat = new Label();
             lblDetails = new Label();
-            btnFinish = new Button(); // Khai báo nút mới
+            btnFinish = new Button();
+            btnShowDetails = new Button();// Khai báo nút mới
             SuspendLayout();
             // 
             // lblTitle
@@ -72,6 +73,20 @@
             btnFinish.TabIndex = 3;
             btnFinish.Text = "HOÀN THÀNH";
             btnFinish.UseVisualStyleBackColor = false;
+
+            btnShowDetails.BackColor = Color.FromArgb(40, 70, 80); // Màu tối hơn nút Hoàn thành
+            btnShowDetails.Cursor = Cursors.Hand;
+            btnShowDetails.FlatAppearance.BorderSize = 1;
+            btnShowDetails.FlatAppearance.BorderColor = Color.FromArgb(193, 225, 127);
+            btnShowDetails.FlatStyle = FlatStyle.Flat;
+            btnShowDetails.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
+            btnShowDetails.ForeColor = Color.White;
+            btnShowDetails.Location = new Point(275, 520); // Nằm dưới nút Finish
+            btnShowDetails.Name = "btnShowDetails";
+            btnShowDetails.Size = new Size(250, 50);
+            btnShowDetails.TabIndex = 4;
+            btnShowDetails.Text = "XEM CHI TIẾT CÂU TRẢ LỜI";
+            btnShowDetails.UseVisualStyleBackColor = false;
             // 
             // QuizResultControl
             // 
@@ -82,6 +97,7 @@
             Controls.Add(lblDetails);
             Controls.Add(lblMainStat);
             Controls.Add(lblTitle);
+            this.Controls.Add(btnShowDetails);
             Name = "QuizResultControl";
             Padding = new Padding(0, 50, 0, 0);
             Size = new Size(800, 600);
@@ -93,6 +109,9 @@
         private Label lblTitle;
         private Label lblMainStat;
         private Label lblDetails;
-        private Button btnFinish; // Khai báo nút
+        private Button btnFinish; 
+       
+            
+            private Button btnShowDetails;// Khai báo nút
     }
 }

@@ -47,6 +47,19 @@ namespace WinForms.UserControls.Quiz
             }
         }
 
+        public string GetUserAnswer()
+        {
+            if (flpResult.Controls.Count == 0) return "Chưa sắp xếp từ nào";
+
+            // Lấy danh sách text từ các nút đã được kéo lên vùng kết quả
+            var userWords = flpResult.Controls.Cast<Button>()
+                                     .Select(b => b.Text.Trim())
+                                     .Where(t => !string.IsNullOrEmpty(t));
+
+            // Ghép lại thành một câu hoàn chỉnh để lưu vào Database
+            return string.Join(" ", userWords);
+        }
+
         private Button CreateWordButton(string text)
         {
             return new Button
@@ -84,14 +97,9 @@ namespace WinForms.UserControls.Quiz
 
         public void ShowResult()
         {
-            // 1. Lấy danh sách từ người dùng đã xếp
-            var userWords = flpResult.Controls.Cast<Button>()
-                                     .Select(b => b.Text.Trim())
-                                     .Where(t => !string.IsNullOrEmpty(t));
+            // Sử dụng chính hàm GetUserAnswer để lấy dữ liệu so sánh
+            string userSentence = GetUserAnswer();
 
-            string userSentence = string.Join(" ", userWords);
-
-            // 2. Hàm chuẩn hóa chuỗi để so sánh (xóa khoảng trắng thừa)
             string Normalize(string input)
             {
                 if (string.IsNullOrWhiteSpace(input)) return "";
@@ -101,10 +109,8 @@ namespace WinForms.UserControls.Quiz
             string finalUser = Normalize(userSentence);
             string finalCorrect = Normalize(_correctSentence);
 
-            // 3. So sánh kết quả
             IsCorrect = string.Equals(finalUser, finalCorrect, StringComparison.OrdinalIgnoreCase);
 
-            // 4. Hiển thị màu sắc phản hồi (Xanh: Đúng, Đỏ: Sai)
             foreach (Button btn in flpResult.Controls)
             {
                 btn.Enabled = false;

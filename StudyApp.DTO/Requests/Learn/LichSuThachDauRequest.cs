@@ -14,13 +14,12 @@
 
     public class CapNhatKetQuaThachDauRequest
     {
-        // Mã PIN của phòng đấu
         public int MaThachDau { get; set; }
-
-        // ID người dùng (Dùng Guid để khớp với Identity của bạn)
         public Guid MaNguoiDung { get; set; }
 
-        // Kết quả thi đấu
+        // THÊM DÒNG NÀY
+        public int MaBoDe { get; set; }
+
         public int? Diem { get; set; }
         public int? SoTheDung { get; set; }
         public int? SoTheSai { get; set; }
