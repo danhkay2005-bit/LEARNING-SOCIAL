@@ -271,7 +271,7 @@ namespace WinForms.Forms
             });
 
             AddMenuButton("👥 Quản lý Người dùng", (s, e) => {
-                // LoadPage(Program.ServiceProvider.GetRequiredService<QuanLyNguoiDungPage>());
+                 LoadPage(Program.ServiceProvider.GetRequiredService<QuanLyNguoiDungAdminPage>());
             });
 
             AddMenuButton("📚 Quản lý Bộ đề", (s, e) => {
