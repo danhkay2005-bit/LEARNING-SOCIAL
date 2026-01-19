@@ -29,6 +29,8 @@
         private void InitializeComponent()
         {
             pnlCard = new Panel();
+            btnXemXacNhan = new Button();
+            btnXemMatKhauMoi = new Button();
             lblTitle = new Label();
             lblEmail = new Label();
             txtEmail = new TextBox();
@@ -45,6 +47,8 @@
             // 
             pnlCard.Anchor = AnchorStyles.None;
             pnlCard.BackColor = Color.White;
+            pnlCard.Controls.Add(btnXemXacNhan);
+            pnlCard.Controls.Add(btnXemMatKhauMoi);
             pnlCard.Controls.Add(lblTitle);
             pnlCard.Controls.Add(lblEmail);
             pnlCard.Controls.Add(txtEmail);
@@ -58,6 +62,28 @@
             pnlCard.Name = "pnlCard";
             pnlCard.Size = new Size(360, 400);
             pnlCard.TabIndex = 2;
+            // 
+            // btnXemXacNhan
+            // 
+            btnXemXacNhan.FlatAppearance.BorderSize = 0;
+            btnXemXacNhan.FlatStyle = FlatStyle.Flat;
+            btnXemXacNhan.Location = new Point(300, 245);
+            btnXemXacNhan.Name = "btnXemXacNhan";
+            btnXemXacNhan.Size = new Size(30, 28);
+            btnXemXacNhan.TabIndex = 12;
+            btnXemXacNhan.Text = "👁️";
+            btnXemXacNhan.UseVisualStyleBackColor = true;
+            // 
+            // btnXemMatKhauMoi
+            // 
+            btnXemMatKhauMoi.FlatAppearance.BorderSize = 0;
+            btnXemMatKhauMoi.FlatStyle = FlatStyle.Flat;
+            btnXemMatKhauMoi.Location = new Point(300, 172);
+            btnXemMatKhauMoi.Name = "btnXemMatKhauMoi";
+            btnXemMatKhauMoi.Size = new Size(30, 28);
+            btnXemMatKhauMoi.TabIndex = 11;
+            btnXemMatKhauMoi.Text = "👁️";
+            btnXemMatKhauMoi.UseVisualStyleBackColor = true;
             // 
             // lblTitle
             // 
@@ -169,5 +195,7 @@
         private TextBox txtXacNhanMatKhau;
         private Button btnDatLaiMatKhau;
         private Button btnHuy;
+        private Button btnXemXacNhan;
+        private Button btnXemMatKhauMoi;
     }
 }
