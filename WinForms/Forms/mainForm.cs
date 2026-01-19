@@ -1,11 +1,14 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using StudyApp.BLL.Interfaces.Learn;
 using StudyApp.BLL.Interfaces.Social;
+using StudyApp.DAL.Entities.User;
 using StudyApp.DTO;
+using StudyApp.DTO.Enums;
 using System;
 using System.Drawing;
 using System.Windows.Forms;
 using WinForms.UserControls;
+using WinForms.UserControls.Admin;
 using WinForms.UserControls.Components.Social;
 using WinForms.UserControls.Pages;
 using WinForms.UserControls.Social;
@@ -33,44 +36,27 @@ namespace WinForms.Forms
         {
             menuPanel.Controls.Clear();
 
-            if (!UserSession.IsLoggedIn)
+            // Kiểm tra xem đã đăng nhập chưa và CurrentUser có khác null không
+            if (!UserSession.IsLoggedIn || UserSession.CurrentUser == null)
             {
                 AddMenuButton("🔑 Đăng nhập", BtnDangNhap_Click);
+                return;
+            }
+
+            // 1. Ép kiểu VaiTroEnum về int để so sánh với MaVaiTro (int)
+            // Dấu ? đảm bảo nếu CurrentUser null thì sẽ không văng lỗi (Crash) app
+            if (UserSession.CurrentUser?.MaVaiTro == (int)VaiTroEnum.Admin)
+            {
+                RenderAdminMenu();
             }
             else
             {
-                AddMenuButton("🏠 Trang chủ", (s, e) => 
-                {
-                    if (Program.ServiceProvider == null) return;
-                    LoadPage(Program.ServiceProvider.GetRequiredService<TrangChuPage>());
-                });
-                AddMenuButton("👤 Thông tin cá nhân", (s, e) => LoadPage(new ThongTinCaNhanPage()));
-                AddMenuButton("📚 Học tập", (s, e) => 
-                {
-                    if (Program.ServiceProvider == null) return;
-                    LoadPage(Program.ServiceProvider.GetRequiredService<HocTapPage>());
-                });
-
-                AddMenuButton("🌐 Mạng xã hội", BtnMangXaHoi_Click);
-
-                AddMenuButton("🛒 Cửa hàng", (s, e) => LoadPage(Program.ServiceProvider!.GetRequiredService<CuaHangPage>()));
-                AddMenuButton("Kho vật phẩm", (s, e) => LoadPage(Program.ServiceProvider!.GetRequiredService<KhoVatPhamPage>()));
-                AddMenuButton("⚙️ Cài đặt", (s, e) => LoadPage(new CaiDatPage()));
-                AddMenuButton("🏅 Thành Tựu", (s, e) => 
-                {
-                    if (Program.ServiceProvider == null) return;
-                    LoadPage(Program.ServiceProvider.GetRequiredService<AchievementsPage>());
-                });
-                AddMenuButton("📋 Nhiệm Vụ", (s, e) => 
-                {
-                    if (Program.ServiceProvider == null) return;
-                    LoadPage(Program.ServiceProvider.GetRequiredService<TaskPage>());
-                });
-                                                                        
-                AddMenuButton("🚪 Đăng xuất", BtnDangXuat_Click);
+                RenderUserMenu();
             }
-        }
 
+            // 2. Nút chung
+            AddMenuButton("🚪 Đăng xuất", BtnDangXuat_Click);
+        }
         // ================= MENU BUTTON =================
         private void AddMenuButton(string text, EventHandler onClick)
         {
@@ -126,34 +112,43 @@ namespace WinForms.Forms
         {
             if (Program.ServiceProvider == null)
                 throw new InvalidOperationException("ServiceProvider is not initialized.");
+
             var loginPage = Program.ServiceProvider.GetRequiredService<DangNhapControl>();
 
             loginPage.DangNhapThanhCong += () =>
             {
+                // 1. Cập nhật lại thanh Menu bên trái để khớp với quyền hạn
                 RenderMenu();
 
-                LoadPage(Program.ServiceProvider.GetRequiredService<TrangChuPage>());
+                // 2. Kiểm tra vai trò để điều hướng trang đích mặc định
+                // Sử dụng toán tử ?. để an toàn và ép kiểu Enum về int để so sánh
+                if (UserSession.CurrentUser?.MaVaiTro == (int)VaiTroEnum.Admin)
+                {
+                    // Nếu là Admin -> Chuyển thẳng vào Dashboard quản trị
+                    var adminDashboard = Program.ServiceProvider.GetRequiredService<AdminDashboardPage>();
+                    LoadPage(adminDashboard);
+                }
+                else
+                {
+                    // Nếu là User/Sinh viên -> Chuyển vào Trang chủ ứng dụng
+                    var homePage = Program.ServiceProvider.GetRequiredService<TrangChuPage>();
+                    LoadPage(homePage);
+                }
             };
 
+            // --- Các sự kiện chuyển trang phụ giữ nguyên ---
             loginPage.YeuCauDangKy += () =>
             {
                 var dangKyPage = Program.ServiceProvider.GetRequiredService<DangKyControl>();
                 LoadPage(dangKyPage);
-                dangKyPage.QuayVeDangNhap += () =>
-                {
-                    LoadPage(loginPage);
-                };
+                dangKyPage.QuayVeDangNhap += () => LoadPage(loginPage);
             };
 
             loginPage.QuenMatKhau += () =>
             {
                 var quenMKPage = Program.ServiceProvider.GetRequiredService<QuenMatKhauControl>();
                 LoadPage(quenMKPage);
-
-                quenMKPage.QuayVeDangNhap += () =>
-                {
-                    LoadPage(loginPage);
-                };
+                quenMKPage.QuayVeDangNhap += () => LoadPage(loginPage);
             };
 
             LoadPage(loginPage);
@@ -203,6 +198,64 @@ namespace WinForms.Forms
             }
 
             RenderMenu();
+        }
+
+        private void RenderUserMenu()
+        {
+            AddMenuButton("🏠 Trang chủ", (s, e) =>
+            {
+                if (Program.ServiceProvider == null) return;
+                LoadPage(Program.ServiceProvider.GetRequiredService<TrangChuPage>());
+            });
+
+            AddMenuButton("👤 Thông tin cá nhân", (s, e) => LoadPage(new ThongTinCaNhanPage()));
+
+            AddMenuButton("📚 Học tập", (s, e) =>
+            {
+                if (Program.ServiceProvider == null) return;
+                LoadPage(Program.ServiceProvider.GetRequiredService<HocTapPage>());
+            });
+
+            AddMenuButton("🌐 Mạng xã hội", BtnMangXaHoi_Click);
+
+            AddMenuButton("🛒 Cửa hàng", (s, e) => LoadPage(Program.ServiceProvider!.GetRequiredService<CuaHangPage>()));
+            AddMenuButton("📦 Kho vật phẩm", (s, e) => LoadPage(Program.ServiceProvider!.GetRequiredService<KhoVatPhamPage>()));
+            AddMenuButton("🏅 Thành Tựu", (s, e) =>
+            {
+                if (Program.ServiceProvider == null) return;
+                LoadPage(Program.ServiceProvider.GetRequiredService<AchievementsPage>());
+            });
+            AddMenuButton("📋 Nhiệm Vụ", (s, e) =>
+            {
+                if (Program.ServiceProvider == null) return;
+                LoadPage(Program.ServiceProvider.GetRequiredService<TaskPage>());
+            });
+        }
+
+        private void RenderAdminMenu()
+        {
+            if (Program.ServiceProvider == null) return;
+            AddMenuButton("📊 Dashboard Thống kê", (s, e) => {
+                LoadPage(Program.ServiceProvider.GetRequiredService<AdminDashboardPage>());
+            });
+
+            AddMenuButton("👥 Quản lý Người dùng", (s, e) => {
+                // LoadPage(Program.ServiceProvider.GetRequiredService<QuanLyNguoiDungPage>());
+            });
+
+            AddMenuButton("📚 Quản lý Bộ đề", (s, e) => {
+                // LoadPage(Program.ServiceProvider.GetRequiredService<QuanLyBoDeAdminPage>());
+            });
+
+            AddMenuButton("📝 Quản lý Bài đăng", (s, e) => {
+                // LoadPage(Program.ServiceProvider.GetRequiredService<QuanLyBaiDangPage>());
+            });
+
+            AddMenuButton("🏪 Quản lý Cửa hàng", (s, e) => {
+                // LoadPage(Program.ServiceProvider.GetRequiredService<QuanLyCuaHangPage>());
+            });
+
+            AddMenuButton("⚙️ Cài đặt hệ thống", (s, e) => LoadPage(new CaiDatPage()));
         }
     }
 }
