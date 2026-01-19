@@ -29,5 +29,9 @@ namespace WinForms.UserControls.Tasks
         {
             OnItemBought(itemId);
         }
+       
+
+        
+        
     }
 }

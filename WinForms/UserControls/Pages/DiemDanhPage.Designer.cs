@@ -1,6 +1,6 @@
 ﻿namespace WinForms.UserControls.Pages
 {
-    partial class CaiDatPage
+    partial class DiemDanhPage
     {
         /// <summary> 
         /// Required designer variable.
