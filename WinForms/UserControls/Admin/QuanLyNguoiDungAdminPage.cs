@@ -328,9 +328,21 @@ namespace WinForms.UserControls.Admin
 
                 if (giftForm.ShowDialog() == DialogResult.OK)
                 {
-                    user.Vang += (int)numVang.Value;
-                    user.KimCuong += (int)numKimCuong.Value;
-                    user.TongDiemXp += (int)numXP.Value;
+                    // Đảm bảo không bị NULL
+                    int vangMoi = (user.Vang ?? 0) + (int)numVang.Value;
+                    int kimCuongMoi = (user.KimCuong ?? 0) + (int)numKimCuong.Value;
+                    int xpMoi = (user.TongDiemXp ?? 0) + (int)numXP.Value;
+
+                    // Kiểm tra giá trị hợp lệ
+                    if (vangMoi < 0 || kimCuongMoi < 0 || xpMoi < 0)
+                    {
+                        MessageBox.Show("Vàng, Kim Cương, XP không được âm!");
+                        return;
+                    }
+
+                    user.Vang = vangMoi;
+                    user.KimCuong = kimCuongMoi;
+                    user.TongDiemXp = xpMoi;
 
                     if (numVang.Value != 0) LogTransaction(userId, "Vang", (int)numVang.Value, user.Vang ?? 0);
                     if (numKimCuong.Value != 0) LogTransaction(userId, "KimCuong", (int)numKimCuong.Value, user.KimCuong ?? 0);
@@ -348,7 +360,7 @@ namespace WinForms.UserControls.Admin
             var log = new LichSuGiaoDich
             {
                 MaNguoiDung = userId,
-                LoaiGiaoDich = "AdminGrant",
+                LoaiGiaoDich = "NhanThuong", // hoặc giá trị hợp lệ khác
                 LoaiTien = type,
                 SoLuong = amount,
                 SoDuTruoc = balanceAfter - amount,
