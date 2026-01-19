@@ -43,8 +43,9 @@ namespace WinForms.Forms
                 return;
             }
 
-            // 1. Ép kiểu VaiTroEnum về int để so sánh với MaVaiTro (int)
-            // Dấu ? đảm bảo nếu CurrentUser null thì sẽ không văng lỗi (Crash) app
+            // ✅ THÊM: Hiển thị chuông thông báo khi đăng nhập
+            RenderNotificationBadge();
+
             if (UserSession.CurrentUser?.MaVaiTro == (int)VaiTroEnum.Admin)
             {
                 RenderAdminMenu();
@@ -286,6 +287,26 @@ namespace WinForms.Forms
                 // LoadPage(Program.ServiceProvider.GetRequiredService<QuanLyCuaHangPage>());
             });
 
+        }
+
+        // Add this method to your MainForm class
+
+        private void RenderNotificationBadge()
+        {
+            // Remove existing badge if present
+            if (_notificationBadge != null)
+            {
+                this.Controls.Remove(_notificationBadge);
+                _notificationBadge.Dispose();
+                _notificationBadge = null;
+            }
+
+            // Create and configure a new NotificationBadge
+            _notificationBadge = new NotificationBadge();
+            _notificationBadge.Location = new Point(menuPanel.Right - 40, 10); // Adjust as needed
+            _notificationBadge.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            this.Controls.Add(_notificationBadge);
+            _notificationBadge.BringToFront();
         }
     }
 }
