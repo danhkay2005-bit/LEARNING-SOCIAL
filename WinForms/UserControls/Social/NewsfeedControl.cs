@@ -25,6 +25,11 @@ namespace WinForms.UserControls.Social
         // ✅ SỬA: Dùng IUserProfileService thay vì INguoiDungService
         private readonly IUserProfileService? _userProfileService;
 
+        // ✅ THÊM: Biến lưu NotificationBadge
+        private NotificationBadge? _notificationBadge;
+
+       
+
         private int _currentPage = 1;
         private const int PAGE_SIZE = 10;
         private bool _isLoading = false;

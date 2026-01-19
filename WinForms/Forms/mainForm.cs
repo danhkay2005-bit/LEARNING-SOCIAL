@@ -43,9 +43,6 @@ namespace WinForms.Forms
                 return;
             }
 
-            // ✅ THÊM: Hiển thị chuông thông báo khi đăng nhập
-            RenderNotificationBadge();
-
             if (UserSession.CurrentUser?.MaVaiTro == (int)VaiTroEnum.Admin)
             {
                 RenderAdminMenu();
@@ -293,7 +290,7 @@ namespace WinForms.Forms
 
         private void RenderNotificationBadge()
         {
-            // Remove existing badge if present
+            // Xóa badge cũ nếu có
             if (_notificationBadge != null)
             {
                 this.Controls.Remove(_notificationBadge);
@@ -301,10 +298,19 @@ namespace WinForms.Forms
                 _notificationBadge = null;
             }
 
-            // Create and configure a new NotificationBadge
-            _notificationBadge = new NotificationBadge();
-            _notificationBadge.Location = new Point(menuPanel.Right - 40, 10); // Adjust as needed
+            // ✅ SỬA: Lấy INotificationService từ ServiceProvider và truyền vào constructor đúng
+            if (Program.ServiceProvider == null) return;
+            
+            var notificationService = Program.ServiceProvider.GetRequiredService<INotificationService>();
+            
+            // Tạo NotificationBadge với constructor đầy đủ tham số
+            _notificationBadge = new NotificationBadge(notificationService, Program.ServiceProvider);
+            
+            // ✅ QUAN TRỌNG: Set kích thước nhỏ thay vì dùng mặc định 253x160
+            _notificationBadge.Size = new Size(50, 50);
+            _notificationBadge.Location = new Point(this.Width - 60, 10); // Góc trên bên phải
             _notificationBadge.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            
             this.Controls.Add(_notificationBadge);
             _notificationBadge.BringToFront();
         }
