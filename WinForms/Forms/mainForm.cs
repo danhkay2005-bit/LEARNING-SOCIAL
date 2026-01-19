@@ -55,7 +55,7 @@ namespace WinForms.Forms
 
                 AddMenuButton("🛒 Cửa hàng", (s, e) => LoadPage(Program.ServiceProvider!.GetRequiredService<CuaHangPage>()));
                 AddMenuButton("Kho vật phẩm", (s, e) => LoadPage(Program.ServiceProvider!.GetRequiredService<KhoVatPhamPage>()));
-                AddMenuButton("⚙️ Cài đặt", (s, e) => LoadPage(new CaiDatPage()));
+                AddMenuButton("🗓 Điểm Danh", (s, e) => LoadPage(Program.ServiceProvider!.GetRequiredService<DiemDanhPage>()));
                 AddMenuButton("🏅 Thành Tựu", (s, e) => 
                 {
                     if (Program.ServiceProvider == null) return;
