@@ -6,11 +6,23 @@ using StudyApp.DAL.Entities.User;
 using StudyApp.DTO.Requests.User;
 using StudyApp.DTO.Responses.User;
 using System;
+using System.Threading.Tasks;
+
 
 namespace StudyApp.BLL.Services.User;
 
-public class UserProfileService(UserDbContext _context, IMapper _mapper) : IUserProfileService
+public class UserProfileService : IUserProfileService
 {
+    private readonly UserDbContext _context;
+    private readonly IMapper _mapper;
+
+    // ✅ Constructor duy nhất với DI
+    public UserProfileService(UserDbContext context, IMapper mapper)
+    {
+        _context = context;
+        _mapper = mapper;
+    }
+
     public async Task<NguoiDungResponse?> GetProfileAsync(Guid userId)
     {
         var user = await _context.NguoiDungs
@@ -89,6 +101,7 @@ public class UserProfileService(UserDbContext _context, IMapper _mapper) : IUser
 
         return _mapper.Map<List<NguoiDungResponse>>(users);
     }
+
     public async Task<bool> ChangePasswordAsync(Guid userId, string oldPass, string newPass)
     {
         var user = await _context.NguoiDungs.FindAsync(userId);
@@ -107,5 +120,48 @@ public class UserProfileService(UserDbContext _context, IMapper _mapper) : IUser
         user.MatKhauMaHoa = newPass;
 
         return await _context.SaveChangesAsync() > 0;
+    }
+
+    /// <summary>
+    /// ✏️ Cập nhật Avatar
+    /// </summary>
+    public async Task<bool> UpdateAvatarAsync(Guid userId, string avatarUrl)
+    {
+        try
+        {
+            var user = await _context.NguoiDungs.FindAsync(userId);
+
+            if (user == null)
+                return false;
+
+            user.HinhDaiDien = avatarUrl;
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 🔍 Lấy Avatar URL
+    /// </summary>
+    public async Task<string?> GetAvatarUrlAsync(Guid userId)
+    {
+        try
+        {
+            var user = await _context.NguoiDungs
+                .Where(u => u.MaNguoiDung == userId)
+                .Select(u => u.HinhDaiDien)
+                .FirstOrDefaultAsync();
+
+            return user;
+        }
+        catch
+        {
+            return null;
+        }
     }
 }

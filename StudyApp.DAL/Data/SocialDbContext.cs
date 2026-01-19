@@ -192,8 +192,8 @@ public partial class SocialDbContext : DbContext
             entity.HasIndex(e => e.MaNguoiDung, "IX_Reaction_NguoiDung");
 
             entity.Property(e => e.LoaiReaction)
-                .HasMaxLength(20)
-                .IsUnicode(false)
+                .HasMaxLength(50)
+                .IsUnicode(true)  // ✅ BẬT UNICODE
                 .HasDefaultValue("Thich");
             entity.Property(e => e.ThoiGian)
                 .HasDefaultValueSql("(getdate())")
@@ -213,8 +213,8 @@ public partial class SocialDbContext : DbContext
             entity.HasIndex(e => e.MaNguoiDung, "IX_ReactionBL_NguoiDung");
 
             entity.Property(e => e.LoaiReaction)
-                .HasMaxLength(20)
-                .IsUnicode(false)
+                .HasMaxLength(50)
+                .IsUnicode(true)  // ✅ BẬT UNICODE
                 .HasDefaultValue("Thich");
             entity.Property(e => e.ThoiGian)
                 .HasDefaultValueSql("(getdate())")

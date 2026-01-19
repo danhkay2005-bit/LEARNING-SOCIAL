@@ -1,22 +1,28 @@
-﻿using StudyApp.BLL.Interfaces.Social;
+﻿using Microsoft.Extensions.DependencyInjection;
+using StudyApp.BLL.Interfaces.Social;
 using StudyApp.DTO;
 using StudyApp.DTO.Enums;
 using StudyApp.DTO.Requests.Social;
 using StudyApp.DTO.Responses.Social;
 using System;
 using System.Drawing;
+using System.Threading;
 using System.Windows.Forms;
-using WinForms.UserControls.Social;
+using WinForms.Forms.Social;
 
 namespace WinForms.UserControls.Components.Social
 {
     public partial class PostCardControl : UserControl
     {
+        // ✅ THÊM: Semaphore để giới hạn concurrent DB operations
+        private static readonly SemaphoreSlim _dbSemaphore = new SemaphoreSlim(2, 2); // Max 2 operations cùng lúc
+
         // ✅ SỬA:  Thêm nullable cho các service (vì constructor mặc định không inject)
         private readonly IPostService? _postService;
         private readonly IReactionService? _reactionService;
         private readonly ICommentService? _commentService;
-        private readonly IReactionBaiDangService? _reactionBaiDangService; // ✅ THÊM
+        private readonly IReactionBaiDangService? _reactionBaiDangService;
+        private readonly IChiaSeBaiDangService? _chiaSeBaiDangService; // ✅ THÊM: Service chia sẻ
 
         private BaiDangResponse? _post;
         private LoaiReactionEnum? _currentReaction = null; // ✅ THÊM: Lưu reaction hiện tại
@@ -33,7 +39,7 @@ namespace WinForms.UserControls.Components.Social
         private Label? lblTimestamp;
         private Button? btnMenu; // ✅ THÊM: Nút menu 3 chấm
         private Panel? pnlContent;
-        private Label? lblContent;
+        private RichTextBox? rtbContent; // ✅ SỬA: Đổi từ Label sang RichTextBox
         private PictureBox? pbImage;
         private Panel? pnlStats;
         private Label? lblReactionCount;
@@ -60,10 +66,11 @@ namespace WinForms.UserControls.Components.Social
             _reactionService = reactionService;
             _commentService = commentService;
 
-            // ✅ THÊM: Lấy IReactionBaiDangService để check reaction hiện tại
+            // ✅ Lấy các service bổ sung từ ServiceProvider
             if (Program.ServiceProvider != null)
             {
                 _reactionBaiDangService = Program.ServiceProvider.GetService(typeof(IReactionBaiDangService)) as IReactionBaiDangService;
+                _chiaSeBaiDangService = Program.ServiceProvider.GetService(typeof(IChiaSeBaiDangService)) as IChiaSeBaiDangService;
             }
 
             InitializeControls();
@@ -84,6 +91,9 @@ namespace WinForms.UserControls.Components.Social
             if (_post == null || !UserSession.IsLoggedIn || UserSession.CurrentUser == null || _reactionBaiDangService == null)
                 return;
 
+            // ✅ FIX: Chờ lượt để tránh DbContext conflict
+            await _dbSemaphore.WaitAsync();
+
             try
             {
                 var myReaction = await _reactionBaiDangService.KiemTraReactionCuaNguoiDungAsync(
@@ -102,6 +112,11 @@ namespace WinForms.UserControls.Components.Social
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"⚠️ Lỗi load reaction: {ex.Message}");
+            }
+            finally
+            {
+                // ✅ QUAN TRỌNG: Luôn release semaphore
+                _dbSemaphore.Release();
             }
         }
 
@@ -198,15 +213,33 @@ namespace WinForms.UserControls.Components.Social
                 BackColor = Color.White
             };
 
-            lblContent = new Label
+            // ✅ SỬA: Thay Label bằng RichTextBox để highlight hashtag
+            rtbContent = new RichTextBox
             {
                 Dock = DockStyle.Top,
-                AutoSize = true,
-                MaximumSize = new Size(560, 0),
-                Font = new Font("Segoe UI", 9.5F, FontStyle.Regular), // ✅ SỬA
+                BorderStyle = BorderStyle.None,
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Regular),
                 ForeColor = Color.Black,
-                Padding = new Padding(0, 0, 0, 10)
+                BackColor = Color.White,
+                ReadOnly = true,
+                ScrollBars = RichTextBoxScrollBars.None,
+                Cursor = Cursors.Arrow, // ✅ Mặc định là Arrow (vì ReadOnly)
+                DetectUrls = false, // ✅ Tắt auto-detect URL để tự xử lý hashtag
+                Margin = new Padding(0, 0, 0, 10)
             };
+            
+            // ✅ QUAN TRỌNG: Tự động tính chiều cao
+            rtbContent.ContentsResized += (s, e) =>
+            {
+                if (rtbContent != null)
+                    rtbContent.Height = e.NewRectangle.Height + 5;
+            };
+
+            // ✅ Click handler cho hashtag
+            rtbContent.MouseClick += RtbContent_MouseClick;
+            
+            // ✅ MỚI: Hover detection để đổi cursor
+            rtbContent.MouseMove += RtbContent_MouseMove;
 
             pbImage = new PictureBox
             {
@@ -217,7 +250,7 @@ namespace WinForms.UserControls.Components.Social
             };
 
             pnlContent.Controls.Add(pbImage);
-            pnlContent.Controls.Add(lblContent);
+            pnlContent.Controls.Add(rtbContent); // ✅ SỬA: Đổi từ lblContent
 
             // ===== STATS =====
             pnlStats = new Panel
@@ -303,14 +336,42 @@ namespace WinForms.UserControls.Components.Social
         {
             if (_post == null) return;
 
+            // ✅ Kiểm tra nếu là bài SHARE
+            if (_post.LoaiBaiDang == LoaiBaiDangEnum.ChiaSeKhoaHoc)
+            {
+                RenderSharedPost();
+            }
+            else
+            {
+                RenderNormalPost();
+            }
+        }
+
+        /// <summary>
+        /// ✅ Render bài đăng bình thường (không phải share)
+        /// </summary>
+        private void RenderNormalPost()
+        {
+            if (_post == null) return;
+
+            // ✅ Load avatar người đăng
+            if (pbAvatar != null)
+            {
+                LoadAvatarImage(pbAvatar, _post.HinhDaiDien, _post.TenNguoiDung);
+            }
+
+            // ✅ Hiển thị tên người đăng
             if (lblAuthorName != null)
-                lblAuthorName.Text = "Người dùng";
+                lblAuthorName.Text = _post.TenNguoiDung ?? "Người dùng";
 
             if (lblTimestamp != null)
                 lblTimestamp.Text = GetRelativeTime(_post.ThoiGianTao ?? DateTime.Now);
 
-            if (lblContent != null)
-                lblContent.Text = _post.NoiDung ?? "(Không có nội dung)";
+            // ✅ SỬA: Highlight hashtag trong RichTextBox
+            if (rtbContent != null)
+            {
+                RenderContentWithHashtags(rtbContent, _post.NoiDung ?? "(Không có nội dung)");
+            }
 
             if (!string.IsNullOrEmpty(_post.HinhAnh) && pbImage != null)
             {
@@ -330,6 +391,212 @@ namespace WinForms.UserControls.Components.Social
 
             if (lblCommentCount != null)
                 lblCommentCount.Text = $"💬 {_post.SoBinhLuan} bình luận";
+        }
+
+        /// <summary>
+        /// ✅ MỚI: Render bài đăng SHARED (giống Facebook)
+        /// </summary>
+        private async void RenderSharedPost()
+        {
+            if (_post == null || _chiaSeBaiDangService == null) return;
+
+            await _dbSemaphore.WaitAsync();
+
+            try
+            {
+                // ✅ ADD: Check if control is disposed after await
+                if (this.IsDisposed || this.Disposing) return;
+                
+                var shareInfo = await _chiaSeBaiDangService.LayChiTietChiaSeTheoBaiDangMoiAsync(_post.MaBaiDang);
+
+                // ✅ ADD: Check again after second await
+                if (this.IsDisposed || this.Disposing) return;
+
+                if (shareInfo == null || shareInfo.BaiDangGoc == null)
+                {
+                    RenderNormalPost();
+                    return;
+                }
+
+                // 2. Header: "X đã chia sẻ bài viết"
+                if (pbAvatar != null)
+                {
+                    LoadAvatarImage(pbAvatar, _post.HinhDaiDien, _post.TenNguoiDung);
+                }
+
+                if (lblAuthorName != null)
+                {
+                    lblAuthorName.Text = $"{_post.TenNguoiDung ?? "Người dùng"}";
+                }
+
+                if (lblTimestamp != null)
+                {
+                    lblTimestamp.Text = $"đã chia sẻ • {GetRelativeTime(_post.ThoiGianTao ?? DateTime.Now)}";
+                    lblTimestamp.ForeColor = Color.Gray;
+                }
+
+                // 3. Nội dung thêm của người share
+                if (rtbContent != null)
+                {
+                    var noiDungShare = shareInfo.NoiDungThem;
+                    if (!string.IsNullOrWhiteSpace(noiDungShare))
+                    {
+                        RenderContentWithHashtags(rtbContent, noiDungShare);
+                    }
+                    else
+                    {
+                        rtbContent.Visible = false;
+                    }
+                }
+
+                // 4. Tạo panel bài gốc (nested)
+                var nestedPanel = CreateNestedPostPanel(shareInfo.BaiDangGoc);
+                if (pnlContent != null)
+                {
+                    pnlContent.Controls.Add(nestedPanel);
+                    nestedPanel.BringToFront();
+                }
+
+                // 5. Stats của bài SHARE (không phải bài gốc)
+                if (lblReactionCount != null)
+                    lblReactionCount.Text = $"👍 {_post.SoReaction}";
+
+                if (lblCommentCount != null)
+                    lblCommentCount.Text = $"💬 {_post.SoBinhLuan} bình luận";
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"❌ Lỗi render shared post: {ex.Message}");
+                
+                // ✅ ADD: Check before fallback
+                if (!this.IsDisposed && !this.Disposing)
+                {
+                    RenderNormalPost();
+                }
+            }
+            finally
+            {
+                _dbSemaphore.Release();
+            }
+        }
+
+        /// <summary>
+        /// ✅ MỚI: Tạo panel bài gốc (nested) - Style Facebook
+        /// </summary>
+        private Panel CreateNestedPostPanel(BaiDangResponse originalPost)
+        {
+            var panel = new Panel
+            {
+                Dock = DockStyle.Top,
+                AutoSize = true,
+                BackColor = Color.FromArgb(245, 245, 245), // Màu xám nhạt
+                BorderStyle = BorderStyle.FixedSingle,
+                Padding = new Padding(12),
+                Margin = new Padding(0, 10, 0, 0)
+            };
+
+            // ===== HEADER của bài gốc =====
+            var pnlNestedHeader = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 50,
+                BackColor = Color.Transparent
+            };
+
+            var pbNestedAvatar = new PictureBox
+            {
+                Width = 40,
+                Height = 40,
+                Location = new Point(5, 5),
+                SizeMode = PictureBoxSizeMode.StretchImage,
+                BackColor = Color.LightGray,
+                BorderStyle = BorderStyle.FixedSingle
+            };
+            LoadAvatarImage(pbNestedAvatar, originalPost.HinhDaiDien, originalPost.TenNguoiDung);
+
+            var lblNestedAuthor = new Label
+            {
+                Text = originalPost.TenNguoiDung ?? "Người dùng",
+                Location = new Point(52, 8),
+                AutoSize = true,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(24, 119, 242)
+            };
+
+            var lblNestedTime = new Label
+            {
+                Text = GetRelativeTime(originalPost.ThoiGianTao ?? DateTime.Now),
+                Location = new Point(52, 28),
+                AutoSize = true,
+                Font = new Font("Segoe UI", 7.5F),
+                ForeColor = Color.Gray
+            };
+
+            pnlNestedHeader.Controls.Add(pbNestedAvatar);
+            pnlNestedHeader.Controls.Add(lblNestedAuthor);
+            pnlNestedHeader.Controls.Add(lblNestedTime);
+
+            // ===== CONTENT của bài gốc =====
+            var lblNestedContent = new Label
+            {
+                Text = originalPost.NoiDung ?? "(Không có nội dung)",
+                Dock = DockStyle.Top,
+                AutoSize = true,
+                MaximumSize = new Size(520, 0),
+                Font = new Font("Segoe UI", 9F),
+                ForeColor = Color.FromArgb(50, 50, 50),
+                Padding = new Padding(0, 5, 0, 10)
+            };
+
+            // ===== HÌNH ẢNH của bài gốc (nếu có) =====
+            PictureBox? pbNestedImage = null;
+            if (!string.IsNullOrEmpty(originalPost.HinhAnh))
+            {
+                pbNestedImage = new PictureBox
+                {
+                    Dock = DockStyle.Top,
+                    SizeMode = PictureBoxSizeMode.Zoom,
+                    MaximumSize = new Size(520, 250),
+                    MinimumSize = new Size(520, 150)
+                };
+
+                try
+                {
+                    pbNestedImage.Load(originalPost.HinhAnh);
+                }
+                catch
+                {
+                    pbNestedImage.Visible = false;
+                }
+            }
+
+            // ===== STATS của bài gốc (chỉ hiển thị số, không có button) =====
+            var lblNestedStats = new Label
+            {
+                Text = $"👍 {originalPost.SoReaction}   💬 {originalPost.SoBinhLuan} bình luận",
+                Dock = DockStyle.Top,
+                Font = new Font("Segoe UI", 8F),
+                ForeColor = Color.Gray,
+                Padding = new Padding(0, 8, 0, 5),
+                AutoSize = true
+            };
+
+            // ===== ADD CONTROLS =====
+            panel.Controls.Add(lblNestedStats);
+            if (pbNestedImage != null)
+                panel.Controls.Add(pbNestedImage);
+            panel.Controls.Add(lblNestedContent);
+            panel.Controls.Add(pnlNestedHeader);
+
+            // Click vào bài gốc → Mở detail (tùy chọn)
+            panel.Cursor = Cursors.Hand;
+            panel.Click += (s, e) =>
+            {
+                System.Diagnostics.Debug.WriteLine($"Click vào bài gốc #{originalPost.MaBaiDang}");
+                // TODO: Mở detail bài gốc nếu muốn
+            };
+
+            return panel;
         }
 
         private string GetRelativeTime(DateTime dateTime)
@@ -401,32 +668,214 @@ namespace WinForms.UserControls.Components.Social
 
         private void BtnComment_Click(object? sender, EventArgs e)
         {
-            if (_post == null || _commentService == null || _reactionService == null) return;
+            if (_post == null || _commentService == null) return;
 
-            // Tạo CommentSection
-            var commentSection = new CommentSectionControl(_commentService, _reactionService)
+            // ✅ FIX: Dùng CommentSectionDialog mới với IReactionBinhLuanService
+            try
             {
-                Dock = DockStyle.Fill
-            };
+                // Lấy IReactionBinhLuanService từ Program.ServiceProvider
+                var reactionBinhLuanService = Program.ServiceProvider?.GetService(typeof(IReactionBinhLuanService)) as IReactionBinhLuanService;
+                
+                if (reactionBinhLuanService == null)
+                {
+                    MessageBox.Show("Không thể tải dịch vụ bình luận", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
 
-            // Tạo Form popup
-            var form = new Form
+                var dialog = new CommentSectionDialog(
+                    _post.MaBaiDang,
+                    _commentService,
+                    reactionBinhLuanService
+                );
+
+                dialog.ShowDialog();
+            }
+            catch (Exception ex)
             {
-                Text = "Bình luận",
-                Size = new Size(650, 600),
-                StartPosition = FormStartPosition.CenterParent
-            };
-            form.Controls.Add(commentSection);
-
-            // Load comments
-            _ = commentSection.LoadCommentsAsync(_post.MaBaiDang);
-
-            form.ShowDialog();
+                MessageBox.Show($"Lỗi: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
-        private void BtnShare_Click(object? sender, EventArgs e)
+        private async void BtnShare_Click(object? sender, EventArgs e)
         {
-            MessageBox.Show("Chức năng chia sẻ đang phát triển!");
+            if (!UserSession.IsLoggedIn || _post == null || UserSession.CurrentUser == null || _chiaSeBaiDangService == null)
+            {
+                MessageBox.Show("Vui lòng đăng nhập để chia sẻ bài viết!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            try
+            {
+                // Hiển thị dialog xác nhận và nhập nội dung bổ sung
+                using var shareDialog = new Form
+                {
+                    Text = "Chia sẻ bài viết",
+                    Width = 450,
+                    Height = 350,
+                    StartPosition = FormStartPosition.CenterParent,
+                    FormBorderStyle = FormBorderStyle.FixedDialog,
+                    MaximizeBox = false,
+                    MinimizeBox = false
+                };
+
+                // Label hướng dẫn
+                var lblTitle = new Label
+                {
+                    Text = "Bạn muốn chia sẻ bài viết này?",
+                    Font = new Font("Segoe UI", 10F, FontStyle.Bold),
+                    Location = new Point(15, 15),
+                    AutoSize = true
+                };
+
+                // TextBox nhập nội dung thêm
+                var lblNoiDung = new Label
+                {
+                    Text = "Thêm suy nghĩ của bạn (tùy chọn):",
+                    Font = new Font("Segoe UI", 9F),
+                    Location = new Point(15, 50),
+                    AutoSize = true
+                };
+
+                var txtNoiDung = new TextBox
+                {
+                    Location = new Point(15, 75),
+                    Width = 400,
+                    Height = 80,
+                    Multiline = true,
+                    ScrollBars = ScrollBars.Vertical,
+                    PlaceholderText = "Chia sẻ suy nghĩ của bạn về bài viết này..."
+                };
+
+                // Hiển thị preview bài gốc
+                var pnlPreview = new Panel
+                {
+                    Location = new Point(15, 165),
+                    Width = 400,
+                    Height = 70,
+                    BorderStyle = BorderStyle.FixedSingle,
+                    BackColor = Color.FromArgb(245, 245, 245)
+                };
+
+                var lblPreview = new Label
+                {
+                    Text = $"📄 Bài viết gốc của {_post.TenNguoiDung}",
+                    Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
+                    Location = new Point(10, 10),
+                    AutoSize = true,
+                    ForeColor = Color.FromArgb(24, 119, 242)
+                };
+
+                var lblContent = new Label
+                {
+                    Text = _post.NoiDung?.Length > 80 
+                        ? _post.NoiDung.Substring(0, 80) + "..." 
+                        : _post.NoiDung ?? "(Không có nội dung)",
+                    Font = new Font("Segoe UI", 8F),
+                    Location = new Point(10, 30),
+                    Width = 370,
+                    Height = 30,
+                    ForeColor = Color.Gray
+                };
+
+                pnlPreview.Controls.Add(lblPreview);
+                pnlPreview.Controls.Add(lblContent);
+
+                // Nút Chia sẻ
+                var btnShare = new Button
+                {
+                    Text = "🔄 Chia sẻ",
+                    Location = new Point(220, 250),
+                    Width = 100,
+                    Height = 35,
+                    BackColor = Color.FromArgb(24, 119, 242),
+                    ForeColor = Color.White,
+                    FlatStyle = FlatStyle.Flat,
+                    Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                    Cursor = Cursors.Hand,
+                    DialogResult = DialogResult.OK
+                };
+                btnShare.FlatAppearance.BorderSize = 0;
+
+                // Nút Hủy
+                var btnCancel = new Button
+                {
+                    Text = "Hủy",
+                    Location = new Point(330, 250),
+                    Width = 85,
+                    Height = 35,
+                    BackColor = Color.LightGray,
+                    FlatStyle = FlatStyle.Flat,
+                    Font = new Font("Segoe UI", 9F),
+                    Cursor = Cursors.Hand,
+                    DialogResult = DialogResult.Cancel
+                };
+                btnCancel.FlatAppearance.BorderSize = 0;
+
+                // Thêm controls vào dialog
+                shareDialog.Controls.AddRange(new Control[] { 
+                    lblTitle, lblNoiDung, txtNoiDung, pnlPreview, btnShare, btnCancel 
+                });
+
+                // Hiển thị dialog
+                if (shareDialog.ShowDialog() == DialogResult.OK)
+                {
+                    // Tạo request chia sẻ
+                    var request = new ChiaSeBaiDangRequest
+                    {
+                        MaBaiDangGoc = _post.MaBaiDang,
+                        MaNguoiChiaSe = UserSession.CurrentUser.MaNguoiDung,
+                        NoiDungThem = txtNoiDung.Text.Trim(),
+                        QuyenRiengTu = QuyenRiengTuEnum.CongKhai
+                    };
+
+                    // Gọi API chia sẻ
+                    var result = await _chiaSeBaiDangService.ChiaSeBaiDangAsync(request);
+
+                    MessageBox.Show(
+                        "✅ Đã chia sẻ bài viết lên trang cá nhân của bạn!",
+                        "Thành công",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Information
+                    );
+
+                    // Cập nhật số lượng chia sẻ (nếu có)
+                    System.Diagnostics.Debug.WriteLine($"✅ Đã chia sẻ bài đăng #{_post.MaBaiDang}");
+                }
+            }
+            catch (Exception ex)
+            {
+                var errorMessage = ex.Message;
+                
+                if (errorMessage.Contains("đã chia sẻ"))
+                {
+                    MessageBox.Show(
+                        "❌ Bạn đã chia sẻ bài viết này rồi!",
+                        "Thông báo",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Warning
+                    );
+                }
+                else if (errorMessage.Contains("không có quyền"))
+                {
+                    MessageBox.Show(
+                        "❌ Bạn không có quyền chia sẻ bài viết này!",
+                        "Lỗi",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error
+                    );
+                }
+                else
+                {
+                    MessageBox.Show(
+                        $"Lỗi khi chia sẻ bài viết:\n{errorMessage}",
+                        "Lỗi",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error
+                    );
+                }
+
+                System.Diagnostics.Debug.WriteLine($"❌ Lỗi chia sẻ: {ex.Message}");
+            }
         }
 
         // ===== ✅ THÊM: REACTION PICKER =====
@@ -641,6 +1090,8 @@ namespace WinForms.UserControls.Components.Social
             {
                 // ✅ Lỗi thật sự → Rollback UI
                 System.Diagnostics.Debug.WriteLine($"❌ Lỗi: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"❌ Stack Trace: {ex.StackTrace}");
+                System.Diagnostics.Debug.WriteLine($"❌ Inner Exception: {ex.InnerException?.Message}");
                 
                 _currentReaction = oldReaction;
                 if (btnLike != null)
@@ -815,6 +1266,269 @@ namespace WinForms.UserControls.Components.Social
                     MessageBox.Show($"Lỗi xóa bài viết: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
+        }
+
+        /// <summary>
+        /// ✅ MỚI: Load avatar từ URL hoặc tạo placeholder
+        /// </summary>
+        private void LoadAvatarImage(PictureBox pictureBox, string? avatarUrl, string? displayName)
+        {
+            if (pictureBox == null) return;
+
+            try
+            {
+                // Nếu có URL hợp lệ
+                if (!string.IsNullOrWhiteSpace(avatarUrl))
+                {
+                    if (Uri.TryCreate(avatarUrl, UriKind.Absolute, out var uri) &&
+                        (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
+                    {
+                        pictureBox.LoadAsync(avatarUrl);
+                        return;
+                    }
+                    else if (System.IO.File.Exists(avatarUrl))
+                    {
+                        pictureBox.Image = Image.FromFile(avatarUrl);
+                        return;
+                    }
+                }
+
+                // Fallback: Tạo avatar chữ cái đầu
+                CreateInitialsAvatarForPost(pictureBox, displayName);
+            }
+            catch
+            {
+                CreateInitialsAvatarForPost(pictureBox, displayName);
+            }
+        }
+
+        /// <summary>
+        /// ✅ MỚI: Tạo avatar từ chữ cái đầu
+        /// </summary>
+        private void CreateInitialsAvatarForPost(PictureBox pictureBox, string? displayName)
+        {
+            if (pictureBox == null) return;
+
+            try
+            {
+                var bitmap = new Bitmap(pictureBox.Width, pictureBox.Height);
+                using (var g = Graphics.FromImage(bitmap))
+                {
+                    // Background màu xanh
+                    g.Clear(Color.FromArgb(24, 119, 242));
+
+                    // Lấy chữ cái đầu
+                    string initials = "U";
+                    if (!string.IsNullOrWhiteSpace(displayName))
+                    {
+                        var parts = displayName.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                        if (parts.Length >= 2)
+                        {
+                            initials = $"{parts[0][0]}{parts[^1][0]}".ToUpper();
+                        }
+                        else if (parts.Length == 1)
+                        {
+                            initials = parts[0].Substring(0, Math.Min(2, parts[0].Length)).ToUpper();
+                        }
+                    }
+
+                    // Vẽ chữ
+                    using (var font = new Font("Segoe UI", pictureBox.Width / 3, FontStyle.Bold))
+                    using (var brush = new SolidBrush(Color.White))
+                    using (var format = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center })
+                    {
+                        g.DrawString(initials, font, brush, new RectangleF(0, 0, pictureBox.Width, pictureBox.Height), format);
+                    }
+                }
+                pictureBox.Image = bitmap;
+            }
+            catch
+            {
+                pictureBox.BackColor = Color.LightGray;
+            }
+        }
+
+        /// <summary>
+        /// ✅ HOÀN THIỆN: Render nội dung với hashtag được highlight trong RichTextBox
+        /// 
+        /// CÁCH HOẠT ĐỘNG:
+        /// 1. Set text vào RichTextBox
+        /// 2. Dùng Regex tìm vị trí các hashtag
+        /// 3. Highlight hashtag bằng màu xanh (Color.Blue) và Bold
+        /// 4. Click detection trong RtbContent_MouseClick
+        /// </summary>
+        private void RenderContentWithHashtags(RichTextBox rtbContent, string content)
+        {
+            if (rtbContent == null || string.IsNullOrEmpty(content))
+                return;
+
+            // 1. Set text thuần
+            rtbContent.Text = content;
+
+            // 2. Reset format
+            rtbContent.SelectAll();
+            rtbContent.SelectionColor = Color.Black;
+            rtbContent.SelectionFont = new Font("Segoe UI", 9.5F, FontStyle.Regular);
+            rtbContent.DeselectAll();
+
+            // 3. Tìm và highlight các hashtag
+            var regex = new System.Text.RegularExpressions.Regex(@"#[\p{L}\p{N}_]+");
+            var matches = regex.Matches(content);
+
+            foreach (System.Text.RegularExpressions.Match match in matches)
+            {
+                // Select hashtag
+                rtbContent.Select(match.Index, match.Length);
+                
+                // ✅ Highlight: Màu xanh + Bold + Underline (giống link)
+                rtbContent.SelectionColor = Color.FromArgb(24, 119, 242); // Facebook blue
+                rtbContent.SelectionFont = new Font("Segoe UI", 9.5F, FontStyle.Bold | FontStyle.Underline);
+            }
+
+            // 4. Deselect để không hiện selection
+            rtbContent.DeselectAll();
+
+            // 5. Đặt cursor về đầu
+            rtbContent.SelectionStart = 0;
+            rtbContent.SelectionLength = 0;
+        }
+
+        /// <summary>
+        /// ✅ MỚI: Xử lý click vào hashtag
+        /// </summary>
+        private void RtbContent_MouseClick(object? sender, MouseEventArgs e)
+        {
+            if (rtbContent == null) return;
+
+            // Lấy vị trí click
+            int clickIndex = rtbContent.GetCharIndexFromPosition(e.Location);
+
+            // Lấy text
+            string text = rtbContent.Text;
+            if (clickIndex < 0 || clickIndex >= text.Length) return;
+
+            // Tìm hashtag tại vị trí click
+            var regex = new System.Text.RegularExpressions.Regex(@"#[\p{L}\p{N}_]+");
+            var matches = regex.Matches(text);
+
+            foreach (System.Text.RegularExpressions.Match match in matches)
+            {
+                // Check xem click có nằm trong hashtag không
+                if (clickIndex >= match.Index && clickIndex < match.Index + match.Length)
+                {
+                    // Lấy hashtag (bỏ dấu #)
+                    string hashtag = match.Value.TrimStart('#');
+
+                    // ✅ Mở trang tìm kiếm hashtag
+                    OpenHashtagSearch(hashtag);
+                    return;
+                }
+            }
+        }
+
+        /// <summary>
+        /// ✅ MỚI: Detect hover vào hashtag và đổi cursor
+        /// 
+        /// CÁCH HOẠT ĐỘNG:
+        /// 1. Lấy index của ký tự tại vị trí chuột
+        /// 2. Kiểm tra xem index có nằm trong hashtag không
+        /// 3. Nếu có → Cursor = Hand (👆)
+        /// 4. Nếu không → Cursor = Arrow (mặc định)
+        /// </summary>
+        private void RtbContent_MouseMove(object? sender, MouseEventArgs e)
+        {
+            if (rtbContent == null) return;
+
+            try
+            {
+                // Lấy index của ký tự tại vị trí chuột
+                int hoverIndex = rtbContent.GetCharIndexFromPosition(e.Location);
+                string text = rtbContent.Text;
+
+                if (hoverIndex < 0 || hoverIndex >= text.Length)
+                {
+                    rtbContent.Cursor = Cursors.Arrow;
+                    return;
+                }
+
+                // Tìm tất cả hashtag
+                var regex = new System.Text.RegularExpressions.Regex(@"#[\p{L}\p{N}_]+");
+                var matches = regex.Matches(text);
+
+                // Kiểm tra xem đang hover hashtag không
+                bool isOverHashtag = false;
+                foreach (System.Text.RegularExpressions.Match match in matches)
+                {
+                    if (hoverIndex >= match.Index && hoverIndex < match.Index + match.Length)
+                    {
+                        isOverHashtag = true;
+                        break;
+                    }
+                }
+
+                // Đổi cursor tương ứng
+                rtbContent.Cursor = isOverHashtag ? Cursors.Hand : Cursors.Arrow;
+            }
+            catch
+            {
+                rtbContent.Cursor = Cursors.Arrow;
+            }
+        }
+
+        /// <summary>
+        /// ✅ MỚI: Mở trang tìm kiếm hashtag
+        /// </summary>
+        private void OpenHashtagSearch(string hashtag)
+        {
+            try
+            {
+                // Tìm MainForm
+                var mainForm = this.FindForm();
+                if (mainForm is Forms.MainForm mf && Program.ServiceProvider != null)
+                {
+                    // ✅ Lấy HashtagService
+                    var hashtagService = Program.ServiceProvider.GetService(typeof(IHashtagService)) as IHashtagService;
+                    if (hashtagService != null)
+                    {
+                        // ✅ Tạo HashtagSearchPage và load
+                        var searchPage = new WinForms.UserControls.Social.HashtagSearchPage(hashtagService, hashtag);
+                        mf.LoadPage(searchPage);
+                        
+                        System.Diagnostics.Debug.WriteLine($"✅ Đã mở HashtagSearchPage cho #{hashtag}");
+                    }
+                    else
+                    {
+                        MessageBox.Show(
+                            "Không thể tải dịch vụ tìm kiếm hashtag",
+                            "Lỗi",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Error
+                        );
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi mở tìm kiếm: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                System.Diagnostics.Debug.WriteLine($"❌ Lỗi OpenHashtagSearch: {ex.Message}\n{ex.StackTrace}");
+            }
+        }
+
+        /// <summary>
+        /// ✅ MỚI: Tách hashtag từ nội dung
+        /// </summary>
+        private List<string> ExtractHashtags(string content)
+        {
+            if (string.IsNullOrEmpty(content))
+                return new List<string>();
+
+            var regex = new System.Text.RegularExpressions.Regex(@"#([\p{L}\p{N}_]+)");
+            var matches = regex.Matches(content);
+
+            return matches.Cast<System.Text.RegularExpressions.Match>()
+                         .Select(m => m.Groups[1].Value.ToLower())
+                         .Distinct()
+                         .ToList();
         }
 
         private void PostCardControl_Load(object sender, EventArgs e)

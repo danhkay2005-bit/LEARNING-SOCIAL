@@ -18,11 +18,13 @@ namespace StudyApp.BLL.Services.Social
     public class ChiaSeBaiDangService :IChiaSeBaiDangService
     {
         private readonly SocialDbContext _context;
+        private readonly UserDbContext _userContext;
         private readonly IMapper _mapper;
 
-        public ChiaSeBaiDangService(SocialDbContext context, IMapper mapper)
+        public ChiaSeBaiDangService(SocialDbContext context, UserDbContext userContext, IMapper mapper)
         {
             _context = context;
+            _userContext = userContext;
             _mapper = mapper;
         }
 
@@ -214,6 +216,60 @@ namespace StudyApp.BLL.Services.Social
                 .ToListAsync();
 
             return _mapper.Map<List<ChiaSeBaiDangResponse>>(danhSachChiaSe);
+        }
+
+        public async Task<ChiaSeBaiDangResponse?> LayChiTietChiaSeTheoBaiDangMoiAsync(int maBaiDangMoi)
+        {
+            var chiaSe = await _context.ChiaSeBaiDangs
+                .Include(cs => cs.MaBaiDangGocNavigation)
+                .Include(cs => cs.MaBaiDangMoiNavigation)
+                .FirstOrDefaultAsync(cs => cs.MaBaiDangMoi == maBaiDangMoi);
+
+            if (chiaSe == null) return null;
+
+            var result = _mapper.Map<ChiaSeBaiDangResponse>(chiaSe);
+
+            // ✅ FIX: Load thông tin người CHIA SẺ (BaiDangMoi)
+            if (result.BaiDangMoi != null)
+            {
+                var nguoiChiaSe = await _userContext.NguoiDungs
+                    .Where(u => u.MaNguoiDung == result.BaiDangMoi.MaNguoiDung)
+                    .Select(u => new
+                    {
+                        u.HoVaTen,
+                        u.TenDangNhap,
+                        u.HinhDaiDien
+                    })
+                    .FirstOrDefaultAsync();
+
+                if (nguoiChiaSe != null)
+                {
+                    result.BaiDangMoi.TenNguoiDung = nguoiChiaSe.HoVaTen ?? nguoiChiaSe.TenDangNhap;
+                    result.BaiDangMoi.HinhDaiDien = nguoiChiaSe.HinhDaiDien;
+                }
+            }
+
+            // ✅ Load thông tin người đăng gốc từ UserDbContext
+            if (result.BaiDangGoc != null)
+            {
+                var nguoiDungGoc = await _userContext.NguoiDungs
+                    .Where(u => u.MaNguoiDung == result.BaiDangGoc.MaNguoiDung)
+                    .Select(u => new
+                    {
+                        u.HoVaTen,
+                        u.TenDangNhap,
+                        u.HinhDaiDien
+                    })
+                    .FirstOrDefaultAsync();
+
+                if (nguoiDungGoc != null)
+                {
+                    result.BaiDangGoc.TenNguoiDung = nguoiDungGoc.HoVaTen ?? nguoiDungGoc.TenDangNhap;
+                    result.BaiDangGoc.HinhDaiDien = nguoiDungGoc.HinhDaiDien;
+                }
+            }
+
+            return result;
         }
     }
 }

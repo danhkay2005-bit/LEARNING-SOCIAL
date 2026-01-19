@@ -51,7 +51,7 @@ namespace WinForms.UserControls.Pages
 
                 var dailyList = allQuests.Where(q => q.LoaiNhiemVu == LoaiNhiemVuEnum.HangNgay).ToList();
                 RenderDataToPanel(flpDaily, dailyList);
-
+               
                 var weeklyList = allQuests.Where(q => q.LoaiNhiemVu == LoaiNhiemVuEnum.HangTuan).ToList();
                 RenderDataToPanel(flpWeekly, weeklyList);
 
@@ -60,6 +60,8 @@ namespace WinForms.UserControls.Pages
 
                 var eventList = allQuests.Where(q => q.LoaiNhiemVu == LoaiNhiemVuEnum.SuKien).ToList();
                 RenderDataToPanel(flpEvent, eventList);
+
+              
             }
             catch (Exception ex)
             {
@@ -203,5 +205,10 @@ namespace WinForms.UserControls.Pages
             }
         }
         #endregion
+
+        public async Task RefreshQuests()
+        {
+            await LoadAllQuests();
+        }
     }
 }

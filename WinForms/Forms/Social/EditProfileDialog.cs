@@ -1,4 +1,4 @@
-using StudyApp.BLL.Interfaces.User;
+Ôªøusing StudyApp.BLL.Interfaces.User;
 using StudyApp.DTO;
 using StudyApp.DTO.Requests.User;
 using System;
@@ -7,23 +7,9 @@ using System.Windows.Forms;
 
 namespace WinForms.Forms.Social
 {
-    /// <summary>
-    /// ?? EDIT PROFILE DIALOG - Ch?nh s?a thÙng tin c· nh‚n
-    /// 
-    /// CH?C N?NG:
-    /// 1. S?a H? v‡ tÍn
-    /// 2. S?a Email
-    /// 3. S?a S? ?i?n tho?i
-    /// 4. S?a Ti?u s?/Bio
-    /// 5. Ch?n Gi?i tÌnh
-    /// 6. Ch?n Ng‡y sinh
-    /// 7. ??i Avatar (path)
-    /// </summary>
     public partial class EditProfileDialog : Form
     {
         private readonly IUserProfileService _userProfileService;
-
-        // Controls
         private Label? lblTitle;
         private Label? lblName;
         private TextBox? txtName;
@@ -46,7 +32,6 @@ namespace WinForms.Forms.Social
         public EditProfileDialog(IUserProfileService userProfileService)
         {
             _userProfileService = userProfileService;
-
             InitializeComponent();
             InitializeControls();
             LoadCurrentProfile();
@@ -54,12 +39,18 @@ namespace WinForms.Forms.Social
 
         private void InitializeComponent()
         {
-            this.Text = "Ch?nh s?a thÙng tin c· nh‚n";
-            this.Size = new Size(600, 650);
-            this.StartPosition = FormStartPosition.CenterParent;
-            this.FormBorderStyle = FormBorderStyle.FixedDialog;
-            this.MaximizeBox = false;
-            this.MinimizeBox = false;
+            SuspendLayout();
+            // 
+            // EditProfileDialog
+            // 
+            ClientSize = new Size(582, 603);
+            FormBorderStyle = FormBorderStyle.FixedDialog;
+            MaximizeBox = false;
+            MinimizeBox = false;
+            Name = "EditProfileDialog";
+            StartPosition = FormStartPosition.CenterParent;
+            Text = "Ch·ªânh S·ª≠a Th√¥ng Tin C√° Nh√¢n";
+            ResumeLayout(false);
         }
 
         private void InitializeControls()
@@ -69,10 +60,9 @@ namespace WinForms.Forms.Social
             int inputX = 180;
             int inputWidth = 370;
 
-            // ========== TITLE ==========
             lblTitle = new Label
             {
-                Text = "?? Ch?nh s?a thÙng tin c· nh‚n",
+                Text = "Ch·ªânh S·ª≠a th√¥ng tin c√° nh√¢n",
                 Location = new Point(30, y),
                 AutoSize = true,
                 Font = new Font("Segoe UI", 16F, FontStyle.Bold),
@@ -81,10 +71,9 @@ namespace WinForms.Forms.Social
             this.Controls.Add(lblTitle);
             y += 50;
 
-            // ========== H? V¿ T N ==========
             lblName = new Label
             {
-                Text = "H? v‡ tÍn:",
+                Text = "H·ªç v√† t√™n:",
                 Location = new Point(labelX, y + 5),
                 AutoSize = true,
                 Font = new Font("Segoe UI", 10F, FontStyle.Bold)
@@ -99,7 +88,6 @@ namespace WinForms.Forms.Social
             this.Controls.Add(txtName);
             y += 45;
 
-            // ========== EMAIL ==========
             lblEmail = new Label
             {
                 Text = "Email:",
@@ -117,10 +105,9 @@ namespace WinForms.Forms.Social
             this.Controls.Add(txtEmail);
             y += 45;
 
-            // ========== S? ?I?N THO?I ==========
             lblPhone = new Label
             {
-                Text = "S? ?i?n tho?i:",
+                Text = "S·ªë ƒêi·ªán Tho·∫°i:",
                 Location = new Point(labelX, y + 5),
                 AutoSize = true,
                 Font = new Font("Segoe UI", 10F, FontStyle.Bold)
@@ -135,10 +122,9 @@ namespace WinForms.Forms.Social
             this.Controls.Add(txtPhone);
             y += 45;
 
-            // ========== GI?I TÕNH ==========
             lblGender = new Label
             {
-                Text = "Gi?i tÌnh:",
+                Text = "Gi·ªõi t√≠nh:",
                 Location = new Point(labelX, y + 5),
                 AutoSize = true,
                 Font = new Font("Segoe UI", 10F, FontStyle.Bold)
@@ -150,16 +136,15 @@ namespace WinForms.Forms.Social
                 Font = new Font("Segoe UI", 10F),
                 DropDownStyle = ComboBoxStyle.DropDownList
             };
-            cboGender.Items.AddRange(new object[] { "KhÙng x·c ??nh", "Nam", "N?" });
+            cboGender.Items.AddRange(new object[] { "Kh√¥ng x√°c ƒê·ªãnh", "Nam", "N·ªØ" });
             cboGender.SelectedIndex = 0;
             this.Controls.Add(lblGender);
             this.Controls.Add(cboGender);
             y += 45;
 
-            // ========== NG¿Y SINH ==========
             lblBirthday = new Label
             {
-                Text = "Ng‡y sinh:",
+                Text = "Ng√†y sinh:",
                 Location = new Point(labelX, y + 5),
                 AutoSize = true,
                 Font = new Font("Segoe UI", 10F, FontStyle.Bold)
@@ -175,7 +160,6 @@ namespace WinForms.Forms.Social
             this.Controls.Add(dtpBirthday);
             y += 45;
 
-            // ========== AVATAR ==========
             lblAvatar = new Label
             {
                 Text = "Avatar URL:",
@@ -192,7 +176,7 @@ namespace WinForms.Forms.Social
             };
             btnBrowseAvatar = new Button
             {
-                Text = "??",
+                Text = "...",
                 Location = new Point(inputX + 290, y),
                 Width = 80,
                 Height = 25,
@@ -205,10 +189,9 @@ namespace WinForms.Forms.Social
             this.Controls.Add(btnBrowseAvatar);
             y += 45;
 
-            // ========== TI?U S?/BIO ==========
             lblBio = new Label
             {
-                Text = "Ti?u s?:",
+                Text = "Ti·ªÉu S·ª≠:",
                 Location = new Point(labelX, y + 5),
                 AutoSize = true,
                 Font = new Font("Segoe UI", 10F, FontStyle.Bold)
@@ -221,13 +204,12 @@ namespace WinForms.Forms.Social
                 Font = new Font("Segoe UI", 10F),
                 Multiline = true,
                 MaxLength = 500,
-                PlaceholderText = "Vi?t v‡i dÚng v? b?n..."
+                PlaceholderText = "Vi?t v√†i d√≤ng v? b?n..."
             };
             this.Controls.Add(lblBio);
             this.Controls.Add(txtBio);
             y += 100;
 
-            // ========== BUTTONS ==========
             btnCancel = new Button
             {
                 Text = "H?y",
@@ -245,7 +227,7 @@ namespace WinForms.Forms.Social
 
             btnSave = new Button
             {
-                Text = "?? L?u thay ??i",
+                Text = "L∆∞u Thay ƒê·ªïi",
                 Location = new Point(450, y),
                 Width = 130,
                 Height = 40,
@@ -260,43 +242,33 @@ namespace WinForms.Forms.Social
 
             this.Controls.Add(btnCancel);
             this.Controls.Add(btnSave);
-
             this.CancelButton = btnCancel;
         }
 
-        /// <summary>
-        /// ?? Load thÙng tin hi?n t?i
-        /// </summary>
         private async void LoadCurrentProfile()
         {
             if (UserSession.CurrentUser == null) return;
 
-            // Load thÙng tin c? b?n t? UserSession
             if (txtName != null) txtName.Text = UserSession.CurrentUser.HoVaTen ?? "";
             if (txtEmail != null) txtEmail.Text = UserSession.CurrentUser.Email ?? "";
             if (txtPhone != null) txtPhone.Text = UserSession.CurrentUser.SoDienThoai ?? "";
             if (txtAvatar != null) txtAvatar.Text = UserSession.CurrentUser.HinhDaiDien ?? "";
 
-            // ? FIX: Load thÙng tin ??y ?? t? API (bao g?m Gi?i tÌnh, Ng‡y sinh, Ti?u s?)
             try
             {
                 var fullProfile = await _userProfileService.GetProfileAsync(UserSession.CurrentUser.MaNguoiDung);
                 if (fullProfile != null)
                 {
-                    // Load Gi?i tÌnh
                     if (cboGender != null && fullProfile.GioiTinh.HasValue)
                     {
-                        // GioiTinh t? API: 0 = KhÙng x·c ??nh, 1 = Nam, 2 = N?
-                        cboGender.SelectedIndex = (int)fullProfile.GioiTinh.Value; // ? S?A: Cast sang int
+                        cboGender.SelectedIndex = (int)fullProfile.GioiTinh.Value;
                     }
 
-                    // Load Ng‡y sinh
                     if (dtpBirthday != null && fullProfile.NgaySinh.HasValue)
                     {
                         dtpBirthday.Value = fullProfile.NgaySinh.Value.ToDateTime(TimeOnly.MinValue);
                     }
 
-                    // Load Ti?u s?
                     if (txtBio != null && !string.IsNullOrEmpty(fullProfile.TieuSu))
                     {
                         txtBio.Text = fullProfile.TieuSu;
@@ -305,19 +277,15 @@ namespace WinForms.Forms.Social
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"?? L?i load profile ??y ??: {ex.Message}");
-                // KhÙng hi?n l?i cho user, vÏ thÙng tin c? b?n ?„ load
+                System.Diagnostics.Debug.WriteLine($"Lo·∫°i load profile: {ex.Message}");
             }
         }
 
-        /// <summary>
-        /// ?? Ch?n file avatar
-        /// </summary>
         private void BtnBrowseAvatar_Click(object? sender, EventArgs e)
         {
             using var openFileDialog = new OpenFileDialog
             {
-                Title = "Ch?n ?nh ??i di?n",
+                Title = "Ch·ªçn ·∫¢nh ƒê·∫°i Di·ªán",
                 Filter = "Image Files|*.jpg;*.jpeg;*.png;*.gif;*.bmp",
                 FilterIndex = 1
             };
@@ -331,37 +299,32 @@ namespace WinForms.Forms.Social
             }
         }
 
-        /// <summary>
-        /// ?? L?u thay ??i
-        /// </summary>
         private async void BtnSave_Click(object? sender, EventArgs e)
         {
             if (UserSession.CurrentUser == null)
             {
-                MessageBox.Show("B?n ch?a ??ng nh?p!", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("B·∫°n Ch∆∞a ƒêƒÉng Nh·∫≠p!", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
             if (btnSave != null)
             {
                 btnSave.Enabled = false;
-                btnSave.Text = "? ?ang l?u...";
+                btnSave.Text = "ƒêang L∆∞u...";
             }
 
             try
             {
-                // Validate
                 if (!ValidateInput())
                 {
                     if (btnSave != null)
                     {
                         btnSave.Enabled = true;
-                        btnSave.Text = "?? L?u thay ??i";
+                        btnSave.Text = "L∆∞u Thay ƒê·ªïi";
                     }
                     return;
                 }
 
-                // T?o request
                 var request = new CapNhatHoSoRequest
                 {
                     HoVaTen = txtName?.Text?.Trim(),
@@ -373,7 +336,6 @@ namespace WinForms.Forms.Social
                     NgaySinh = dtpBirthday != null ? DateOnly.FromDateTime(dtpBirthday.Value) : null
                 };
 
-                // G?i API
                 var success = await _userProfileService.UpdateProfileAsync(
                     UserSession.CurrentUser.MaNguoiDung,
                     request
@@ -381,15 +343,14 @@ namespace WinForms.Forms.Social
 
                 if (success)
                 {
-                    // C?p nh?t UserSession (c?n reload t? DB ho?c update local)
                     if (request.HoVaTen != null) UserSession.CurrentUser.HoVaTen = request.HoVaTen;
                     if (request.Email != null) UserSession.CurrentUser.Email = request.Email;
                     if (request.SoDienThoai != null) UserSession.CurrentUser.SoDienThoai = request.SoDienThoai;
                     if (request.HinhDaiDien != null) UserSession.CurrentUser.HinhDaiDien = request.HinhDaiDien;
 
                     MessageBox.Show(
-                        "? C?p nh?t thÙng tin th‡nh cÙng!",
-                        "Th‡nh cÙng",
+                        "C·∫≠p nh·∫≠t th√¥ng tin th√†nh c√¥ng!",
+                        "Th√†nh c√¥ng",
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Information
                     );
@@ -400,8 +361,8 @@ namespace WinForms.Forms.Social
                 else
                 {
                     MessageBox.Show(
-                        "? C?p nh?t th?t b?i. Vui lÚng th? l?i!",
-                        "L?i",
+                        "C·∫≠p nh·∫≠t th·∫•t b·∫°i. vui l√≤ng th·ª≠ l·∫°i!",
+                        "L·ªói",
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Error
                     );
@@ -410,8 +371,8 @@ namespace WinForms.Forms.Social
             catch (Exception ex)
             {
                 MessageBox.Show(
-                    $"L?i: {ex.Message}",
-                    "L?i",
+                    $"L·ªói: {ex.Message}",
+                    "L·ªói",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error
                 );
@@ -421,39 +382,33 @@ namespace WinForms.Forms.Social
                 if (btnSave != null)
                 {
                     btnSave.Enabled = true;
-                    btnSave.Text = "?? L?u thay ??i";
+                    btnSave.Text = "L∆∞u Thay ƒê·ªïi";
                 }
             }
         }
 
-        /// <summary>
-        /// ?? Validate input
-        /// </summary>
         private bool ValidateInput()
         {
-            // Ki?m tra H? v‡ tÍn
             if (txtName != null && string.IsNullOrWhiteSpace(txtName.Text))
             {
-                MessageBox.Show("Vui lÚng nh?p h? v‡ tÍn!", "C?nh b·o", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Vui l√≤ng nh·∫≠p h·ªç v√† t√™n!", "C·∫£nh b√°o", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 txtName.Focus();
                 return false;
             }
 
-            // Ki?m tra Email (n?u cÛ)
             if (txtEmail != null && !string.IsNullOrWhiteSpace(txtEmail.Text))
             {
                 if (!IsValidEmail(txtEmail.Text))
                 {
-                    MessageBox.Show("Email khÙng h?p l?!", "C?nh b·o", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("Email kh√¥ng h?p l?!", "C?nh b√°o", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     txtEmail.Focus();
                     return false;
                 }
             }
 
-            // Ki?m tra Ti?u s? (max 500)
             if (txtBio != null && txtBio.Text.Length > 500)
             {
-                MessageBox.Show("Ti?u s? t?i ?a 500 k˝ t?!", "C?nh b·o", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Ti·ªÉu s·ª≠ t·ªëi ƒëa 500 k√≠ t·ª±!", "C·∫£nh b√°o", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 txtBio.Focus();
                 return false;
             }
@@ -461,9 +416,6 @@ namespace WinForms.Forms.Social
             return true;
         }
 
-        /// <summary>
-        /// ?? Ki?m tra email h?p l?
-        /// </summary>
         private bool IsValidEmail(string email)
         {
             try

@@ -14,8 +14,10 @@ namespace StudyApp.BLL.Mappings.User
                 .ForMember(d => d.TienDoHienTai, o => o.MapFrom(s => s.TienDoHienTai ?? 0))
                 .ForMember(d => d.DaHoanThanh, o => o.MapFrom(s => s.DaHoanThanh ?? false))
                 .ForMember(d => d.DaNhanThuong, o => o.MapFrom(s => s.DaNhanThuong ?? false))
-
+                
+                .ForMember(d => d.MaNhiemVu, o => o.MapFrom(s => s.MaNhiemVuNavigation.MaNhiemVu))
                 .ForMember(d => d.TenNhiemVu, o => o.MapFrom(s => s.MaNhiemVuNavigation.TenNhiemVu))
+                
                 .ForMember(d => d.MoTa, o => o.MapFrom(s => s.MaNhiemVuNavigation.MoTa))
                 .ForMember(d => d.BieuTuong, o => o.MapFrom(s => s.MaNhiemVuNavigation.BieuTuong))
                 .ForMember(d => d.DieuKienDatDuoc, o => o.MapFrom(s => s.MaNhiemVuNavigation.DieuKienDatDuoc))

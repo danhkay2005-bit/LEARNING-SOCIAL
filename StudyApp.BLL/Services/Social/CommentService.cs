@@ -14,37 +14,49 @@ namespace StudyApp.BLL.Services.Social
 {
     public class CommentService : ICommentService
     {
-        private readonly SocialDbContext _context;
+        private readonly SocialDbContext _socialContext;
+        private readonly UserDbContext _userContext;
         private readonly IMapper _mapper;
 
-        public CommentService(SocialDbContext context, IMapper mapper)
+        public CommentService(SocialDbContext socialContext, UserDbContext userContext, IMapper mapper)
         {
-            _context = context;
+            _socialContext = socialContext;
+            _userContext = userContext;
             _mapper = mapper;
         }
 
         public async Task<BinhLuanBaiDangResponse> CreateCommentAsync(TaoBinhLuanRequest request)
         {
-            using var transaction = await _context.Database.BeginTransactionAsync();
+            using var transaction = await _socialContext.Database.BeginTransactionAsync();
             try
             {
                 var comment = _mapper.Map<BinhLuanBaiDang>(request);
                 comment.ThoiGianTao = DateTime.Now;
                 comment.DaXoa = false;
 
-                _context.Set<BinhLuanBaiDang>().Add(comment);
+                _socialContext.Set<BinhLuanBaiDang>().Add(comment);
 
                 // Tăng số lượng bình luận của bài đăng
-                var post = await _context.Set<BaiDang>().FindAsync(request.MaBaiDang);
+                var post = await _socialContext.Set<BaiDang>().FindAsync(request.MaBaiDang);
                 if (post != null)
                 {
                     post.SoBinhLuan = (post.SoBinhLuan ?? 0) + 1;
                 }
 
-                await _context.SaveChangesAsync();
+                await _socialContext.SaveChangesAsync();
                 await transaction.CommitAsync();
 
-                return _mapper.Map<BinhLuanBaiDangResponse>(comment);
+                // Lấy thông tin người dùng để trả về
+                var response = _mapper.Map<BinhLuanBaiDangResponse>(comment);
+                var nguoiDung = await _userContext.NguoiDungs.FindAsync(comment.MaNguoiDung);
+                if (nguoiDung != null)
+                {
+                    response.TenDangNhap = nguoiDung.TenDangNhap;
+                    response.HoVaTen = nguoiDung.HoVaTen;
+                    response.HinhDaiDien = nguoiDung.HinhDaiDien;
+                }
+
+                return response;
             }
             catch
             {
@@ -55,7 +67,7 @@ namespace StudyApp.BLL.Services.Social
 
         public async Task<BinhLuanBaiDangResponse> UpdateCommentAsync(int commentId, CapNhatBinhLuanRequest request)
         {
-            var existing = await _context.Set<BinhLuanBaiDang>()
+            var existing = await _socialContext.Set<BinhLuanBaiDang>()
                 .FirstOrDefaultAsync(x => x.MaBinhLuan == commentId && x.DaXoa != true);
 
             if (existing == null)
@@ -65,17 +77,27 @@ namespace StudyApp.BLL.Services.Social
             existing.ThoiGianSua = DateTime.Now;
             existing.DaChinhSua = true;
 
-            await _context.SaveChangesAsync();
+            await _socialContext.SaveChangesAsync();
 
-            return _mapper.Map<BinhLuanBaiDangResponse>(existing);
+            // Lấy thông tin người dùng để trả về
+            var response = _mapper.Map<BinhLuanBaiDangResponse>(existing);
+            var nguoiDung = await _userContext.NguoiDungs.FindAsync(existing.MaNguoiDung);
+            if (nguoiDung != null)
+            {
+                response.TenDangNhap = nguoiDung.TenDangNhap;
+                response.HoVaTen = nguoiDung.HoVaTen;
+                response.HinhDaiDien = nguoiDung.HinhDaiDien;
+            }
+
+            return response;
         }
 
         public async Task<bool> DeleteCommentAsync(int commentId)
         {
-            using var transaction = await _context.Database.BeginTransactionAsync();
+            using var transaction = await _socialContext.Database.BeginTransactionAsync();
             try
             {
-                var comment = await _context.Set<BinhLuanBaiDang>().FindAsync(commentId);
+                var comment = await _socialContext.Set<BinhLuanBaiDang>().FindAsync(commentId);
                 if (comment == null)
                     return false;
 
@@ -84,13 +106,13 @@ namespace StudyApp.BLL.Services.Social
                 comment.ThoiGianSua = DateTime.Now;
 
                 // Giảm số lượng bình luận của bài đăng
-                var post = await _context.Set<BaiDang>().FindAsync(comment.MaBaiDang);
+                var post = await _socialContext.Set<BaiDang>().FindAsync(comment.MaBaiDang);
                 if (post != null && post.SoBinhLuan > 0)
                 {
                     post.SoBinhLuan--;
                 }
 
-                await _context.SaveChangesAsync();
+                await _socialContext.SaveChangesAsync();
                 await transaction.CommitAsync();
 
                 return true;
@@ -104,22 +126,88 @@ namespace StudyApp.BLL.Services.Social
 
         public async Task<List<BinhLuanBaiDangResponse>> GetCommentsByPostAsync(int postId)
         {
-            var comments = await _context.Set<BinhLuanBaiDang>()
-                .Where(x => x.MaBaiDang == postId && x.DaXoa != true && x.MaBinhLuanCha == null) // Chỉ lấy comment gốc
+            // Lấy danh sách bình luận
+            var comments = await _socialContext.Set<BinhLuanBaiDang>()
+                .Where(x => x.MaBaiDang == postId && x.DaXoa != true && x.MaBinhLuanCha == null)
                 .OrderByDescending(x => x.ThoiGianTao)
                 .ToListAsync();
 
-            return _mapper.Map<List<BinhLuanBaiDangResponse>>(comments);
+            if (!comments.Any())
+                return new List<BinhLuanBaiDangResponse>();
+
+            // Lấy danh sách MaNguoiDung
+            var danhSachMaNguoiDung = comments.Select(x => x.MaNguoiDung).Distinct().ToList();
+
+            // Lấy thông tin người dùng
+            var thongTinNguoiDung = await _userContext.NguoiDungs
+                .Where(x => danhSachMaNguoiDung.Contains(x.MaNguoiDung))
+                .Select(x => new
+                {
+                    x.MaNguoiDung,
+                    x.TenDangNhap,
+                    x.HoVaTen,
+                    x.HinhDaiDien
+                })
+                .ToListAsync();
+
+            // Map và join thông tin
+            var result = comments.Select(comment =>
+            {
+                var response = _mapper.Map<BinhLuanBaiDangResponse>(comment);
+                var nguoiDung = thongTinNguoiDung.FirstOrDefault(x => x.MaNguoiDung == comment.MaNguoiDung);
+                if (nguoiDung != null)
+                {
+                    response.TenDangNhap = nguoiDung.TenDangNhap;
+                    response.HoVaTen = nguoiDung.HoVaTen;
+                    response.HinhDaiDien = nguoiDung.HinhDaiDien;
+                }
+                return response;
+            }).ToList();
+
+            return result;
         }
 
         public async Task<List<BinhLuanBaiDangResponse>> GetRepliesAsync(int parentCommentId)
         {
-            var replies = await _context.Set<BinhLuanBaiDang>()
+            // Lấy danh sách reply
+            var replies = await _socialContext.Set<BinhLuanBaiDang>()
                 .Where(x => x.MaBinhLuanCha == parentCommentId && x.DaXoa != true)
-                .OrderBy(x => x.ThoiGianTao) // Reply hiển thị từ cũ đến mới
+                .OrderBy(x => x.ThoiGianTao)
                 .ToListAsync();
 
-            return _mapper.Map<List<BinhLuanBaiDangResponse>>(replies);
+            if (!replies.Any())
+                return new List<BinhLuanBaiDangResponse>();
+
+            // Lấy danh sách MaNguoiDung
+            var danhSachMaNguoiDung = replies.Select(x => x.MaNguoiDung).Distinct().ToList();
+
+            // Lấy thông tin người dùng
+            var thongTinNguoiDung = await _userContext.NguoiDungs
+                .Where(x => danhSachMaNguoiDung.Contains(x.MaNguoiDung))
+                .Select(x => new
+                {
+                    x.MaNguoiDung,
+                    x.TenDangNhap,
+                    x.HoVaTen,
+                    x.HinhDaiDien
+                })
+                .ToListAsync();
+
+            // Map và join thông tin
+            var result = replies.Select(reply =>
+            {
+                var response = _mapper.Map<BinhLuanBaiDangResponse>(reply);
+                var nguoiDung = thongTinNguoiDung.FirstOrDefault(x => x.MaNguoiDung == reply.MaNguoiDung);
+                if (nguoiDung != null)
+                {
+                    response.TenDangNhap = nguoiDung.TenDangNhap;
+                    response.HoVaTen = nguoiDung.HoVaTen;
+                    response.HinhDaiDien = nguoiDung.HinhDaiDien;
+                }
+                return response;
+            }).ToList();
+
+            return result;
         }
     }
 }
