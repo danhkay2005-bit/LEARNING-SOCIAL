@@ -251,7 +251,7 @@ namespace WinForms.Forms
             });
 
             AddMenuButton("🏪 Quản lý Cửa hàng", (s, e) => {
-                // LoadPage(Program.ServiceProvider.GetRequiredService<QuanLyCuaHangPage>());
+                 LoadPage(Program.ServiceProvider.GetRequiredService<QuanLyCuaHangAdminPage>());
             });
 
         }
