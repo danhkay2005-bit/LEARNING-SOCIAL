@@ -46,9 +46,9 @@
             // btnOK
             // 
             btnOK.Dock = DockStyle.Bottom;
-            btnOK.Location = new Point(0, 427);
+            btnOK.Location = new Point(0, 291);
             btnOK.Name = "btnOK";
-            btnOK.Size = new Size(800, 23);
+            btnOK.Size = new Size(602, 39);
             btnOK.TabIndex = 1;
             btnOK.Text = "OK";
             btnOK.UseVisualStyleBackColor = true;
@@ -59,7 +59,7 @@
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.Azure;
-            ClientSize = new Size(800, 450);
+            ClientSize = new Size(602, 330);
             Controls.Add(btnOK);
             Controls.Add(lblMessage);
             FormBorderStyle = FormBorderStyle.None;

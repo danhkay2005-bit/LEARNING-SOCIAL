@@ -239,7 +239,7 @@ namespace WinForms.Forms
             });
 
             AddMenuButton("👥 Quản lý Người dùng", (s, e) => {
-                // LoadPage(Program.ServiceProvider.GetRequiredService<QuanLyNguoiDungPage>());
+                 LoadPage(Program.ServiceProvider.GetRequiredService<QuanLyNguoiDungAdminPage>());
             });
 
             AddMenuButton("📚 Quản lý Bộ đề", (s, e) => {
@@ -251,7 +251,7 @@ namespace WinForms.Forms
             });
 
             AddMenuButton("🏪 Quản lý Cửa hàng", (s, e) => {
-                // LoadPage(Program.ServiceProvider.GetRequiredService<QuanLyCuaHangPage>());
+                 LoadPage(Program.ServiceProvider.GetRequiredService<QuanLyCuaHangAdminPage>());
             });
 
         }
