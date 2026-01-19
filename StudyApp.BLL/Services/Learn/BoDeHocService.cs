@@ -17,7 +17,6 @@ namespace StudyApp.BLL.Services.Learn
         private readonly LearningDbContext _context;
         private readonly IMapper _mapper;
         private static readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
-        // ✅ THÊM CÁC FIELD NÀY
         private readonly IGamificationService _gamificationService;
         private readonly IDailyStreakService _dailyStreakService;
 
