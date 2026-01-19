@@ -126,10 +126,11 @@ namespace StudyApp.BLL.Services.Social
 
         public async Task<List<BinhLuanBaiDangResponse>> GetCommentsByPostAsync(int postId)
         {
-            // Lấy danh sách bình luận
+            // ⭐ Lấy TẤT CẢ bình luận (cả parent và replies) của bài đăng
             var comments = await _socialContext.Set<BinhLuanBaiDang>()
-                .Where(x => x.MaBaiDang == postId && x.DaXoa != true && x.MaBinhLuanCha == null)
-                .OrderByDescending(x => x.ThoiGianTao)
+                .Where(x => x.MaBaiDang == postId && x.DaXoa != true)
+                .OrderBy(x => x.MaBinhLuanCha.HasValue ? 1 : 0)  // Parent trước, reply sau
+                .ThenByDescending(x => x.ThoiGianTao)            // Sắp xếp theo thời gian
                 .ToListAsync();
 
             if (!comments.Any())

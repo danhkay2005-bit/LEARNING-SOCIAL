@@ -21,6 +21,7 @@ namespace WinForms.UserControls.Components.Social
 
         private BinhLuanBaiDangResponse? _comment;
         private LoaiReactionEnum? _currentReaction = null;
+        private bool _isProcessingReaction = false;  // Cờ để ngăn click quá nhanh
 
         // Controls
         private PictureBox? pbAvatar;
@@ -72,14 +73,14 @@ namespace WinForms.UserControls.Components.Social
             lblReactionCount = new Label { Location = new Point(60, 100), AutoSize = true, Text = "", Font = new Font("Segoe UI", 8F), ForeColor = Color.Gray, Cursor = Cursors.Hand, Visible = false };
             lblReactionCount.Click += LblReactionCount_Click;
 
-            btnReact = new Button { Location = new Point(60, 120), Size = new Size(85, 24), Text = "Like", Font = new Font("Segoe UI", 8F), FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, BackColor = Color.White, ForeColor = Color.FromArgb(100, 100, 100), TabStop = false };
+            btnReact = new Button { Location = new Point(60, 120), Size = new Size(85, 24), Text = "Like", Font = new Font("Segoe UI", 8F, FontStyle.Bold), FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, BackColor = Color.White, ForeColor = Color.FromArgb(100, 100, 100), TabStop = false };
             btnReact.FlatAppearance.BorderSize = 0;
             btnReact.FlatAppearance.MouseOverBackColor = Color.FromArgb(240, 242, 245);
             btnReact.Click += BtnReact_Click;
             btnReact.MouseEnter += BtnReact_MouseEnter;
             btnReact.MouseLeave += BtnReact_MouseLeave;
 
-            btnReply = new Button { Location = new Point(155, 120), Size = new Size(85, 24), Text = "Reply", Font = new Font("Segoe UI", 8F), FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, BackColor = Color.White, ForeColor = Color.FromArgb(100, 100, 100), TabStop = false };
+            btnReply = new Button { Location = new Point(155, 120), Size = new Size(85, 24), Text = "Reply", Font = new Font("Segoe UI", 8F, FontStyle.Bold), FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, BackColor = Color.White, ForeColor = Color.FromArgb(100, 100, 100), TabStop = false };
             btnReply.FlatAppearance.BorderSize = 0;
             btnReply.FlatAppearance.MouseOverBackColor = Color.FromArgb(240, 242, 245);
             btnReply.Click += BtnReply_Click;
@@ -93,6 +94,10 @@ namespace WinForms.UserControls.Components.Social
             this.Controls.Add(lblReactionCount);
             this.Controls.Add(btnReact);
             this.Controls.Add(btnReply);
+            
+            // Đảm bảo các button luôn ở trên cùng
+            btnReact.BringToFront();
+            btnReply.BringToFront();
 
             this.ResumeLayout(false);
             this.PerformLayout();
@@ -184,6 +189,8 @@ namespace WinForms.UserControls.Components.Social
             }
             
  
+>>>>>>> c4e98d691797eef6de89f2da63b422497f2b8151
+>>>>>>> c4e98d691797eef6de89f2da63b422497f2b8151
             if (lblContent != null) 
                 lblContent.Text = _comment.NoiDung ?? "";
             
@@ -266,28 +273,66 @@ namespace WinForms.UserControls.Components.Social
 
         private async void HandleReactionClick(LoaiReactionEnum reactionType)
         {
-            if (_comment == null || !UserSession.IsLoggedIn || UserSession.CurrentUser == null || _reactionBinhLuanService == null) return;
+            if (_comment == null || !UserSession.IsLoggedIn || UserSession.CurrentUser == null || _reactionBinhLuanService == null) 
+                return;
+            
+            // Ngăn click quá nhanh
+            if (_isProcessingReaction)
+                return;
+            
+            _isProcessingReaction = true;
             HideReactionPicker();
+            
             try
             {
                 if (_currentReaction == reactionType)
                 {
-                    await _reactionBinhLuanService.XoaReactionAsync(new XoaReactionBinhLuanRequest { MaBinhLuan = _comment.MaBinhLuan, MaNguoiDung = UserSession.CurrentUser.MaNguoiDung });
+                    await _reactionBinhLuanService.XoaReactionAsync(new XoaReactionBinhLuanRequest 
+                    { 
+                        MaBinhLuan = _comment.MaBinhLuan, 
+                        MaNguoiDung = UserSession.CurrentUser.MaNguoiDung 
+                    });
                     _currentReaction = null;
-                    if (btnReact != null) { btnReact.Text = "Like"; btnReact.BackColor = Color.White; btnReact.ForeColor = Color.FromArgb(100, 100, 100); }
-                    if (_comment.SoLuotReactions > 0) _comment.SoLuotReactions--;
+                    if (btnReact != null) 
+                    { 
+                        btnReact.Text = "Like"; 
+                        btnReact.BackColor = Color.White; 
+                        btnReact.ForeColor = Color.FromArgb(100, 100, 100); 
+                    }
+                    if (_comment.SoLuotReactions > 0) 
+                        _comment.SoLuotReactions--;
                 }
                 else
                 {
-                    await _reactionBinhLuanService.TaoHoacCapNhatReactionAsync(new TaoHoacCapNhatReactionBinhLuanRequest { MaBinhLuan = _comment.MaBinhLuan, MaNguoiDung = UserSession.CurrentUser.MaNguoiDung, LoaiReaction = reactionType });
+                    await _reactionBinhLuanService.TaoHoacCapNhatReactionAsync(new TaoHoacCapNhatReactionBinhLuanRequest 
+                    { 
+                        MaBinhLuan = _comment.MaBinhLuan, 
+                        MaNguoiDung = UserSession.CurrentUser.MaNguoiDung, 
+                        LoaiReaction = reactionType 
+                    });
                     var oldReaction = _currentReaction;
                     _currentReaction = reactionType;
-                    if (btnReact != null) { btnReact.Text = GetReactionName(reactionType); btnReact.BackColor = Color.FromArgb(230, 240, 255); btnReact.ForeColor = Color.FromArgb(24, 119, 242); }
-                    if (oldReaction == null) _comment.SoLuotReactions++;
+                    if (btnReact != null) 
+                    { 
+                        btnReact.Text = GetReactionName(reactionType); 
+                        btnReact.BackColor = Color.FromArgb(230, 240, 255); 
+                        btnReact.ForeColor = Color.FromArgb(24, 119, 242); 
+                    }
+                    if (oldReaction == null) 
+                        _comment.SoLuotReactions++;
                 }
                 UpdateReactionDisplay();
             }
-            catch (Exception ex) { MessageBox.Show($"Lỗi: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+            catch (Exception ex) 
+            { 
+                MessageBox.Show($"Lỗi khi thả cảm xúc: {ex.Message}\n\nVui lòng thử lại sau.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error); 
+            }
+            finally
+            {
+                // Delay nhỏ trước khi cho phép click lại
+                await System.Threading.Tasks.Task.Delay(500);
+                _isProcessingReaction = false;
+            }
         }
 
         private void BtnMenu_Click(object? sender, EventArgs e) { if (_comment == null || btnMenu == null) return; var menu = new ContextMenuStrip(); menu.Items.Add("?? Chỉnh sửa", null, (s, ev) => OnEditClicked?.Invoke(_comment.MaBinhLuan)); menu.Items.Add(" Xóa", null, (s, ev) => OnDeleteClicked?.Invoke(_comment.MaBinhLuan)); menu.Show(btnMenu, new Point(0, btnMenu.Height)); }

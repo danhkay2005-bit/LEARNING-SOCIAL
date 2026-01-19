@@ -48,7 +48,7 @@ namespace WinForms.Forms.Social
             _reactionBinhLuanService = reactionBinhLuanService;
 
             InitializeControls();
-            LoadCommentsAsync();
+            _ = LoadCommentsAsync(); // ⭐ Fire-and-forget pattern (constructor không thể async)
         }
 
         private void InitializeControls()
@@ -195,7 +195,7 @@ namespace WinForms.Forms.Social
             this.ResumeLayout(false);
         }
 
-        private async void LoadCommentsAsync()
+        private async Task LoadCommentsAsync()
         {
             if (flowComments == null) return;
 
@@ -232,17 +232,34 @@ namespace WinForms.Forms.Social
                     return;
                 }
 
-                // Tách comments thành cha và con
-                var parentComments = comments.Where(c => c.MaBinhLuanCha == null).ToList();
-                var replyComments = comments.Where(c => c.MaBinhLuanCha != null).ToList();
+                // ⭐ Tách comments thành parent và replies
+                var parentComments = comments
+                    .Where(c => c.MaBinhLuanCha == null)
+                    .OrderByDescending(c => c.ThoiGianTao)  // Parent mới nhất lên trên
+                    .ToList();
+                    
+                var replyComments = comments
+                    .Where(c => c.MaBinhLuanCha != null)
+                    .OrderBy(c => c.ThoiGianTao)  // Reply cũ nhất lên trước
+                    .ToList();
+
+                System.Diagnostics.Debug.WriteLine($"=== LoadComments Debug ===");
+                System.Diagnostics.Debug.WriteLine($"Total comments: {comments.Count}");
+                System.Diagnostics.Debug.WriteLine($"Parent comments: {parentComments.Count}");
+                System.Diagnostics.Debug.WriteLine($"Reply comments: {replyComments.Count}");
 
                 foreach (var comment in parentComments)
                 {
                     // Thêm comment cha
                     await AddCommentCardAsync(comment, isReply: false);
 
-                    // Thêm các replies của comment này
-                    var replies = replyComments.Where(r => r.MaBinhLuanCha == comment.MaBinhLuan).ToList();
+                    // ⭐ Thêm TẤT CẢ các replies của comment này
+                    var replies = replyComments
+                        .Where(r => r.MaBinhLuanCha == comment.MaBinhLuan)
+                        .ToList();
+                        
+                    System.Diagnostics.Debug.WriteLine($"Comment {comment.MaBinhLuan} has {replies.Count} replies");
+                    
                     foreach (var reply in replies)
                     {
                         await AddCommentCardAsync(reply, isReply: true);
@@ -252,6 +269,7 @@ namespace WinForms.Forms.Social
             catch (Exception ex)
             {
                 flowComments.Controls.Clear();
+                System.Diagnostics.Debug.WriteLine($"Error loading comments: {ex.Message}");
                 MessageBox.Show($"Lỗi khi tải bình luận: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
@@ -263,7 +281,8 @@ namespace WinForms.Forms.Social
             var commentCard = new CommentCardControl(_commentService, _reactionBinhLuanService)
             {
                 Width = isReply ? flowComments.Width - 70 : flowComments.Width - 30,
-                Margin = isReply ? new Padding(40, 5, 5, 5) : new Padding(5)
+                Margin = isReply ? new Padding(40, 5, 5, 5) : new Padding(5),
+                BackColor = isReply ? Color.FromArgb(248, 249, 250) : Color.White  // ⭐ Reply có màu khác
             };
 
             commentCard.LoadComment(comment);
@@ -271,9 +290,13 @@ namespace WinForms.Forms.Social
             // Event handlers
             commentCard.OnReplyClicked += (commentId) =>
             {
-                // Nếu là reply thì reply về comment cha
+                // ⭐ Nếu là reply thì reply về comment cha gốc
                 var replyToId = comment.MaBinhLuanCha ?? commentId;
-                SetReplyMode(replyToId, comment.HoVaTen ?? comment.TenDangNhap ?? "Người dùng");
+                var replyToName = comment.HoVaTen ?? comment.TenDangNhap ?? "Người dùng";
+                
+                System.Diagnostics.Debug.WriteLine($"Reply clicked: CommentId={commentId}, ParentId={replyToId}, Name={replyToName}");
+                
+                SetReplyMode(replyToId, replyToName);
             };
 
             commentCard.OnEditClicked += async (commentId) =>
@@ -288,7 +311,7 @@ namespace WinForms.Forms.Social
                             NoiDung = editDialog.InputText
                         });
 
-                        LoadCommentsAsync();
+                        await LoadCommentsAsync();
                     }
                     catch (Exception ex)
                     {
@@ -311,7 +334,7 @@ namespace WinForms.Forms.Social
                     try
                     {
                         await _commentService.DeleteCommentAsync(commentId);
-                        LoadCommentsAsync();
+                        await LoadCommentsAsync();
                     }
                     catch (Exception ex)
                     {
@@ -367,7 +390,7 @@ namespace WinForms.Forms.Social
 
                 txtComment.Clear();
                 CancelReplyMode();
-                LoadCommentsAsync();
+                await LoadCommentsAsync(); // ⭐ THÊM AWAIT để đợi reload comments
             }
             catch (Exception ex)
             {
