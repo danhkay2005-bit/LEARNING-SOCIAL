@@ -51,7 +51,38 @@ namespace WinForms.Forms
             }
             else
             {
+
                 RenderUserMenu();
+
+                AddMenuButton("🏠 Trang chủ", (s, e) => 
+                {
+                    if (Program.ServiceProvider == null) return;
+                    LoadPage(Program.ServiceProvider.GetRequiredService<TrangChuPage>());
+                });
+                AddMenuButton("👤 Thông tin cá nhân", (s, e) => LoadPage(new ThongTinCaNhanPage()));
+                AddMenuButton("📚 Học tập", (s, e) => 
+                {
+                    if (Program.ServiceProvider == null) return;
+                    LoadPage(Program.ServiceProvider.GetRequiredService<HocTapPage>());
+                });
+
+                AddMenuButton("🌐 Mạng xã hội", BtnMangXaHoi_Click);
+
+                AddMenuButton("🛒 Cửa hàng", (s, e) => LoadPage(Program.ServiceProvider!.GetRequiredService<CuaHangPage>()));
+                AddMenuButton("Kho vật phẩm", (s, e) => LoadPage(Program.ServiceProvider!.GetRequiredService<KhoVatPhamPage>()));
+                AddMenuButton("🗓 Điểm Danh", (s, e) => LoadPage(Program.ServiceProvider!.GetRequiredService<DiemDanhPage>()));
+                AddMenuButton("🏅 Thành Tựu", (s, e) => 
+                {
+                    if (Program.ServiceProvider == null) return;
+                    LoadPage(Program.ServiceProvider.GetRequiredService<AchievementsPage>());
+                });
+                AddMenuButton("📋 Nhiệm Vụ", (s, e) => 
+                {
+                    if (Program.ServiceProvider == null) return;
+                    LoadPage(Program.ServiceProvider.GetRequiredService<TaskPage>());
+                });
+                                                                        
+                AddMenuButton("🚪 Đăng xuất", BtnDangXuat_Click);
             }
 
             // 2. Nút chung
@@ -255,7 +286,6 @@ namespace WinForms.Forms
                 // LoadPage(Program.ServiceProvider.GetRequiredService<QuanLyCuaHangPage>());
             });
 
-            AddMenuButton("⚙️ Cài đặt hệ thống", (s, e) => LoadPage(new CaiDatPage()));
         }
     }
 }
