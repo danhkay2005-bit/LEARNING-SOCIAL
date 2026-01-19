@@ -20,6 +20,20 @@ namespace WinForms.UserControls
             InitializeComponent();
             _nguoiDungService = nguoiDungService;
             txtMatKhau.UseSystemPasswordChar = true;
+            SetupPasswordVisibility();
+
+        }
+
+        private void SetupPasswordVisibility()
+        {
+            // Ấn chuột xuống -> Hiện
+            btnXemMatKhau.MouseDown += (s, e) => txtMatKhau.UseSystemPasswordChar = false;
+
+            // Nhả chuột ra -> Ẩn
+            btnXemMatKhau.MouseUp += (s, e) => txtMatKhau.UseSystemPasswordChar = true;
+
+            // Kéo chuột ra ngoài -> Ẩn (cho chắc ăn)
+            btnXemMatKhau.MouseLeave += (s, e) => txtMatKhau.UseSystemPasswordChar = true;
         }
 
         private async void btnDangNhap_Click(object sender, EventArgs e)

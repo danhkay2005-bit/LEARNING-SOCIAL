@@ -29,6 +29,7 @@
         private void InitializeComponent()
         {
             pnlCard = new Panel();
+            btnXemMatKhau = new Button();
             lblTitle = new Label();
             lblSubTitle = new Label();
             lblTenDangNhap = new Label();
@@ -46,6 +47,7 @@
             // 
             pnlCard.Anchor = AnchorStyles.None;
             pnlCard.BackColor = Color.White;
+            pnlCard.Controls.Add(btnXemMatKhau);
             pnlCard.Controls.Add(lblTitle);
             pnlCard.Controls.Add(lblSubTitle);
             pnlCard.Controls.Add(lblTenDangNhap);
@@ -60,6 +62,17 @@
             pnlCard.Name = "pnlCard";
             pnlCard.Size = new Size(370, 420);
             pnlCard.TabIndex = 1;
+            // 
+            // btnXemMatKhau
+            // 
+            btnXemMatKhau.FlatAppearance.BorderSize = 0;
+            btnXemMatKhau.FlatStyle = FlatStyle.Flat;
+            btnXemMatKhau.Location = new Point(292, 205);
+            btnXemMatKhau.Name = "btnXemMatKhau";
+            btnXemMatKhau.Size = new Size(30, 28);
+            btnXemMatKhau.TabIndex = 10;
+            btnXemMatKhau.Text = "👁️";
+            btnXemMatKhau.UseVisualStyleBackColor = true;
             // 
             // lblTitle
             // 
@@ -193,5 +206,6 @@
         private Button btnDangNhap;
         private Label lblFooter;
         private Button btnDangKy;
+        private Button btnXemMatKhau;
     }
 }
