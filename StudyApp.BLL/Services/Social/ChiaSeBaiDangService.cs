@@ -15,11 +15,13 @@ using System.Threading.Tasks;
 
 namespace StudyApp.BLL.Services.Social
 {
-    public class ChiaSeBaiDangService :IChiaSeBaiDangService
+    public class ChiaSeBaiDangService : IChiaSeBaiDangService
     {
         private readonly SocialDbContext _context;
         private readonly UserDbContext _userContext;
         private readonly IMapper _mapper;
+        private readonly IThongBaoService _thongBaoService; // ✅ Thêm
+       
 
         public ChiaSeBaiDangService(SocialDbContext context, UserDbContext userContext, IMapper mapper)
         {

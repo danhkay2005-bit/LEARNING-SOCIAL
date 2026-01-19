@@ -17,6 +17,8 @@ namespace StudyApp.BLL.Services.Social
     {
         private readonly SocialDbContext _context;
         private readonly IMapper _mapper;
+        private readonly IThongBaoService _thongBaoService; // ✅ Thêm
+        
 
         public ReactionBaiDangService(SocialDbContext context, IMapper mapper)
         {

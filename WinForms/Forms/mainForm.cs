@@ -43,8 +43,6 @@ namespace WinForms.Forms
                 return;
             }
 
-            // 1. Ép kiểu VaiTroEnum về int để so sánh với MaVaiTro (int)
-            // Dấu ? đảm bảo nếu CurrentUser null thì sẽ không văng lỗi (Crash) app
             if (UserSession.CurrentUser?.MaVaiTro == (int)VaiTroEnum.Admin)
             {
                 RenderAdminMenu();
@@ -53,36 +51,6 @@ namespace WinForms.Forms
             {
 
                 RenderUserMenu();
-
-                AddMenuButton("🏠 Trang chủ", (s, e) => 
-                {
-                    if (Program.ServiceProvider == null) return;
-                    LoadPage(Program.ServiceProvider.GetRequiredService<TrangChuPage>());
-                });
-                AddMenuButton("👤 Thông tin cá nhân", (s, e) => LoadPage(new ThongTinCaNhanPage()));
-                AddMenuButton("📚 Học tập", (s, e) => 
-                {
-                    if (Program.ServiceProvider == null) return;
-                    LoadPage(Program.ServiceProvider.GetRequiredService<HocTapPage>());
-                });
-
-                AddMenuButton("🌐 Mạng xã hội", BtnMangXaHoi_Click);
-
-                AddMenuButton("🛒 Cửa hàng", (s, e) => LoadPage(Program.ServiceProvider!.GetRequiredService<CuaHangPage>()));
-                AddMenuButton("Kho vật phẩm", (s, e) => LoadPage(Program.ServiceProvider!.GetRequiredService<KhoVatPhamPage>()));
-                AddMenuButton("🗓 Điểm Danh", (s, e) => LoadPage(Program.ServiceProvider!.GetRequiredService<DiemDanhPage>()));
-                AddMenuButton("🏅 Thành Tựu", (s, e) => 
-                {
-                    if (Program.ServiceProvider == null) return;
-                    LoadPage(Program.ServiceProvider.GetRequiredService<AchievementsPage>());
-                });
-                AddMenuButton("📋 Nhiệm Vụ", (s, e) => 
-                {
-                    if (Program.ServiceProvider == null) return;
-                    LoadPage(Program.ServiceProvider.GetRequiredService<TaskPage>());
-                });
-                                                                        
-                AddMenuButton("🚪 Đăng xuất", BtnDangXuat_Click);
             }
 
             // 2. Nút chung
@@ -286,6 +254,35 @@ namespace WinForms.Forms
                 // LoadPage(Program.ServiceProvider.GetRequiredService<QuanLyCuaHangPage>());
             });
 
+        }
+
+        // Add this method to your MainForm class
+
+        private void RenderNotificationBadge()
+        {
+            // Xóa badge cũ nếu có
+            if (_notificationBadge != null)
+            {
+                this.Controls.Remove(_notificationBadge);
+                _notificationBadge.Dispose();
+                _notificationBadge = null;
+            }
+
+            // ✅ SỬA: Lấy INotificationService từ ServiceProvider và truyền vào constructor đúng
+            if (Program.ServiceProvider == null) return;
+            
+            var notificationService = Program.ServiceProvider.GetRequiredService<INotificationService>();
+            
+            // Tạo NotificationBadge với constructor đầy đủ tham số
+            _notificationBadge = new NotificationBadge(notificationService, Program.ServiceProvider);
+            
+            // ✅ QUAN TRỌNG: Set kích thước nhỏ thay vì dùng mặc định 253x160
+            _notificationBadge.Size = new Size(50, 50);
+            _notificationBadge.Location = new Point(this.Width - 60, 10); // Góc trên bên phải
+            _notificationBadge.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            
+            this.Controls.Add(_notificationBadge);
+            _notificationBadge.BringToFront();
         }
     }
 }

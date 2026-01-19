@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using StudyApp.DAL.Entities.Social;
+using StudyApp.DAL.Entities;
+
 
 namespace StudyApp.DAL.Data;
 
@@ -242,18 +244,25 @@ public partial class SocialDbContext : DbContext
 
         modelBuilder.Entity<ThongBao>(entity =>
         {
-            entity.HasKey(e => e.MaThongBao).HasName("PK__ThongBao__04DEB54E554C2F69");
+            entity.HasKey(e => e.MaThongBao).HasName("PK__ThongBao__87CB66A0");
 
             entity.ToTable("ThongBao");
 
-            entity.HasIndex(e => e.DaDoc, "IX_ThongBao_DaDoc");
+            entity.HasIndex(e => e.MaNguoiNhan, "IX_ThongBao_NguoiNhan");
 
-            entity.HasIndex(e => e.LoaiThongBao, "IX_ThongBao_LoaiThongBao");
+            entity.HasIndex(e => new { e.MaNguoiNhan, e.DaDoc }, "IX_ThongBao_NguoiNhan_DaDoc");
 
-            entity.HasIndex(e => e.MaNguoiNhan, "IX_ThongBao_MaNguoiNhan");
+            entity.HasIndex(e => e.ThoiGian, "IX_ThongBao_ThoiGian").IsDescending();
 
-            entity.Property(e => e.NoiDung).HasMaxLength(500);
-            entity.Property(e => e.ThoiGian).HasDefaultValueSql("(sysdatetime())");
+            entity.Property(e => e.DaDoc).HasDefaultValue(false);
+            
+            entity.Property(e => e.NoiDung)
+                .IsRequired()
+                .HasMaxLength(500);
+
+            entity.Property(e => e.ThoiGian)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
         });
 
         OnModelCreatingPartial(modelBuilder);

@@ -13,7 +13,7 @@ using System;
 using System.IO;
 using System.Windows.Forms;
 using WinForms.Forms;
-using WinForms.Services; // Namespace chứa WinFormsThachDauNotifier
+using WinForms.Services;
 
 namespace WinForms
 {
