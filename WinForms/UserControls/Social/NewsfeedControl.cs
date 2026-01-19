@@ -1,4 +1,5 @@
-﻿using WinForms.Forms.Social;
+﻿using Microsoft.Extensions.DependencyInjection; // ✅ ADD THIS LINE
+using WinForms.Forms.Social;
 using WinForms.Forms; // ✅ THÊM
 using StudyApp.BLL.Interfaces.User; // ✅ THÊM
 using StudyApp.BLL.Interfaces.Social;
@@ -83,7 +84,33 @@ namespace WinForms.UserControls.Social
             }
 
             InitializeControls();
+            InitializeNotificationBadge(); // ✅ THÊM DÒNG NÀY: Khởi tạo chuông thông báo
             LoadNewsfeedAsync();
+        }
+
+        // ✅ THÊM METHOD MỚI: Khởi tạo NotificationBadge
+        private void InitializeNotificationBadge()
+        {
+            if (_serviceProvider == null) return;
+
+            try
+            {
+                var notificationService = _serviceProvider.GetRequiredService<INotificationService>();
+                
+                _notificationBadge = new NotificationBadge(notificationService, _serviceProvider)
+                {
+                    Size = new Size(50, 50),
+                    Location = new Point(this.Width - 60, 10),
+                    Anchor = AnchorStyles.Top | AnchorStyles.Right
+                };
+                
+                this.Controls.Add(_notificationBadge);
+                _notificationBadge.BringToFront();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"❌ Lỗi khi tạo NotificationBadge: {ex.Message}");
+            }
         }
 
         private void InitializeControls()
