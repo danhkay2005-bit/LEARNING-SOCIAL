@@ -29,6 +29,8 @@
         private void InitializeComponent()
         {
             pnlCard = new Panel();
+            btnXemXacNhan = new Button();
+            btnXemMatKhau = new Button();
             lblTitle = new Label();
             lblTenDangNhap = new Label();
             txtTenDangNhap = new TextBox();
@@ -50,6 +52,8 @@
             // 
             pnlCard.Anchor = AnchorStyles.None;
             pnlCard.BackColor = Color.White;
+            pnlCard.Controls.Add(btnXemXacNhan);
+            pnlCard.Controls.Add(btnXemMatKhau);
             pnlCard.Controls.Add(lblTitle);
             pnlCard.Controls.Add(lblTenDangNhap);
             pnlCard.Controls.Add(txtTenDangNhap);
@@ -68,6 +72,28 @@
             pnlCard.Name = "pnlCard";
             pnlCard.Size = new Size(387, 505);
             pnlCard.TabIndex = 1;
+            // 
+            // btnXemXacNhan
+            // 
+            btnXemXacNhan.FlatAppearance.BorderSize = 0;
+            btnXemXacNhan.FlatStyle = FlatStyle.Flat;
+            btnXemXacNhan.Location = new Point(320, 365);
+            btnXemXacNhan.Name = "btnXemXacNhan";
+            btnXemXacNhan.Size = new Size(30, 28);
+            btnXemXacNhan.TabIndex = 11;
+            btnXemXacNhan.Text = "👁️";
+            btnXemXacNhan.UseVisualStyleBackColor = true;
+            // 
+            // btnXemMatKhau
+            // 
+            btnXemMatKhau.FlatAppearance.BorderSize = 0;
+            btnXemMatKhau.FlatStyle = FlatStyle.Flat;
+            btnXemMatKhau.Location = new Point(320, 292);
+            btnXemMatKhau.Name = "btnXemMatKhau";
+            btnXemMatKhau.Size = new Size(30, 28);
+            btnXemMatKhau.TabIndex = 15;
+            btnXemMatKhau.Text = "👁️";
+            btnXemMatKhau.UseVisualStyleBackColor = true;
             // 
             // lblTitle
             // 
@@ -138,7 +164,7 @@
             // 
             // txtMatKhau
             // 
-            txtMatKhau.Location = new Point(30, 300);
+            txtMatKhau.Location = new Point(30, 292);
             txtMatKhau.Name = "txtMatKhau";
             txtMatKhau.Size = new Size(320, 23);
             txtMatKhau.TabIndex = 8;
@@ -228,5 +254,7 @@
         private Button btnDangKy;
         private Button btnDangNhap;
         private Button btnHuy;
+        private Button btnXemXacNhan;
+        private Button btnXemMatKhau;
     }
 }

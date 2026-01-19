@@ -263,6 +263,102 @@ public class GamificationService : IGamificationService
 
     public async Task<string> ClaimQuestRewardAsync(Guid userId, int maNhiemVu)
     {
+        /*    using var trans = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var progress = await _context.TienDoNhiemVus
+                    .Include(t => t.MaNhiemVuNavigation)
+                    .FirstOrDefaultAsync(td => td.MaNguoiDung == userId && td.MaNhiemVu == maNhiemVu);
+
+                if (progress == null || !(progress.DaHoanThanh ?? false))
+                    return "Chưa hoàn thành!";
+
+                if (progress.DaNhanThuong ?? false)
+                    return "Đã nhận rồi!";
+
+                var user = await _context.NguoiDungs.FindAsync(userId);
+                var q = progress.MaNhiemVuNavigation;
+
+                if (user == null || q == null)
+                    return "Lỗi hệ thống";
+
+                user.Vang = (user.Vang ?? 0) + (q.ThuongVang ?? 0);
+                user.KimCuong = (user.KimCuong ?? 0) + (q.ThuongKimCuong ?? 0);
+                user.TongDiemXp = (user.TongDiemXp ?? 0) + (q.ThuongXp ?? 0);
+                progress.DaNhanThuong = true;
+
+                var today = DateOnly.FromDateTime(DateTime.Now);
+                var lastActivityDate = user.NgayHoatDongCuoi ?? today.AddDays(-10);
+                //  var lastActivityDate = user.NgayHoatDongCuoi ?? DateOnly.FromDateTime(DateTime.Now.AddDays(-10));
+
+                System.Diagnostics.Debug.WriteLine($"[BEFORE] lastActivityDate = {lastActivityDate}, today = {today}");
+                System.Diagnostics.Debug.WriteLine($"[BEFORE] ChuoiNgayHocLienTiep = {user.ChuoiNgayHocLienTiep}");
+                System.Diagnostics.Debug.WriteLine($"[BEFORE] NgayHoatDongCuoi = {user.NgayHoatDongCuoi}");
+
+                // ========== LẦN ĐẦU TIÊN (ChuoiNgayHocLienTiep == 0) ==========
+                if ((user.ChuoiNgayHocLienTiep ?? 0) == 0)
+                {
+                    user.ChuoiNgayHocLienTiep = 1;
+                    user.ChuoiNgayDaiNhat = 1;
+                    user.SoNhiemVuTrongNgay = 1;
+                    user.NgayHoatDongCuoi = today;
+                    user.IsStreakFrozen = false;
+
+                    System.Diagnostics.Debug.WriteLine($"[FIRST TIME] NgayHoatDongCuoi was null → Set ChuoiNgayHocLienTiep = 1");
+                }
+                // ========== NGÀY MỚI (lần thứ 2 trở đi) ==========
+                else if (lastActivityDate < today)
+                {
+                    var yesterday = today.AddDays(-1);
+
+                    System.Diagnostics.Debug.WriteLine($"[NEW DAY] lastActivityDate < today");
+                    System.Diagnostics.Debug.WriteLine($"[NEW DAY] yesterday = {yesterday}, lastActivityDate = {lastActivityDate}");
+
+                    if (lastActivityDate == yesterday)
+                    {
+                        // Hôm qua có hoạt động → cộng chuỗi
+                        user.ChuoiNgayHocLienTiep = (user.ChuoiNgayHocLienTiep ?? 0) + 1;
+                        System.Diagnostics.Debug.WriteLine($"[LOGIC] lastActivityDate == yesterday → Cộng chuỗi = {user.ChuoiNgayHocLienTiep}");
+
+                        // Cập nhật chuỗi dài nhất
+                        if ((user.ChuoiNgayHocLienTiep ?? 0) > (user.ChuoiNgayDaiNhat ?? 0))
+                        {
+                            user.ChuoiNgayDaiNhat = user.ChuoiNgayHocLienTiep;
+                        }
+                    }
+                    else if (lastActivityDate < yesterday)
+                    {
+                        // Mất chuỗi: reset = 1 (chỉ có thể phục hồi bằng vật phẩm)
+                        user.ChuoiNgayHocLienTiep = 1;
+                        System.Diagnostics.Debug.WriteLine($"[LOGIC] lastActivityDate < yesterday → Reset chuỗi = 1");
+                    }
+
+                    // Reset counter hàng ngày
+                    user.SoNhiemVuTrongNgay = 1;
+                    user.NgayHoatDongCuoi = today;
+                    user.IsStreakFrozen = false;
+
+                    System.Diagnostics.Debug.WriteLine($"[LOGIC] Reset NgayHoatDongCuoi = {today}");
+                }
+                // ========== CÙNG NGÀY ==========
+                else
+                {
+                    // Cùng ngày: tăng counter
+                    user.SoNhiemVuTrongNgay++;
+                    System.Diagnostics.Debug.WriteLine($"[SAME DAY] SoNhiemVuTrongNgay = {user.SoNhiemVuTrongNgay}");
+
+                    // ✅ XÓA: Logic khôi phục 3 nhiệm vụ không còn dùng nữa
+                }
+                // thêm thêm ở đây
+             //   user.NgayHoatDongCuoi = today;
+              //  user.IsStreakFrozen = false;
+                // 
+
+            */
+
+
+
+        // test
         using var trans = await _context.Database.BeginTransactionAsync();
         try
         {
@@ -288,67 +384,40 @@ public class GamificationService : IGamificationService
             progress.DaNhanThuong = true;
 
             var today = DateOnly.FromDateTime(DateTime.Now);
-            var lastActivityDate = user.NgayHoatDongCuoi ?? DateOnly.FromDateTime(DateTime.Now.AddDays(-10));
+            var lastActivityDate = user.NgayHoatDongCuoi ?? today.AddDays(-10);
 
-            System.Diagnostics.Debug.WriteLine($"[BEFORE] lastActivityDate = {lastActivityDate}, today = {today}");
-            System.Diagnostics.Debug.WriteLine($"[BEFORE] ChuoiNgayHocLienTiep = {user.ChuoiNgayHocLienTiep}");
-            System.Diagnostics.Debug.WriteLine($"[BEFORE] NgayHoatDongCuoi = {user.NgayHoatDongCuoi}");
-
-            // ========== LẦN ĐẦU TIÊN (ChuoiNgayHocLienTiep == 0) ==========
+            // --- CỘNG CHUỖI ---
             if ((user.ChuoiNgayHocLienTiep ?? 0) == 0)
             {
                 user.ChuoiNgayHocLienTiep = 1;
                 user.ChuoiNgayDaiNhat = 1;
                 user.SoNhiemVuTrongNgay = 1;
-                user.NgayHoatDongCuoi = today;
-                user.IsStreakFrozen = false;
-
-                System.Diagnostics.Debug.WriteLine($"[FIRST TIME] NgayHoatDongCuoi was null → Set ChuoiNgayHocLienTiep = 1");
             }
-            // ========== NGÀY MỚI (lần thứ 2 trở đi) ==========
             else if (lastActivityDate < today)
             {
                 var yesterday = today.AddDays(-1);
-
-                System.Diagnostics.Debug.WriteLine($"[NEW DAY] lastActivityDate < today");
-                System.Diagnostics.Debug.WriteLine($"[NEW DAY] yesterday = {yesterday}, lastActivityDate = {lastActivityDate}");
-
                 if (lastActivityDate == yesterday)
                 {
-                    // Hôm qua có hoạt động → cộng chuỗi
                     user.ChuoiNgayHocLienTiep = (user.ChuoiNgayHocLienTiep ?? 0) + 1;
-                    System.Diagnostics.Debug.WriteLine($"[LOGIC] lastActivityDate == yesterday → Cộng chuỗi = {user.ChuoiNgayHocLienTiep}");
-
-                    // Cập nhật chuỗi dài nhất
                     if ((user.ChuoiNgayHocLienTiep ?? 0) > (user.ChuoiNgayDaiNhat ?? 0))
-                    {
                         user.ChuoiNgayDaiNhat = user.ChuoiNgayHocLienTiep;
-                    }
                 }
-                else if (lastActivityDate < yesterday)
+                else
                 {
-                    // Mất chuỗi: reset = 1 (chỉ có thể phục hồi bằng vật phẩm)
                     user.ChuoiNgayHocLienTiep = 1;
-                    System.Diagnostics.Debug.WriteLine($"[LOGIC] lastActivityDate < yesterday → Reset chuỗi = 1");
                 }
-
-                // Reset counter hàng ngày
                 user.SoNhiemVuTrongNgay = 1;
-                user.NgayHoatDongCuoi = today;
-                user.IsStreakFrozen = false;
-
-                System.Diagnostics.Debug.WriteLine($"[LOGIC] Reset NgayHoatDongCuoi = {today}");
             }
-            // ========== CÙNG NGÀY ==========
             else
             {
-                // Cùng ngày: tăng counter
                 user.SoNhiemVuTrongNgay++;
-                System.Diagnostics.Debug.WriteLine($"[SAME DAY] SoNhiemVuTrongNgay = {user.SoNhiemVuTrongNgay}");
-                
-                // ✅ XÓA: Logic khôi phục 3 nhiệm vụ không còn dùng nữa
             }
 
+            // --- CHỈ cập nhật sau khi cộng chuỗi ---
+            user.NgayHoatDongCuoi = today;
+            user.IsStreakFrozen = false;
+
+            // tới đây
             await _context.SaveChangesAsync();
             await trans.CommitAsync();
 
