@@ -189,8 +189,7 @@ namespace WinForms.UserControls.Components.Social
             }
             
  
->>>>>>> c4e98d691797eef6de89f2da63b422497f2b8151
->>>>>>> c4e98d691797eef6de89f2da63b422497f2b8151
+
             if (lblContent != null) 
                 lblContent.Text = _comment.NoiDung ?? "";
             
