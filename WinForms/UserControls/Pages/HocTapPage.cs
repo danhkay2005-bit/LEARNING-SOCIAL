@@ -19,6 +19,7 @@ namespace WinForms.UserControls.Pages
         private readonly IBoDeHocService _boDeHocService;
         private readonly IThachDauService _thachDauService;
         private readonly IChuDeService _chuDeService;
+        private readonly ITagService? _tagService;
         private readonly HubConnection _hubConnection;
 
         private const int PAGE_SIZE = 4; // Số lượng hiển thị mỗi lần
@@ -36,6 +37,7 @@ namespace WinForms.UserControls.Pages
             IBoDeHocService boDeHocService,
             IThachDauService thachDauService,
             IChuDeService chuDeService,
+            ITagService tagService,
             HubConnection hubConnection)
         {
             InitializeComponent();
@@ -43,6 +45,7 @@ namespace WinForms.UserControls.Pages
             _thachDauService = thachDauService;
             _chuDeService = chuDeService;
             _hubConnection = hubConnection;
+            _tagService = tagService;
             this.pnlMainContent.Resize += PnlMainContent_Resize;
 
             this.Load += HocTapPage_Load;
@@ -101,9 +104,9 @@ namespace WinForms.UserControls.Pages
 
                 // Tải dữ liệu cá nhân trước
                 await LoadMyQuizzesAsync();
+                await LoadTagsAsync();
 
                 _isDataLoading = false;
-                // Sau đó mới tải dữ liệu công khai dựa trên ComboBox
                 if (cbbLocChuDe.SelectedValue is int maChuDe)
                 {
                     await LoadPublicQuizzesAsync(maChuDe);
@@ -115,6 +118,39 @@ namespace WinForms.UserControls.Pages
             }
             finally { _isDataLoading = false; }
         }
+
+        private async Task LoadTagsAsync()
+        {
+            if (_tagService == null) return;
+
+            try
+            {
+                var tags = await _tagService.GetAllAsync();
+                flowTags.Controls.Clear();
+
+                // Nút "Tất cả" - Luồng này trả về trạng thái mặc định (không lọc)
+                Button btnAll = CreateTagButton("Tất cả", 0);
+                btnAll.Click += async (s, e) => {
+                    // Reset ComboBox về mặc định (nếu muốn) hoặc chỉ nạp lại tất cả
+                    lblPublicQuizzes.Text = "Bộ đề công khai";
+                    await LoadPublicQuizzesAsync(0);
+                };
+                flowTags.Controls.Add(btnAll);
+
+                // Luồng Hashtag độc lập
+                foreach (var tag in tags.Take(12))
+                {
+                    Button btnTag = CreateTagButton($"#{tag.TenTag}", tag.MaTag);
+                    btnTag.Click += async (s, e) =>
+                    {
+                        await LoadQuizzesByTagAsync(tag.MaTag, tag.TenTag);
+                    };
+                    flowTags.Controls.Add(btnTag);
+                }
+            }
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine(ex.Message); }
+        }
+
 
         private async Task LoadFilterCategoriesAsync()
         {
@@ -128,8 +164,13 @@ namespace WinForms.UserControls.Pages
         private async void cbbLocChuDe_SelectedIndexChanged(object? sender, EventArgs e)
         {
             if (_isDataLoading || cbbLocChuDe.SelectedValue == null) return;
+
             if (cbbLocChuDe.SelectedValue is int maChuDe)
             {
+                // Reset nhãn về luồng Chủ đề
+                var tenChuDe = cbbLocChuDe.Text;
+                lblPublicQuizzes.Text = maChuDe == 0 ? "Bộ đề công khai" : $"Chủ đề: {tenChuDe}";
+
                 await LoadPublicQuizzesAsync(maChuDe);
             }
         }
@@ -151,6 +192,35 @@ namespace WinForms.UserControls.Pages
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[MyQuizzes Error] {ex.Message}");
+            }
+        }
+
+        public async Task LoadPublicQuizzesAsync(int maChuDe)
+        {
+            if (_isDataLoading) return;
+            _isDataLoading = true;
+
+            try
+            {
+                // Gọi service để lấy dữ liệu từ SQL Server
+                var ds = await _boDeHocService.GetByFilterAsync(maChuDe);
+
+                // Cập nhật danh sách lưu trữ
+                _allPublicQuizzes = ds?.ToList() ?? new List<BoDeHocResponse>();
+
+                // Reset về trang đầu tiên
+                _publicCurrentPage = 0;
+
+                // Hiển thị dữ liệu lên FlowLayoutPanel
+                DisplayPublicQuizzesByPage();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Lỗi khi tải bộ đề công khai: " + ex.Message);
+            }
+            finally
+            {
+                _isDataLoading = false;
             }
         }
 
@@ -185,22 +255,32 @@ namespace WinForms.UserControls.Pages
         // LOGIC BỘ ĐỀ CÔNG KHAI
         // ======================================================
 
-        public async Task LoadPublicQuizzesAsync(int maChuDe)
+        private async Task LoadQuizzesByTagAsync(int tagId, string tagName)
         {
             if (_isDataLoading) return;
             _isDataLoading = true;
 
             try
             {
-                var ds = await _boDeHocService.GetByFilterAsync(maChuDe);
-                _allPublicQuizzes = ds?.ToList() ?? new List<BoDeHocResponse>();
+                // 1. Cập nhật giao diện thông báo luồng đang chạy
+                lblPublicQuizzes.Text = $"#️⃣ Đang xem thẻ: #{tagName}";
+                lblPublicQuizzes.ForeColor = Color.DarkCyan;
+
+                // 2. Gọi hàm Get riêng biệt từ Service
+                var ds = await _boDeHocService.GetByTagAsync(tagId);
+
+                // 3. Cập nhật bộ nhớ đệm và hiển thị
+                _allPublicQuizzes = ds.ToList();
                 _publicCurrentPage = 0;
-                DisplayPublicQuizzesByPage();
+
+                DisplayPublicQuizzesByPage(); // Vẽ lại BoDeItemControl
+
+                if (!_allPublicQuizzes.Any())
+                {
+                    MessageBox.Show($"Chưa có bộ đề nào gắn thẻ #{tagName}", "Thông báo");
+                }
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Lỗi khi tải bộ đề công khai: " + ex.Message);
-            }
+            catch (Exception ex) { MessageBox.Show("Lỗi lọc hashtag: " + ex.Message); }
             finally { _isDataLoading = false; }
         }
 
@@ -356,5 +436,22 @@ namespace WinForms.UserControls.Pages
                 await chiTietPage.JoinAsGuest(maThachDau, maBoDe);
             }
         }
+
+        private Button CreateTagButton(string text, int tagId)
+        {
+            return new Button
+            {
+                Text = text,
+                AutoSize = true,
+                Padding = new Padding(5),
+                Margin = new Padding(3),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(240, 240, 240),
+                Cursor = Cursors.Hand,
+                Font = new Font("Segoe UI", 9, FontStyle.Regular)
+            };
+        }
+
+
     }
 }

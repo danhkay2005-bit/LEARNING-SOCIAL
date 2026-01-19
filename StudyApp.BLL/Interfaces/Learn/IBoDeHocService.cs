@@ -38,5 +38,14 @@ namespace StudyApp.BLL.Interfaces.Learn
         Task<IEnumerable<BoDeHocResponse>> GetByFilterAsync(int maChuDe);
         Task TangSoLuotHocAsync(int maBoDe);
 
+        Task<(IEnumerable<BoDeHocResponse> Data, int TotalCount)> GetAllForAdminAsync(int page, int pageSize, int? maChuDe = null, bool? isDeleted = null);
+
+        // Khôi phục bộ đề đã xóa mềm
+        Task<bool> RestoreAsync(int id);
+
+        // Kiểm soát quyền công khai (Admin có thể ẩn bộ đề nếu nội dung không phù hợp)
+        Task<bool> TogglePublicStatusAsync(int id, bool isPublic);
+        Task<IEnumerable<BoDeHocResponse>> GetByTagAsync(int tagId);
+
     }
 }

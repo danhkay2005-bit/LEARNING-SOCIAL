@@ -17,7 +17,9 @@ namespace StudyApp.BLL.Mappings.Learn
                 .ForMember(dest => dest.LaCongKhai, opt => opt.MapFrom(src => src.LaCongKhai ?? true))
                 .ForMember(dest => dest.SoLuongThe, opt => opt.MapFrom(src => src.SoLuongThe ?? 0))
                 .ForMember(dest => dest.SoLuotHoc, opt => opt.MapFrom(src => src.SoLuotHoc ?? 0))
-                .ForMember(dest => dest.ThoiGianTao, opt => opt.MapFrom(src => src.ThoiGianTao ?? DateTime.MinValue));
+                .ForMember(dest => dest.ThoiGianTao, opt => opt.MapFrom(src => src.ThoiGianTao ?? DateTime.MinValue))
+                .ForMember(dest => dest.DanhSachTags,
+               opt => opt.MapFrom(src => src.TagBoDes.Select(tb => tb.MaTagNavigation))); ;
 
             // 2. CREATE/UPDATE REQUEST -> ENTITY (Quản lý bộ đề)
             CreateMap<TaoBoDeHocRequest, BoDeHoc>()

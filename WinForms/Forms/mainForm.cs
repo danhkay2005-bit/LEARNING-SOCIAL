@@ -243,7 +243,7 @@ namespace WinForms.Forms
             });
 
             AddMenuButton("📚 Quản lý Bộ đề", (s, e) => {
-                // LoadPage(Program.ServiceProvider.GetRequiredService<QuanLyBoDeAdminPage>());
+                LoadPage(Program.ServiceProvider.GetRequiredService<QuanLyBoDeAdminPage>());
             });
 
             AddMenuButton("📝 Quản lý Bài đăng", (s, e) => {

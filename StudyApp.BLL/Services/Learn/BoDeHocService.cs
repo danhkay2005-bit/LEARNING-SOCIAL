@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Azure;
 using Microsoft.EntityFrameworkCore;
 using StudyApp.BLL.Interfaces.Learn;
 using StudyApp.BLL.Interfaces.User;
@@ -31,32 +32,33 @@ namespace StudyApp.BLL.Services.Learn
 
         public async Task<IEnumerable<BoDeHocResponse>> GetByFilterAsync(int maChuDe)
         {
-            // Đợi cho đến khi "khóa" được mở
             await _semaphore.WaitAsync();
             try
             {
-                // 1. Khởi tạo query và lọc ngay các bản ghi đã xóa
+                // 1. Khởi tạo query và nạp kèm Tag (Eager Loading)
                 var query = _context.BoDeHocs
-                    .Where(b => b.DaXoa == false) // HOẶC !b.DaXoa (Chỉ lấy các bản ghi chưa bị xóa)
+                    .Include(x => x.TagBoDes)           // ✅ Nạp bảng trung gian
+                        .ThenInclude(t => t.MaTagNavigation) // ✅ Nạp chi tiết Tag
+                    .Where(b => b.DaXoa == false)
                     .AsQueryable();
 
-                // 2. Lọc theo chủ đề nếu có
+                // 2. Lọc theo chủ đề
                 if (maChuDe > 0)
                 {
                     query = query.Where(b => b.MaChuDe == maChuDe);
                 }
 
-                // 3. Thực thi lấy danh sách với các điều kiện công khai và sắp xếp
+                // 3. Lấy danh sách công khai
                 var list = await query
                     .Where(b => b.LaCongKhai == true)
                     .OrderByDescending(b => b.ThoiGianTao)
                     .ToListAsync();
 
+                // Mapping sang DTO
                 return _mapper.Map<IEnumerable<BoDeHocResponse>>(list);
             }
             finally
             {
-                // Giải phóng khóa
                 _semaphore.Release();
             }
         }
@@ -848,5 +850,90 @@ namespace StudyApp.BLL.Services.Learn
             if (isNew) _context.TienDoHocTaps.Add(tienDo);
             else _context.Entry(tienDo).State = EntityState.Modified;
         }
+
+        public async Task<(IEnumerable<BoDeHocResponse> Data, int TotalCount)> GetAllForAdminAsync(int page, int pageSize, int? maChuDe = null, bool? isDeleted = null)
+            {
+            // Sử dụng .IgnoreQueryFilters() nếu DbContext của bạn có cấu hình xóa mềm mặc định
+            var query = _context.BoDeHocs
+                .IgnoreQueryFilters()
+                .AsNoTracking()
+                .AsQueryable();
+
+            // Lọc theo chủ đề
+            if (maChuDe.HasValue)
+            {
+                query = query.Where(x => x.MaChuDe == maChuDe.Value);
+            }
+
+            // Lọc theo trạng thái xóa
+            if (isDeleted.HasValue)
+            {
+                query = query.Where(x => x.DaXoa == isDeleted.Value);
+            }
+
+            var list = await query
+                .OrderByDescending(x => x.ThoiGianTao)
+                .ToListAsync();
+
+            int totalCount = await query.CountAsync();
+            var data = await query
+                .OrderByDescending(x => x.ThoiGianTao)
+                .Skip((page - 1) * pageSize) // Bỏ qua các trang trước
+                .Take(pageSize)              // Lấy số lượng của trang hiện tại
+                .ToListAsync();
+
+            return (_mapper.Map<IEnumerable<BoDeHocResponse>>(data), totalCount);
+        }
+
+        // 2. Khôi phục bộ đề đã xóa mềm
+        public async Task<bool> RestoreAsync(int id)
+        {
+            // Tìm bộ đề ngay cả khi nó đã bị đánh dấu DaXoa = true
+            var item = await _context.BoDeHocs
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(x => x.MaBoDe == id);
+
+            if (item == null) return false;
+
+            item.DaXoa = false; // Khôi phục trạng thái
+            item.ThoiGianCapNhat = DateTime.Now;
+
+            _context.BoDeHocs.Update(item);
+            return await _context.SaveChangesAsync() > 0;
+        }
+
+        // 3. Kiểm soát quyền công khai (Admin ghi đè quyền của User)
+        public async Task<bool> TogglePublicStatusAsync(int id, bool isPublic)
+        {
+            var item = await _context.BoDeHocs.FindAsync(id);
+            if (item == null) return false;
+
+            item.LaCongKhai = isPublic;
+            item.ThoiGianCapNhat = DateTime.Now;
+
+            _context.BoDeHocs.Update(item);
+            return await _context.SaveChangesAsync() > 0;
+        }
+        public async Task<IEnumerable<BoDeHocResponse>> GetByTagAsync(int tagId)
+        {
+            await _semaphore.WaitAsync();
+            try
+            {
+                var list = await _context.BoDeHocs
+                    .Include(x => x.TagBoDes)
+                        .ThenInclude(t => t.MaTagNavigation)
+                    .Where(b => b.DaXoa == false && b.LaCongKhai == true)
+                    // ✅ Lọc: Chỉ lấy bộ đề có ít nhất 1 liên kết tới mã Tag này
+                    .Where(b => b.TagBoDes.Any(tb => tb.MaTag == tagId))
+                    .OrderByDescending(b => b.ThoiGianTao)
+                    .ToListAsync();
+
+                return _mapper.Map<IEnumerable<BoDeHocResponse>>(list);
+            }
+            finally { _semaphore.Release(); }
+        }
     }
-}
+
+    
+
+    }

@@ -1,46 +1,49 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using StudyApp.BLL.Interfaces.Learn;
 using StudyApp.BLL.Interfaces.Social;
 using StudyApp.DTO;
 using StudyApp.DTO.Enums;
+using StudyApp.DTO.Requests.Learn;
 using StudyApp.DTO.Requests.Social;
 using StudyApp.DTO.Responses.Social;
 using System;
 using System.Drawing;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows.Forms;
+using WinForms.Forms;
 using WinForms.Forms.Social;
+using WinForms.UserControls.Quiz;
 
 namespace WinForms.UserControls.Components.Social
 {
     public partial class PostCardControl : UserControl
     {
-        // ✅ THÊM: Semaphore để giới hạn concurrent DB operations
-        private static readonly SemaphoreSlim _dbSemaphore = new SemaphoreSlim(2, 2); // Max 2 operations cùng lúc
+        private static readonly SemaphoreSlim _dbSemaphore = new SemaphoreSlim(2, 2);
 
-        // ✅ SỬA:  Thêm nullable cho các service (vì constructor mặc định không inject)
         private readonly IPostService? _postService;
         private readonly IReactionService? _reactionService;
         private readonly ICommentService? _commentService;
         private readonly IReactionBaiDangService? _reactionBaiDangService;
-        private readonly IChiaSeBaiDangService? _chiaSeBaiDangService; // ✅ THÊM: Service chia sẻ
+        private readonly IChiaSeBaiDangService? _chiaSeBaiDangService;
+        private readonly IThachDauService? _thachDauService;
 
         private BaiDangResponse? _post;
-        private LoaiReactionEnum? _currentReaction = null; // ✅ THÊM: Lưu reaction hiện tại
-        
-        // ✅ DEBOUNCING: Thay vì throttling
-        private System.Threading.CancellationTokenSource? _reactionCancellation;
+        private LoaiReactionEnum? _currentReaction = null;
+        private CancellationTokenSource? _reactionCancellation;
         private LoaiReactionEnum? _pendingReaction = null;
 
-        // ===== CONTROLS =====
+        #region UI Controls
         private Panel? pnlContainer;
         private Panel? pnlHeader;
         private PictureBox? pbAvatar;
         private Label? lblAuthorName;
         private Label? lblTimestamp;
-        private Button? btnMenu; // ✅ THÊM: Nút menu 3 chấm
+        private Button? btnMenu;
         private Panel? pnlContent;
-        private RichTextBox? rtbContent; // ✅ SỬA: Đổi từ Label sang RichTextBox
+        private RichTextBox? rtbContent;
         private PictureBox? pbImage;
+        private Button? btnJoinChallenge; // Nút tham gia trận đấu từ Newsfeed
         private Panel? pnlStats;
         private Label? lblReactionCount;
         private Label? lblCommentCount;
@@ -48,7 +51,7 @@ namespace WinForms.UserControls.Components.Social
         private Button? btnLike;
         private Button? btnComment;
         private Button? btnShare;
-        private Panel? pnlReactionPicker; // ✅ THÊM: Panel chọn reaction
+        private Panel? pnlReactionPicker;
 
         // ✅ Constructor mặc định (cho Designer)
         public PostCardControl()
@@ -71,6 +74,7 @@ namespace WinForms.UserControls.Components.Social
             {
                 _reactionBaiDangService = Program.ServiceProvider.GetService(typeof(IReactionBaiDangService)) as IReactionBaiDangService;
                 _chiaSeBaiDangService = Program.ServiceProvider.GetService(typeof(IChiaSeBaiDangService)) as IChiaSeBaiDangService;
+                _thachDauService = Program.ServiceProvider.GetService(typeof(IThachDauService)) as IThachDauService;
             }
 
             InitializeControls();
@@ -139,181 +143,56 @@ namespace WinForms.UserControls.Components.Social
 
         private void InitializeControls()
         {
-            // ===== CONTAINER CHÍNH =====
-            pnlContainer = new Panel
-            {
-                Dock = DockStyle.Fill,
-                BackColor = Color.White,
-                BorderStyle = BorderStyle.FixedSingle,
-                Padding = new Padding(15),
-                AutoSize = true
-            };
+            pnlContainer = new Panel { Dock = DockStyle.Fill, BackColor = Color.White, BorderStyle = BorderStyle.FixedSingle, Padding = new Padding(15), AutoSize = true };
 
-            // ===== HEADER =====
-            pnlHeader = new Panel
-            {
-                Dock = DockStyle.Top,
-                Height = 60,
-                BackColor = Color.White
-            };
-
-            pbAvatar = new PictureBox
-            {
-                Width = 45,
-                Height = 45,
-                Location = new Point(10, 7),
-                SizeMode = PictureBoxSizeMode.StretchImage,
-                BackColor = Color.LightGray,
-                BorderStyle = BorderStyle.FixedSingle
-            };
-
-            lblAuthorName = new Label
-            {
-                Location = new Point(65, 10),
-                AutoSize = true,
-                Font = new Font("Segoe UI", 10F, FontStyle.Bold), // ✅ SỬA: Đúng cú pháp
-                ForeColor = Color.FromArgb(24, 119, 242)
-            };
-
-            lblTimestamp = new Label
-            {
-                Location = new Point(65, 32),
-                AutoSize = true,
-                Font = new Font("Segoe UI", 8F, FontStyle.Regular), // ✅ SỬA
-                ForeColor = Color.Gray
-            };
-
-            // ✅ THÊM: Nút menu 3 chấm
-            btnMenu = new Button
-            {
-                Text = "⋮",
-                Location = new Point(540, 10),
-                Width = 35,
-                Height = 35,
-                FlatStyle = FlatStyle.Flat,
-                BackColor = Color.White,
-                Font = new Font("Segoe UI", 16F, FontStyle.Bold),
-                Cursor = Cursors.Hand,
-                ForeColor = Color.Gray
-            };
+            // Header
+            pnlHeader = new Panel { Dock = DockStyle.Top, Height = 60 };
+            pbAvatar = new PictureBox { Width = 45, Height = 45, Location = new Point(10, 7), SizeMode = PictureBoxSizeMode.StretchImage, BackColor = Color.LightGray, BorderStyle = BorderStyle.FixedSingle };
+            lblAuthorName = new Label { Location = new Point(65, 10), AutoSize = true, Font = new Font("Segoe UI", 10F, FontStyle.Bold), ForeColor = Color.FromArgb(24, 119, 242) };
+            lblTimestamp = new Label { Location = new Point(65, 32), AutoSize = true, Font = new Font("Segoe UI", 8F), ForeColor = Color.Gray };
+            btnMenu = new Button { Text = "⋮", Location = new Point(540, 10), Width = 35, Height = 35, FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 16F), Cursor = Cursors.Hand, ForeColor = Color.Gray };
             btnMenu.FlatAppearance.BorderSize = 0;
             btnMenu.Click += BtnMenu_Click;
 
-            pnlHeader.Controls.Add(pbAvatar);
-            pnlHeader.Controls.Add(lblAuthorName);
-            pnlHeader.Controls.Add(lblTimestamp);
-            pnlHeader.Controls.Add(btnMenu); // ✅ THÊM
+            pnlHeader.Controls.AddRange(new Control[] { pbAvatar, lblAuthorName, lblTimestamp, btnMenu });
 
-            // ===== CONTENT =====
-            pnlContent = new Panel
-            {
-                Dock = DockStyle.Top,
-                AutoSize = true,
-                Padding = new Padding(10, 5, 10, 10),
-                BackColor = Color.White
-            };
-
-            // ✅ SỬA: Thay Label bằng RichTextBox để highlight hashtag
-            rtbContent = new RichTextBox
-            {
-                Dock = DockStyle.Top,
-                BorderStyle = BorderStyle.None,
-                Font = new Font("Segoe UI", 9.5F, FontStyle.Regular),
-                ForeColor = Color.Black,
-                BackColor = Color.White,
-                ReadOnly = true,
-                ScrollBars = RichTextBoxScrollBars.None,
-                Cursor = Cursors.Arrow, // ✅ Mặc định là Arrow (vì ReadOnly)
-                DetectUrls = false, // ✅ Tắt auto-detect URL để tự xử lý hashtag
-                Margin = new Padding(0, 0, 0, 10)
-            };
-            
-            // ✅ QUAN TRỌNG: Tự động tính chiều cao
-            rtbContent.ContentsResized += (s, e) =>
-            {
-                if (rtbContent != null)
-                    rtbContent.Height = e.NewRectangle.Height + 5;
-            };
-
-            // ✅ Click handler cho hashtag
+            // Content
+            pnlContent = new Panel { Dock = DockStyle.Top, AutoSize = true, Padding = new Padding(10, 5, 10, 10) };
+            rtbContent = new RichTextBox { Dock = DockStyle.Top, BorderStyle = BorderStyle.None, Font = new Font("Segoe UI", 9.5F), ReadOnly = true, ScrollBars = RichTextBoxScrollBars.None, DetectUrls = false };
+            rtbContent.ContentsResized += (s, e) => rtbContent.Height = e.NewRectangle.Height + 5;
             rtbContent.MouseClick += RtbContent_MouseClick;
-            
-            // ✅ MỚI: Hover detection để đổi cursor
             rtbContent.MouseMove += RtbContent_MouseMove;
 
-            pbImage = new PictureBox
-            {
-                Dock = DockStyle.Top,
-                SizeMode = PictureBoxSizeMode.Zoom,
-                MaximumSize = new Size(560, 350),
-                Visible = false
-            };
+            pbImage = new PictureBox { Dock = DockStyle.Top, SizeMode = PictureBoxSizeMode.Zoom, MaximumSize = new Size(560, 350), Visible = false };
 
-            pnlContent.Controls.Add(pbImage);
-            pnlContent.Controls.Add(rtbContent); // ✅ SỬA: Đổi từ lblContent
+            // Nút Tham Gia Thách Đấu
+            btnJoinChallenge = new Button { Text = "🎮 THAM GIA THÁCH ĐẤU", Dock = DockStyle.Top, Height = 45, BackColor = Color.FromArgb(46, 125, 50), ForeColor = Color.White, FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 10F, FontStyle.Bold), Cursor = Cursors.Hand, Visible = false, Margin = new Padding(0, 10, 0, 10) };
+            btnJoinChallenge.FlatAppearance.BorderSize = 0;
+            btnJoinChallenge.Click += HandleJoinChallengeAsync;
 
-            // ===== STATS =====
-            pnlStats = new Panel
-            {
-                Dock = DockStyle.Top,
-                Height = 35,
-                BackColor = Color.White,
-                Padding = new Padding(10, 5, 10, 5)
-            };
+            pnlContent.Controls.AddRange(new Control[] { pbImage, btnJoinChallenge, rtbContent });
 
-            lblReactionCount = new Label
-            {
-                Location = new Point(10, 8),
-                AutoSize = true,
-                Font = new Font("Segoe UI", 8.5F, FontStyle.Regular), // ✅ SỬA
-                ForeColor = Color.Gray,
-                Text = "👍 0"
-            };
+            // Stats & Actions
+            pnlStats = new Panel { Dock = DockStyle.Top, Height = 35, Padding = new Padding(10, 5, 10, 5) };
+            lblReactionCount = new Label { Location = new Point(10, 8), AutoSize = true, Text = "👍 0", ForeColor = Color.Gray };
+            lblCommentCount = new Label { Location = new Point(100, 8), AutoSize = true, Text = "💬 0 bình luận", ForeColor = Color.Gray };
+            pnlStats.Controls.AddRange(new Control[] { lblReactionCount, lblCommentCount });
 
-            lblCommentCount = new Label
-            {
-                Location = new Point(100, 8),
-                AutoSize = true,
-                Font = new Font("Segoe UI", 8.5F, FontStyle.Regular), // ✅ SỬA
-                ForeColor = Color.Gray,
-                Text = "💬 0 bình luận"
-            };
-
-            pnlStats.Controls.Add(lblReactionCount);
-            pnlStats.Controls.Add(lblCommentCount);
-
-            // ===== ACTIONS =====
-            pnlActions = new Panel
-            {
-                Dock = DockStyle.Top,
-                Height = 45,
-                BackColor = Color.WhiteSmoke
-            };
-
+            pnlActions = new Panel { Dock = DockStyle.Top, Height = 45, BackColor = Color.WhiteSmoke };
             btnLike = CreateActionButton("👍 Thích", 10);
             btnComment = CreateActionButton("💬 Bình luận", 200);
             btnShare = CreateActionButton("↗️ Chia sẻ", 390);
 
-            // ✅ THÊM: Long press hoặc hover để hiện reaction picker
             btnLike.MouseEnter += BtnLike_MouseEnter;
             btnLike.Click += BtnLike_Click;
             btnComment.Click += BtnComment_Click;
             btnShare.Click += BtnShare_Click;
+            pnlActions.Controls.AddRange(new Control[] { btnLike, btnComment, btnShare });
 
-            pnlActions.Controls.Add(btnLike);
-            pnlActions.Controls.Add(btnComment);
-            pnlActions.Controls.Add(btnShare);
-
-            // ✅ THÊM: Reaction Picker (ẩn ban đầu)
-            CreateReactionPicker();
-
-            // ===== ADD TO CONTAINER =====
-            pnlContainer.Controls.Add(pnlActions);
-            pnlContainer.Controls.Add(pnlStats);
-            pnlContainer.Controls.Add(pnlContent);
-            pnlContainer.Controls.Add(pnlHeader);
-
+            pnlContainer.Controls.AddRange(new Control[] { pnlActions, pnlStats, pnlContent, pnlHeader });
             this.Controls.Add(pnlContainer);
+
+            CreateReactionPicker();
         }
 
         private Button CreateActionButton(string text, int x)
@@ -335,62 +214,36 @@ namespace WinForms.UserControls.Components.Social
         private void RenderPost()
         {
             if (_post == null) return;
-
-            // ✅ Kiểm tra nếu là bài SHARE
-            if (_post.LoaiBaiDang == LoaiBaiDangEnum.ChiaSeKhoaHoc)
-            {
-                RenderSharedPost();
-            }
-            else
-            {
-                RenderNormalPost();
-            }
+            if (_post.LoaiBaiDang == LoaiBaiDangEnum.ChiaSeKhoaHoc) RenderSharedPost();
+            else RenderNormalPost();
         }
 
         /// <summary>
         /// ✅ Render bài đăng bình thường (không phải share)
         /// </summary>
-        private void RenderNormalPost()
+        private async void RenderNormalPost()
         {
             if (_post == null) return;
+            LoadAvatarImage(pbAvatar!, _post.HinhDaiDien, _post.TenNguoiDung);
+            lblAuthorName!.Text = _post.TenNguoiDung ?? "Người dùng";
+            lblTimestamp!.Text = GetRelativeTime(_post.ThoiGianTao ?? DateTime.Now);
+            RenderContentWithHashtags(rtbContent!, _post.NoiDung ?? "");
 
-            // ✅ Load avatar người đăng
-            if (pbAvatar != null)
+            // Xử lý nút Thách đấu
+            if (_post.NoiDung != null && _post.NoiDung.Contains("[CHALLENGE_PIN:"))
             {
-                LoadAvatarImage(pbAvatar, _post.HinhDaiDien, _post.TenNguoiDung);
-            }
-
-            // ✅ Hiển thị tên người đăng
-            if (lblAuthorName != null)
-                lblAuthorName.Text = _post.TenNguoiDung ?? "Người dùng";
-
-            if (lblTimestamp != null)
-                lblTimestamp.Text = GetRelativeTime(_post.ThoiGianTao ?? DateTime.Now);
-
-            // ✅ SỬA: Highlight hashtag trong RichTextBox
-            if (rtbContent != null)
-            {
-                RenderContentWithHashtags(rtbContent, _post.NoiDung ?? "(Không có nội dung)");
-            }
-
-            if (!string.IsNullOrEmpty(_post.HinhAnh) && pbImage != null)
-            {
-                try
+                int pin = ExtractIdFromTag(_post.NoiDung, "CHALLENGE_PIN");
+                if (pin > 0 && btnJoinChallenge != null)
                 {
-                    pbImage.Load(_post.HinhAnh);
-                    pbImage.Visible = true;
-                }
-                catch
-                {
-                    pbImage.Visible = false;
+                    btnJoinChallenge.Visible = true;
+                    btnJoinChallenge.BringToFront();
+                    await UpdateChallengeButtonStatus(pin);
                 }
             }
 
-            if (lblReactionCount != null)
-                lblReactionCount.Text = $"👍 {_post.SoReaction}";
-
-            if (lblCommentCount != null)
-                lblCommentCount.Text = $"💬 {_post.SoBinhLuan} bình luận";
+            if (!string.IsNullOrEmpty(_post.HinhAnh)) { pbImage!.LoadAsync(_post.HinhAnh); pbImage.Visible = true; }
+            lblReactionCount!.Text = $"👍 {_post.SoReaction}";
+            lblCommentCount!.Text = $"💬 {_post.SoBinhLuan} bình luận";
         }
 
         /// <summary>
@@ -1535,5 +1388,66 @@ namespace WinForms.UserControls.Components.Social
         {
 
         }
+
+        #region Logic Thách đấu (Join Game)
+        private async Task UpdateChallengeButtonStatus(int pin)
+        {
+            if (btnJoinChallenge == null || _thachDauService == null) return;
+            try
+            {
+                var room = await _thachDauService.GetByIdAsync(pin);
+                if (room == null || room.TrangThai == TrangThaiThachDauEnum.Huy)
+                {
+                    btnJoinChallenge.Text = "⛔ PHÒNG ĐÃ ĐÓNG HOẶC HẾT HẠN";
+                    btnJoinChallenge.Enabled = false;
+                    btnJoinChallenge.BackColor = Color.Gray;
+                }
+                else
+                {
+                    btnJoinChallenge.Text = $"🎮 THAM GIA THÁCH ĐẤU (PIN: {pin:D6})";
+                    btnJoinChallenge.Enabled = true;
+                    btnJoinChallenge.BackColor = Color.FromArgb(46, 125, 50);
+                }
+            }
+            catch { btnJoinChallenge.Visible = false; }
+        }
+
+        private async void HandleJoinChallengeAsync(object? sender, EventArgs e)
+        {
+            if (_post == null || string.IsNullOrEmpty(_post.NoiDung) || _thachDauService == null) return;
+            if (UserSession.CurrentUser == null) { MessageBox.Show("Vui lòng đăng nhập để tham gia!"); return; }
+
+            int pin = ExtractIdFromTag(_post.NoiDung, "CHALLENGE_PIN");
+            int maBoDe = ExtractIdFromTag(_post.NoiDung, "BO_DE_ID");
+
+            try
+            {
+                this.Cursor = Cursors.WaitCursor;
+                var request = new LichSuThachDauRequest { MaThachDau = pin, MaNguoiDung = UserSession.CurrentUser.MaNguoiDung };
+                bool success = await _thachDauService.ThamGiaThachDauAsync(request);
+
+                if (success)
+                {
+                    var mainForm = this.FindForm() as MainForm;
+                    if (mainForm != null && Program.ServiceProvider != null)
+                    {
+                        var chiTietPage = Program.ServiceProvider.GetRequiredService<ChiTietBoDeControl>();
+                        mainForm.LoadPage(chiTietPage);
+                        await chiTietPage.JoinAsGuest(pin, maBoDe);
+                    }
+                }
+                else { MessageBox.Show("Không thể tham gia phòng này!"); await UpdateChallengeButtonStatus(pin); }
+            }
+            catch (Exception ex) { MessageBox.Show("Lỗi: " + ex.Message); }
+            finally { this.Cursor = Cursors.Default; }
+        }
+        #endregion
+
+        private int ExtractIdFromTag(string content, string tag)
+        {
+            var match = Regex.Match(content, $@"\[{tag}:(\d+)\]");
+            return match.Success ? int.Parse(match.Groups[1].Value) : 0;
+        }
+        #endregion
     }
 }

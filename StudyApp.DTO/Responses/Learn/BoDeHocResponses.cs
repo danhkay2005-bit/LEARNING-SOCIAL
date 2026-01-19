@@ -33,10 +33,12 @@ namespace StudyApp.DTO.Responses.Learn
         public string? AnhBia { get; set; }
 
         public MucDoKhoEnum MucDoKho { get; set; }
+        public bool DaXoa { get; set; }
         public bool LaCongKhai { get; set; }
 
         public int SoLuongThe { get; set; }
         public int SoLuotHoc { get; set; }
         public DateTime ThoiGianTao { get; set; }
+        public List<TagResponse> DanhSachTags { get; set; } = new List<TagResponse>();
     }
 }

@@ -1,9 +1,11 @@
 ﻿using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.DependencyInjection;
 using StudyApp.BLL.Interfaces.Learn;
+using StudyApp.BLL.Interfaces.Social;
 using StudyApp.DTO;
 using StudyApp.DTO.Enums;
 using StudyApp.DTO.Requests.Learn;
+using StudyApp.DTO.Requests.Social;
 using StudyApp.DTO.Responses.Learn;
 using System;
 using System.Drawing;
@@ -21,6 +23,7 @@ namespace WinForms.UserControls.Quiz
         private readonly IBoDeHocService _boDeHocService;
         private readonly IThachDauService _thachDauService;
         private readonly HubConnection _hubConnection;
+        private readonly IPostService? _postService;
 
         private bool _isStartingMatch = false;
 
@@ -28,23 +31,65 @@ namespace WinForms.UserControls.Quiz
         private int _currentPin = 0;
         private LobbyRole _currentRole = LobbyRole.None;
 
-        public ChiTietBoDeControl(IBoDeHocService boDeHocService, IThachDauService thachDauService, HubConnection hubConnection)
+        public ChiTietBoDeControl(IBoDeHocService boDeHocService, IThachDauService thachDauService, IPostService postService, HubConnection hubConnection)
         {
             InitializeComponent();
             _boDeHocService = boDeHocService;
             _thachDauService = thachDauService;
             _hubConnection = hubConnection;
+            _postService = postService;
 
             // Đăng ký sự kiện mặc định
             btnStartSolo.Click += btnStartSolo_Click;
             btnCreateChallenge.Click += btnCreateChallenge_Click;
             btnEdit.Click += btnEdit_Click;
             btnDelete.Click += btnDelete_Click;
+            btnShareSocial.Visible = false; // Chỉ hiện sau khi đã tạo mã PIN
+            btnShareSocial.Click += btnShareSocial_Click;
 
             RegisterSignalREvents();    
         }
 
         public int MaBoDe { set => LoadDataById(value); }
+
+        private async void btnShareSocial_Click(object? sender, EventArgs e)
+        {
+            if (_currentPin == 0 || _currentBoDe == null || _postService == null || UserSession.CurrentUser == null) return;
+
+            // 1. Mở Popup trang trí
+            using (var shareDialog = new ShareChallengeDialog(_currentBoDe.TieuDe, _currentPin))
+            {
+                if (shareDialog.ShowDialog() == DialogResult.OK)
+                {
+                    try
+                    {
+                        // 2. Cấu trúc nội dung kèm tag nhận diện hệ thống
+                        string content = $"🔥 {shareDialog.UserMessage}\n\n" +
+                                         $"🎮 Bộ đề: {_currentBoDe.TieuDe}\n" +
+                                         $"🔑 Mã mời: {_currentPin:D6}\n" +
+                                         $"[CHALLENGE_PIN:{_currentPin}][BO_DE_ID:{_currentBoDe.MaBoDe}]";
+
+                        var req = new TaoBaiDangRequest
+                        {
+                            MaNguoiDung = UserSession.CurrentUser.MaNguoiDung,
+                            NoiDung = content,
+                            MaBoDeLienKet = _currentBoDe.MaBoDe ,
+                            QuyenRiengTu = shareDialog.SelectedPrivacy,
+                        };
+
+                        await _postService.CreatePostAsync(req);
+
+                        MessageBox.Show("Đã chia sẻ lời mời lên Mạng xã hội!", "Thành công");
+                        btnShareSocial.Enabled = false;
+                        btnShareSocial.Text = "ĐÃ CHIA SẺ ✅";
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("Lỗi chia sẻ: " + ex.Message);
+                    }
+                }
+            }
+        }
 
         private void RegisterSignalREvents()
         {
@@ -76,6 +121,20 @@ namespace WinForms.UserControls.Quiz
             });
         }
 
+        private void SafeInvoke(Action action)
+        {
+            if (this.IsDisposed || this.Disposing) return;
+
+            if (this.InvokeRequired)
+            {
+                if (this.IsHandleCreated) this.BeginInvoke(action);
+            }
+            else
+            {
+                action();
+            }
+        }
+
         private async void LoadDataById(int id)
         {
             try
@@ -93,12 +152,12 @@ namespace WinForms.UserControls.Quiz
             lblMainTitle.Text = data.TieuDe.ToUpper();
             lblSideTitle.Text = data.TieuDe;
             lblSideInfo.Text = $"{data.SoLuongThe} thẻ • Độ khó: {data.MucDoKho}";
-            if (!string.IsNullOrEmpty(data.AnhBia)) picThumb.ImageLocation = data.AnhBia;
 
-            // 2. Kiểm tra quyền sở hữu để hiện nút Sửa và Xóa
-            bool isOwner = UserSession.CurrentUser != null && data.MaNguoiDung == UserSession.CurrentUser.MaNguoiDung;
-            btnEdit.Visible = isOwner;
-            btnDelete.Visible = isOwner; // Hiện nút xóa nếu là chủ
+            if (!string.IsNullOrEmpty(data.AnhBia))
+                picThumb.ImageLocation = data.AnhBia;
+
+            // Cập nhật hiển thị nút dựa trên trạng thái hiện tại
+            UpdateActionButtonsVisibility();
         }
 
         private async void btnDelete_Click(object? sender, EventArgs e)
@@ -115,8 +174,6 @@ namespace WinForms.UserControls.Quiz
             {
                 try
                 {
-                    // Gọi service để xóa (Giả sử bạn đã có hàm DeleteAsync trong IBoDeHocService)
-                    // Nếu backend dùng xóa mềm (soft delete), trạng thái sẽ chuyển thành DaXoa = true
                     await _boDeHocService.DeleteAsync(_currentBoDe.MaBoDe);
 
                     MessageBox.Show("Đã xóa bộ đề thành công.", "Thông báo");
@@ -175,9 +232,6 @@ namespace WinForms.UserControls.Quiz
 
                 // 1. Khách vào phòng
                 await _hubConnection.InvokeAsync("JoinRoom", pin.ToString());
-
-                // 2. QUAN TRỌNG: Gọi hàm này để báo cho máy Chủ phòng hiện nút "BẮT ĐẦU"
-                // Hub sẽ gửi lệnh "ReadyToStart" về cho máy Chủ
                 await _hubConnection.InvokeAsync("TriggerStartMatch", pin.ToString());
 
                 lblStatus.Text = "Đã vào phòng, đợi chủ phòng bắt đầu!";
@@ -207,6 +261,8 @@ namespace WinForms.UserControls.Quiz
                 btnCreateChallenge.Enabled = false;
                 btnStartSolo.Enabled = false;
                 btnStartSolo.Text = "ĐỢI ĐỐI THỦ...";
+                btnShareSocial.Visible = true;
+                UpdateActionButtonsVisibility();
 
                 if (_hubConnection.State == HubConnectionState.Disconnected)
                     await _hubConnection.StartAsync();
@@ -373,15 +429,16 @@ namespace WinForms.UserControls.Quiz
         // 3. Hàm dọn dẹp (Dùng chung cho cả Back và Destroyed)
         private async Task CleanupLobbyAsync()
         {
-            // Nếu đang chuyển sang màn hình thi đấu, tuyệt đối không được xóa phòng!
             if (_isStartingMatch || _currentPin == 0) return;
 
             int pinToCancel = _currentPin;
-            _currentPin = 0; // Reset ngay để tránh các luồng khác gọi trùng
+            _currentPin = 0; // PIN về 0 -> Trạng thái không còn trong phòng
 
             try
             {
-                // SignalR: Thông báo rời phòng
+                // Ẩn ngay lập tức nút Sửa/Xóa vì phòng đã đóng
+                UpdateActionButtonsVisibility();
+
                 if (_hubConnection.State == HubConnectionState.Connected)
                 {
                     await _hubConnection.InvokeAsync("LeaveRoom", pinToCancel.ToString());
@@ -391,14 +448,28 @@ namespace WinForms.UserControls.Quiz
                     }
                 }
 
-                // Database: Xóa phòng tạm
                 await _thachDauService.HuyThachDauAsync(pinToCancel);
-                System.Diagnostics.Debug.WriteLine($"[Cleanup] Đã hủy phòng chờ {pinToCancel}");
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[Error] CleanupLobby: {ex.Message}");
             }
+        }
+
+        private void UpdateActionButtonsVisibility()
+        {
+            // 1. Xác định các trạng thái cơ bản
+            bool isOwner = _currentBoDe != null &&
+                           UserSession.CurrentUser != null &&
+                           _currentBoDe.MaNguoiDung == UserSession.CurrentUser.MaNguoiDung;
+
+            bool hasActiveRoom = (_currentPin != 0); 
+            bool isNoActiveRoom = !hasActiveRoom;    
+
+            btnEdit.Visible = isOwner && isNoActiveRoom;
+            btnDelete.Visible = isOwner && isNoActiveRoom;
+            lblChallengeCode.Visible = hasActiveRoom;
+            btnShareSocial.Visible = hasActiveRoom;
         }
 
     }

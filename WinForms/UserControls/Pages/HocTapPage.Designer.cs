@@ -35,6 +35,7 @@
             lblPublicQuizzes = new Label();
             flowBoDeCongKhai = new FlowLayoutPanel();
             pnlPublicNavigation = new FlowLayoutPanel();
+            this.flowTags = new FlowLayoutPanel();
             btnPrevPublic = new Button();
             btnNextPublic = new Button();
             pnlMainContent.SuspendLayout();
@@ -57,6 +58,8 @@
             pnlMainContent.Controls.Add(lblPublicQuizzes);
             pnlMainContent.Controls.Add(flowBoDeCongKhai);
             pnlMainContent.Controls.Add(pnlPublicNavigation);
+            this.pnlMainContent.Controls.Add(this.flowTags); // ✅ Thêm vào Container
+            this.pnlMainContent.Controls.Add(this.lblPublicQuizzes);
             pnlMainContent.Dock = DockStyle.Fill;
             pnlMainContent.FlowDirection = FlowDirection.TopDown;
             pnlMainContent.Location = new Point(0, 0);
@@ -258,6 +261,15 @@
             btnNextPublic.Text = "▶";
             btnNextPublic.Visible = false;
             // 
+
+            this.flowTags.AutoSize = true;
+            this.flowTags.FlowDirection = FlowDirection.LeftToRight;
+            this.flowTags.Location = new Point(33, 400); // Vị trí mẫu
+            this.flowTags.Name = "flowTags";
+            this.flowTags.Padding = new Padding(5);
+            this.flowTags.Size = new Size(1000, 40);
+            this.flowTags.TabIndex = 8;
+            this.flowTags.BackColor = Color.Transparent;
             // HocTapPage
             // 
             Controls.Add(pnlMainContent);
@@ -298,5 +310,7 @@
         private FlowLayoutPanel pnlPublicNavigation;
         private Button btnPrevPublic;
         private Button btnNextPublic;
+
+        private FlowLayoutPanel flowTags;
     }
 }
