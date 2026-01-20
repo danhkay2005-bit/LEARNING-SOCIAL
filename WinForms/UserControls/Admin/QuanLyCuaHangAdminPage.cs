@@ -21,6 +21,7 @@ namespace WinForms.UserControls.Admin
         private void QuanLyCuaHangAdminPage_Load(object sender, EventArgs e)
         {
             LoadComboBoxLoaiTien();
+            LoadData();
         }
 
         private void LoadComboBoxLoaiTien()

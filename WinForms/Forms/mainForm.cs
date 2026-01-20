@@ -216,6 +216,7 @@ namespace WinForms.Forms
             });
 
             AddMenuButton("🌐 Mạng xã hội", BtnMangXaHoi_Click);
+            AddMenuButton("🗓 Điểm Danh", (s, e) => LoadPage(Program.ServiceProvider!.GetRequiredService<DiemDanhPage>()));
 
             AddMenuButton("🛒 Cửa hàng", (s, e) => LoadPage(Program.ServiceProvider!.GetRequiredService<CuaHangPage>()));
             AddMenuButton("📦 Kho vật phẩm", (s, e) => LoadPage(Program.ServiceProvider!.GetRequiredService<KhoVatPhamPage>()));
@@ -247,7 +248,7 @@ namespace WinForms.Forms
             });
 
             AddMenuButton("📝 Quản lý Bài đăng", (s, e) => {
-                // LoadPage(Program.ServiceProvider.GetRequiredService<QuanLyBaiDangPage>());
+                 LoadPage(Program.ServiceProvider.GetRequiredService<QuanLyBaiDangAdminPage>());
             });
 
             AddMenuButton("🏪 Quản lý Cửa hàng", (s, e) => {

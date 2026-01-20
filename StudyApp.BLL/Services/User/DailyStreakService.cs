@@ -108,7 +108,8 @@ namespace StudyApp.BLL.Services.User
             // Trường hợp 1: Liên tục (Hôm qua có học)
             if (khoangCachNgay == 1)
             {
-                user.ChuoiNgayHocLienTiep = streakHienTai + 1;
+                //user.ChuoiNgayHocLienTiep = streakHienTai + 1;
+                user.ChuoiNgayHocLienTiep = (user.ChuoiNgayHocLienTiep ?? 0) + 1;
             }
             // Trường hợp 2: Bị ngắt quãng (Khoảng cách > 1 ngày) -> Cần dùng BẢO VỆ (Freeze)
             else if (khoangCachNgay > 1)
