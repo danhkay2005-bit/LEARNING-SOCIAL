@@ -31,6 +31,7 @@ namespace WinForms.UserControls
         private bool _iAnsweredCurrent = false, _opponentAnsweredCurrent = false;
         private bool _isFinishing = false; 
         private Stopwatch _totalTimer = new Stopwatch();
+        private Stopwatch _questionStopwatch = new Stopwatch();
         private List<ChiTietTraLoiRequest> _danhSachTraLoiChiTiet = new List<ChiTietTraLoiRequest>();
 
         public HocBoDePage(IBoDeHocService boDeHocService, IThachDauService thachDauService, HubConnection hubConnection)
@@ -128,6 +129,7 @@ namespace WinForms.UserControls
             Control qc = CreateQuestionControl(cauHoi);
             qc.Dock = DockStyle.Fill;
             pnlQuestionContent.Controls.Add(qc);
+            _questionStopwatch.Restart();
             timerTick.Start();
         }
 
@@ -144,7 +146,10 @@ namespace WinForms.UserControls
                     return;
                 }
 
+                _questionStopwatch.Stop();
+
                 timerTick.Stop();
+                int thoiGianThucTe = (int)Math.Max(1, _questionStopwatch.Elapsed.TotalSeconds);
                 bool isCorrect = false;
                 if (sender != null)
                 {
@@ -158,7 +163,7 @@ namespace WinForms.UserControls
                     TraLoiDung = isCorrect,
                     CauTraLoiUser = qc.GetUserAnswer(), 
                     DapAnDung = currentCauHoi.ThongTinThe.MatSau,
-                    ThoiGianTraLoiGiay = 100 - _currentTimeLeft
+                    ThoiGianTraLoiGiay = thoiGianThucTe
                 });
 
                 await Task.Delay(600);
@@ -230,7 +235,13 @@ namespace WinForms.UserControls
             if (_isFinishing) return;
             timerTick.Stop();
             _totalTimer.Stop();
+            _questionStopwatch.Stop(); // Đảm bảo stopwatch câu cuối cùng cũng dừng
+
             pnlQuestionContent.Controls.Clear();
+
+            // 1. TÍNH TỔNG THỜI GIAN THỰC TẾ LÀM BÀI (Cộng dồn từng câu)
+            int? tongThoiGianThucGiay = _danhSachTraLoiChiTiet.Sum(x => x.ThoiGianTraLoiGiay);
+            TimeSpan thoiGianThucSpan = TimeSpan.FromSeconds((double)(tongThoiGianThucGiay ?? 0));
 
             var resultUI = new QuizResultControl();
             resultUI.Dock = DockStyle.Fill;
@@ -245,18 +256,22 @@ namespace WinForms.UserControls
                         MaNguoiDung = UserSession.CurrentUser.MaNguoiDung,
                         MaBoDe = _data?.ThongTinChung?.MaBoDe,
                         LoaiPhien = "KiemTra",
+                        // Thời gian bắt đầu có thể giữ nguyên để biết thời điểm bắt đầu học
                         ThoiGianBatDau = DateTime.Now.Subtract(_totalTimer.Elapsed),
                         ThoiGianKetThuc = DateTime.Now,
-                        ThoiGianHocGiay = (int)_totalTimer.Elapsed.TotalSeconds,
+                        // SỬ DỤNG TỔNG THỜI GIAN THỰC TẾ
+                        ThoiGianHocGiay = tongThoiGianThucGiay,
                         TongSoThe = _data?.DanhSachCauHoi?.Count ?? 0,
                         SoTheDung = _correctCount,
                         SoTheSai = _wrongCount,
                         TyLeDung = (_data?.DanhSachCauHoi?.Count ?? 0) > 0 ? (double)_correctCount / (_data?.DanhSachCauHoi?.Count ?? 1) * 100 : 0
                     };
-                    await _boDeHocService.LuuKetQuaPhienHocAsync(phienHoc, _danhSachTraLoiChiTiet);
 
+                    await _boDeHocService.LuuKetQuaPhienHocAsync(phienHoc, _danhSachTraLoiChiTiet);
                     await RefreshUserStats();
-                    resultUI.DisplaySoloResult(_correctCount, _wrongCount, _data?.DanhSachCauHoi?.Count ?? 0, _totalTimer.Elapsed);
+
+                    // Hiển thị thời gian thực lên UI kết quả
+                    resultUI.DisplaySoloResult(_correctCount, _wrongCount, _data?.DanhSachCauHoi?.Count ?? 0, thoiGianThucSpan);
                 }
                 else if (_maThachDau.HasValue)
                 {
@@ -268,8 +283,10 @@ namespace WinForms.UserControls
                         Diem = _totalScore,
                         SoTheDung = _correctCount,
                         SoTheSai = _wrongCount,
-                        ThoiGianLamBaiGiay = (int)_totalTimer.Elapsed.TotalSeconds
+                      
+                        ThoiGianLamBaiGiay = tongThoiGianThucGiay
                     };
+
                     bool isSaved = await _thachDauService.CapNhatKetQuaNguoiChoiAsync(updateReq, _danhSachTraLoiChiTiet);
 
                     if (isSaved)
@@ -280,22 +297,11 @@ namespace WinForms.UserControls
                         var me = bxh.FirstOrDefault(x => x.MaNguoiDung == UserSession.CurrentUser.MaNguoiDung);
                         var opp = bxh.FirstOrDefault(x => x.MaNguoiDung != UserSession.CurrentUser.MaNguoiDung);
 
+                        // So sánh thắng thua dựa trên Diem, sau đó là ThoiGianLamBaiGiay thực tế
                         bool isWin = (opp == null) || (me != null && opp != null &&
                                      (me.Diem > opp.Diem || (me.Diem == opp.Diem && me.ThoiGianLamBaiGiay < opp.ThoiGianLamBaiGiay)));
 
                         resultUI.DisplayChallengeResult(_totalScore, _correctCount, _wrongCount, isWin, _maThachDau.Value);
-
-                        // Cập nhật nút "Xem chi tiết" để hiển thị dữ liệu vừa đấu
-                        resultUI.OnShowDetailsClicked += () => {
-                            var reviewUI = new QuizReviewControl(_danhSachTraLoiChiTiet);
-                            reviewUI.Dock = DockStyle.Fill;
-                            reviewUI.OnBackClicked += () => {
-                                pnlQuestionContent.Controls.Clear();
-                                pnlQuestionContent.Controls.Add(resultUI);
-                            };
-                            pnlQuestionContent.Controls.Clear();
-                            pnlQuestionContent.Controls.Add(reviewUI);
-                        };
                     }
                     else
                     {
@@ -305,14 +311,14 @@ namespace WinForms.UserControls
                     await RefreshUserStats();
                 }
 
+                // Logic xem lại chi tiết câu hỏi (giữ nguyên)
                 resultUI.OnShowDetailsClicked += () => {
-                    var reviewUI = new QuizReviewControl(_danhSachTraLoiChiTiet); 
+                    var reviewUI = new QuizReviewControl(_danhSachTraLoiChiTiet);
                     reviewUI.Dock = DockStyle.Fill;
                     reviewUI.OnBackClicked += () => {
                         pnlQuestionContent.Controls.Clear();
                         pnlQuestionContent.Controls.Add(resultUI);
                     };
-
                     pnlQuestionContent.Controls.Clear();
                     pnlQuestionContent.Controls.Add(reviewUI);
                 };

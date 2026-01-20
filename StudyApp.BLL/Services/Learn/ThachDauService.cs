@@ -337,5 +337,29 @@
 
             return response;
         }
+        public async Task<IEnumerable<LichSuThachDauResponse>> GetLichSuByUserAsync(Guid userId)
+        {
+            // 1. Thực hiện Join thủ công để lấy cặp dữ liệu (Entity Lịch sử + Tên bộ đề)
+            var rawData = await (from ls in _context.LichSuThachDaus
+                                 join bd in _context.BoDeHocs on ls.MaBoDe equals bd.MaBoDe
+                                 where ls.MaNguoiDung == userId
+                                 orderby ls.ThoiGianKetThuc descending
+                                 select new
+                                 {
+                                     Entity = ls,
+                                     TenBoDe = bd.TieuDe
+                                 }).ToListAsync();
+
+            var responseList = rawData.Select(x =>
+            {
+                var dto = _mapper.Map<LichSuThachDauResponse>(x.Entity);
+
+                dto.TenBoDe = x.TenBoDe;
+
+                return dto;
+            }).ToList();
+
+            return responseList;
+        }
     }
     }

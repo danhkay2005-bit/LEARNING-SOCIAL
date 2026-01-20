@@ -1,4 +1,5 @@
-﻿using System;
+﻿using StudyApp.DTO.Responses.Learn;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -11,5 +12,6 @@ namespace StudyApp.BLL.Interfaces.Learn
         Task NotifyReadyToStart(int maThachDau);
         Task NotifyUpdateScore(int maThachDau, Guid userId, int score);
         Task NotifyOpponentReadyNext(int maThachDau, Guid userId, int questionIndex);
+
     }
 }

@@ -43,6 +43,7 @@
             label2 = new Label();
             picCauHoi = new PictureBox();
             btnThemAnh = new Button();
+            btnTaoAnhAI = new Button(); // Thêm mới
             panelAnswers.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)picCauHoi).BeginInit();
             SuspendLayout();
@@ -192,16 +193,29 @@
             btnThemAnh.ForeColor = Color.White;
             btnThemAnh.Location = new Point(928, 107);
             btnThemAnh.Name = "btnThemAnh";
-            btnThemAnh.Size = new Size(94, 107);
+            btnThemAnh.Size = new Size(94, 52); // Giảm chiều cao từ 107 xuống 52
             btnThemAnh.TabIndex = 8;
             btnThemAnh.Text = "Thêm ảnh";
             btnThemAnh.UseVisualStyleBackColor = false;
+            // 
+            // btnTaoAnhAI
+            // 
+            btnTaoAnhAI.BackColor = Color.FromArgb(0, 120, 215); // Màu xanh dương để phân biệt
+            btnTaoAnhAI.FlatStyle = FlatStyle.Flat;
+            btnTaoAnhAI.ForeColor = Color.White;
+            btnTaoAnhAI.Location = new Point(928, 162); // Đặt bên dưới nút Thêm ảnh
+            btnTaoAnhAI.Name = "btnTaoAnhAI";
+            btnTaoAnhAI.Size = new Size(94, 52);
+            btnTaoAnhAI.TabIndex = 9;
+            btnTaoAnhAI.Text = "✨ Tạo AI";
+            btnTaoAnhAI.UseVisualStyleBackColor = false;
             // 
             // TracNghiemEditorControl
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.White;
+            Controls.Add(btnTaoAnhAI); // Thêm vào Controls
             Controls.Add(btnThemAnh);
             Controls.Add(picCauHoi);
             Controls.Add(label2);
@@ -234,5 +248,6 @@
         private Label label2;
         private PictureBox picCauHoi;
         private Button btnThemAnh;
+        private Button btnTaoAnhAI; // Khai báo biến
     }
 }

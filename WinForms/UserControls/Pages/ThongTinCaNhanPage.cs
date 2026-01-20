@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using StudyApp.BLL.Interfaces.Learn;
 using StudyApp.BLL.Interfaces.Social;
 using StudyApp.BLL.Interfaces.User;
 using StudyApp.DTO;
@@ -10,6 +11,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using WinForms.UserControls.Components.Social;
+using WinForms.UserControls.Quiz;
 
 namespace WinForms.UserControls
 {
@@ -51,11 +53,19 @@ namespace WinForms.UserControls
         private FlowLayoutPanel? flowFollowers;
         private FlowLayoutPanel? flowFollowing;
 
+        private readonly IBoDeHocService? _boDeHocService;
+        private readonly IThachDauService? _thachDauService;
+
+        // Tab mới
+        private TabPage? tabMyQuizzes;
+        private TabPage? tabChallengeHistory;
+        private FlowLayoutPanel? flowMyQuizzes;
+        private FlowLayoutPanel? flowChallengeHistory;
+
         public ThongTinCaNhanPage()
         {
             InitializeComponent();
 
-            // Lấy services từ Program. ServiceProvider
             if (Program.ServiceProvider != null)
             {
                 _userProfileService = Program.ServiceProvider.GetService<IUserProfileService>();
@@ -63,6 +73,10 @@ namespace WinForms.UserControls
                 _postService = Program.ServiceProvider.GetService<IPostService>();
                 _reactionService = Program.ServiceProvider.GetService<IReactionService>();
                 _commentService = Program.ServiceProvider.GetService<ICommentService>();
+
+                // ✅ Service mới
+                _boDeHocService = Program.ServiceProvider.GetService<IBoDeHocService>();
+                _thachDauService = Program.ServiceProvider.GetService<IThachDauService>();
             }
 
             InitializeCustomControls();
@@ -246,11 +260,60 @@ namespace WinForms.UserControls
             tabControl.TabPages.Add(tabFollowing);
 
             tabControl.SelectedIndexChanged += TabControl_SelectedIndexChanged;
+            tabControl = new TabControl { Dock = DockStyle.Fill, Font = new Font("Segoe UI", 10F, FontStyle.Bold) };
+
+            // Tab 1: Bài viết
+            tabPosts = new TabPage("📝 Bài viết");
+            flowPosts = CreateTabFlowPanel();
+            tabPosts.Controls.Add(flowPosts);
+
+            // ✅ Tab 2: Bộ đề của tôi
+            tabMyQuizzes = new TabPage("📚 Bộ đề");
+            flowMyQuizzes = CreateTabFlowPanel();
+            // Flow cho bộ đề nên để WrapContents = true để hiện dạng lưới
+            flowMyQuizzes.FlowDirection = FlowDirection.LeftToRight;
+            flowMyQuizzes.WrapContents = true;
+            tabMyQuizzes.Controls.Add(flowMyQuizzes);
+
+            // ✅ Tab 3: Lịch sử thách đấu
+            tabChallengeHistory = new TabPage("⚔️ Thách đấu");
+            flowChallengeHistory = CreateTabFlowPanel();
+            tabChallengeHistory.Controls.Add(flowChallengeHistory);
+
+            // Tab 4: Followers
+            tabFollowers = new TabPage("👥 Người theo dõi");
+            flowFollowers = CreateTabFlowPanel();
+            tabFollowers.Controls.Add(flowFollowers);
+
+            // Tab 5: Following
+            tabFollowing = new TabPage("➕ Đang theo dõi");
+            flowFollowing = CreateTabFlowPanel();
+            tabFollowing.Controls.Add(flowFollowing);
+
+            tabControl.TabPages.AddRange(new TabPage[] { tabPosts, tabMyQuizzes, tabChallengeHistory, tabFollowers, tabFollowing });
+            tabControl.SelectedIndexChanged += TabControl_SelectedIndexChanged;
+
+            this.Controls.Add(tabControl);
+            this.Controls.Add(pnlHeader);
 
             this.Controls.Add(tabControl);
             this.Controls.Add(pnlHeader);
         }
 
+
+
+        private FlowLayoutPanel CreateTabFlowPanel()
+        {
+            return new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.TopDown,
+                WrapContents = false,
+                AutoScroll = true,
+                BackColor = Color.FromArgb(240, 242, 245),
+                Padding = new Padding(20)
+            };
+        }
         /// <summary>
         /// 🏷️ Tạo label thống kê
         /// </summary>
@@ -265,6 +328,104 @@ namespace WinForms.UserControls
                 ForeColor = Color.FromArgb(24, 119, 242),
                 Cursor = Cursors.Hand
             };
+        }
+
+        /// <summary>
+        /// 📚 Tải danh sách bộ đề của tôi
+        /// </summary>
+        private async Task LoadMyQuizzesAsync()
+        {
+            if (_boDeHocService == null || flowMyQuizzes == null || UserSession.CurrentUser == null) return;
+            flowMyQuizzes.Controls.Clear();
+
+            try
+            {
+                var quizzes = await _boDeHocService.GetByUserAsync(UserSession.CurrentUser.MaNguoiDung);
+                if (quizzes == null || !quizzes.Any())
+                {
+                    flowMyQuizzes.Controls.Add(CreateEmptyLabel("📚 Bạn chưa tạo bộ đề nào. Hãy bắt đầu ngay!"));
+                    return;
+                }
+
+                foreach (var q in quizzes)
+                {
+                    var item = new BoDeItemControl();
+                    item.SetData(q.MaBoDe, q.TieuDe, q.SoLuongThe, q.SoLuotHoc, q.AnhBia ?? "");
+                    item.OnVaoThiClick += (s, ev) => {
+                        if (this.FindForm() is Forms.MainForm mf && Program.ServiceProvider != null)
+                        {
+                            var detail = Program.ServiceProvider.GetRequiredService<ChiTietBoDeControl>();
+                            detail.MaBoDe = q.MaBoDe;
+                            mf.LoadPage(detail);
+                        }
+                    };
+                    flowMyQuizzes.Controls.Add(item);
+                }
+            }
+            catch (Exception ex) { Console.WriteLine(ex.Message); }
+        }
+
+        private Label CreateEmptyLabel(string text)
+        {
+            return new Label
+            {
+                Text = text,
+                AutoSize = true,
+                Font = new Font("Segoe UI", 10F, FontStyle.Italic),
+                ForeColor = Color.Gray,
+                Margin = new Padding(20, 50, 20, 20), // Tạo khoảng cách phía trên để không bị dính vào header
+                TextAlign = ContentAlignment.MiddleCenter
+            };
+        }
+
+        /// <summary>
+        /// ⚔️ Tải lịch sử thách đấu của tôi
+        /// </summary>
+        private async Task LoadChallengeHistoryAsync()
+        {
+            if (_thachDauService == null || flowChallengeHistory == null || UserSession.CurrentUser == null) return;
+            flowChallengeHistory.Controls.Clear();
+
+            try
+            {
+                var history = await _thachDauService.GetLichSuByUserAsync(UserSession.CurrentUser.MaNguoiDung);
+                if (history == null || !history.Any())
+                {
+                    flowChallengeHistory.Controls.Add(CreateEmptyLabel("⚔️ Bạn chưa tham gia trận thách đấu nào."));
+                    return;
+                }
+
+                foreach (var h in history)
+                {
+                    Panel pnlRow = new Panel { Width = 750, Height = 70, BackColor = Color.White, Margin = new Padding(0, 5, 0, 10), BorderStyle = BorderStyle.FixedSingle };
+
+                    string statusText = h.LaNguoiThang ? "🏆 THẮNG" : "💀 THUA";
+                    Color statusColor = h.LaNguoiThang ? Color.Goldenrod : Color.Gray;
+
+                    Label lblResult = new Label
+                    {
+                        Text = $"[{statusText}] {h.TenBoDe} | {h.Diem} điểm | 🎯 {h.TyLeDung}%",
+                        Font = new Font("Segoe UI", 10F, FontStyle.Bold),
+                        ForeColor = statusColor,
+                        Location = new Point(15, 10),
+                        AutoSize = true
+                    };
+
+                    Label lblTime = new Label
+                    {
+                        Text = $"Trận đấu: #{h.MaThachDauGoc} - Kết thúc: {h.ThoiGianKetThuc:dd/MM/yyyy HH:mm}",
+                        Font = new Font("Segoe UI", 9F, FontStyle.Regular),
+                        ForeColor = Color.Gray,
+                        Location = new Point(15, 38),
+                        AutoSize = true
+                    };
+
+                    pnlRow.Controls.Add(lblResult);
+                    pnlRow.Controls.Add(lblTime);
+                    flowChallengeHistory.Controls.Add(pnlRow);
+                }
+            }
+            catch (Exception ex) { Console.WriteLine(ex.Message); }
         }
 
         /// <summary>
@@ -802,17 +963,15 @@ namespace WinForms.UserControls
             if (tabControl == null) return;
 
             if (tabControl.SelectedTab == tabPosts)
-            {
                 await LoadMyPostsAsync();
-            }
+            else if (tabControl.SelectedTab == tabMyQuizzes)
+                await LoadMyQuizzesAsync();
+            else if (tabControl.SelectedTab == tabChallengeHistory)
+                await LoadChallengeHistoryAsync();
             else if (tabControl.SelectedTab == tabFollowers)
-            {
                 await LoadFollowersAsync();
-            }
             else if (tabControl.SelectedTab == tabFollowing)
-            {
                 await LoadFollowingAsync();
-            }
         }
 
         /// <summary>
