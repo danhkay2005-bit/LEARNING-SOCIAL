@@ -19,20 +19,28 @@
         {
             lblMatTruoc = new Label();
             flpDapAn = new FlowLayoutPanel();
+            picHinhAnh = new PictureBox();
             SuspendLayout();
             // 
             // lblMatTruoc (Câu hỏi - Mặt trước thẻ)
             // 
             lblMatTruoc.Dock = DockStyle.Top;
-            lblMatTruoc.Font = new Font("Segoe UI Semibold", 20F, FontStyle.Bold);
+            lblMatTruoc.Font = new Font("Segoe UI Semibold", 18F, FontStyle.Bold); // Giảm font size một chút nếu có ảnh
             lblMatTruoc.ForeColor = Color.White;
             lblMatTruoc.Location = new Point(0, 0);
             lblMatTruoc.Name = "lblMatTruoc";
-            lblMatTruoc.Padding = new Padding(0, 20, 0, 20);
-            lblMatTruoc.Size = new Size(900, 180);
+            lblMatTruoc.Size = new Size(900, 100); // Giảm chiều cao mặc định
             lblMatTruoc.TabIndex = 0;
-            lblMatTruoc.Text = "Nội dung câu hỏi sẽ hiển thị ở đây?";
             lblMatTruoc.TextAlign = ContentAlignment.MiddleCenter;
+
+            picHinhAnh.Dock = DockStyle.Top;
+            picHinhAnh.Location = new Point(0, 100);
+            picHinhAnh.Name = "picHinhAnh";
+            picHinhAnh.Size = new Size(900, 200); // Chiều cao cho ảnh
+            picHinhAnh.SizeMode = PictureBoxSizeMode.Zoom; // Giữ tỉ lệ ảnh
+            picHinhAnh.TabIndex = 2;
+            picHinhAnh.TabStop = false;
+            picHinhAnh.Visible = false; // Mặc định ẩn, chỉ hiện khi có ảnh
             // 
             // flpDapAn (Danh sách đáp án nạp động)
             // 
@@ -52,6 +60,7 @@
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.FromArgb(18, 38, 44); // Màu tối đồng bộ với HocBoDePage
             Controls.Add(flpDapAn);
+            Controls.Add(picHinhAnh);
             Controls.Add(lblMatTruoc);
             Name = "TracNghiemHocControl";
             Size = new Size(900, 500);
@@ -62,5 +71,6 @@
 
         private Label lblMatTruoc;
         private FlowLayoutPanel flpDapAn;
+        private PictureBox picHinhAnh;
     }
 }

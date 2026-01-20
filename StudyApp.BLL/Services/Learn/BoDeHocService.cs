@@ -9,6 +9,7 @@ using StudyApp.DTO.Enums;
 using StudyApp.DTO.Requests.Learn;
 using StudyApp.DTO.Responses.Learn;
 using StudyApp.DTO.Responses.Learn.StudyApp.DTO.Responses.Learn;
+using System;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 
@@ -727,22 +728,23 @@ namespace StudyApp.BLL.Services.Learn
         }
         public async Task LuuKetQuaPhienHocAsync(PhienHoc phienHoc, List<ChiTietTraLoiRequest> chiTiets)
         {
+            if (phienHoc == null) throw new ArgumentNullException(nameof(phienHoc));
+
+            // Khởi tạo Transaction duy nhất tại đây
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                if (phienHoc == null) throw new ArgumentNullException(nameof(phienHoc));
-
-                // 1. LƯU PHIÊN HỌC (Để lấy MaPhien Identity)
+                // 1. LƯU PHIÊN HỌC 
+                // Cần SaveChanges trước để lấy MaPhien (Identity) gán cho các bảng liên quan
                 _context.PhienHocs.Add(phienHoc);
                 await _context.SaveChangesAsync();
 
-                // 2. DUYỆT CHI TIẾT VÀ CẬP NHẬT TIẾN ĐỘ
+                // 2. DUYỆT CHI TIẾT
                 foreach (var ct in chiTiets)
                 {
-                    // A. Lưu bảng ChiTietTraLoi
                     var log = new ChiTietTraLoi
                     {
-                        MaPhien = phienHoc.MaPhien,
+                        MaPhien = phienHoc.MaPhien, // Đã có ID từ bước 1
                         MaThe = ct.MaThe,
                         TraLoiDung = ct.TraLoiDung,
                         CauTraLoiUser = ct.CauTraLoiUser,
@@ -752,11 +754,11 @@ namespace StudyApp.BLL.Services.Learn
                     };
                     _context.ChiTietTraLois.Add(log);
 
-                    // B. Cập nhật bảng TienDoHocTap (SM-2)
-                    await CapNhatTienDoSM2(ct.MaThe, phienHoc.MaNguoiDung, ct.TraLoiDung);
+                    // GỌI HÀM CẬP NHẬT (Không có Transaction bên trong)
+                    await CapNhatTienDoSM2(ct.MaThe, phienHoc.MaNguoiDung, ct.TraLoiDung, DateTime.Now);
                 }
 
-                // 3. XỬ LÝ LỊCH SỬ BỘ ĐỀ (Như code cũ của bạn)
+                // 3. XỬ LÝ LỊCH SỬ BỘ ĐỀ
                 if (phienHoc.MaBoDe.HasValue)
                 {
                     var boDe = await _context.BoDeHocs.FindAsync(phienHoc.MaBoDe);
@@ -775,12 +777,17 @@ namespace StudyApp.BLL.Services.Learn
                     _context.LichSuHocBoDes.Add(lichSu);
                 }
 
+                // LƯU TẤT CẢ THAY ĐỔI (Chi tiết trả lời, Tiến độ SM2, Lịch sử bộ đề)
+                // Việc này giúp giảm số lần kết nối Database trong vòng lặp foreach
                 await _context.SaveChangesAsync();
+
+                // HOÀN TẤT
                 await transaction.CommitAsync();
 
+                // Xử lý Gamification (thường là các bảng độc lập, có thể tách riêng)
                 await HandleGamification(phienHoc);
             }
-            catch 
+            catch (Exception)
             {
                 await transaction.RollbackAsync();
                 throw;
@@ -798,39 +805,38 @@ namespace StudyApp.BLL.Services.Learn
             catch (Exception ex) { Debug.WriteLine("Gamification Error: " + ex.Message); }
         }
 
-        private async Task CapNhatTienDoSM2(int maThe, Guid maNguoiDung, bool isCorrect)
+private async Task CapNhatTienDoSM2(int maThe, Guid maNguoiDung, bool isCorrect, DateTime executionTime)
         {
+            // EF sẽ track đối tượng này ngay khi lấy lên
             var tienDo = await _context.TienDoHocTaps
                 .FirstOrDefaultAsync(x => x.MaThe == maThe && x.MaNguoiDung == maNguoiDung);
 
-            bool isNew = false;
             if (tienDo == null)
             {
-                isNew = true;
                 tienDo = new TienDoHocTap
                 {
                     MaNguoiDung = maNguoiDung,
                     MaThe = maThe,
-                    HeSoDe = 1.3, // Giảm hệ số xuống thấp nhất để khoảng cách tăng chậm
+                    HeSoDe = 1.3,
                     SoLanLap = 0,
                     KhoangCachNgay = 0,
-                    ThoiGianTao = DateTime.Now
+                    ThoiGianTao = executionTime,
+                    SoLanDung = 0,
+                    SoLanSai = 0
                 };
+                _context.TienDoHocTaps.Add(tienDo);
             }
 
             if (isCorrect)
             {
-                // LOGIC MỚI: Ép khoảng cách ngắn (1-2 ngày)
                 if (tienDo.SoLanLap == 0)
-                    tienDo.KhoangCachNgay = 1; // Đúng lần 1: Mai học lại
+                    tienDo.KhoangCachNgay = 1;
                 else if (tienDo.SoLanLap == 1)
-                    tienDo.KhoangCachNgay = 2; // Đúng lần 2: Kia học lại
+                    tienDo.KhoangCachNgay = 2;
                 else
                 {
-                    // Các lần sau: Khoảng cách = Khoảng cách cũ * 1.2 (Tăng rất chậm)
+                    // Tăng chậm 20% mỗi lần đúng, tối đa 7 ngày
                     double nextInterval = (tienDo.KhoangCachNgay ?? 2) * 1.2;
-
-                    // Bạn có thể giới hạn tối đa không quá 3 hoặc 5 ngày nếu muốn cực kỳ gắt gao
                     tienDo.KhoangCachNgay = (int)Math.Min(Math.Round(nextInterval), 7);
                 }
 
@@ -839,21 +845,20 @@ namespace StudyApp.BLL.Services.Learn
             }
             else
             {
-                // Nếu sai: Bắt buộc học lại vào ngay ngày mai
+                // Sai: Reset hoàn toàn về mức bắt đầu
                 tienDo.SoLanLap = 0;
                 tienDo.KhoangCachNgay = 1;
                 tienDo.SoLanSai++;
-                tienDo.HeSoDe = 1.3; // Reset về độ dễ thấp nhất
+                tienDo.HeSoDe = 1.3;
             }
 
-            // Cập nhật ngày ôn tập: Hôm nay + số ngày giãn cách
-            tienDo.NgayOnTapTiepTheo = DateTime.Now.AddDays(tienDo.KhoangCachNgay ?? 1);
-            tienDo.LanHocCuoi = DateTime.Now;
+            // Cập nhật ngày ôn tập
+            tienDo.NgayOnTapTiepTheo = executionTime.AddDays(tienDo.KhoangCachNgay ?? 1);
+            tienDo.LanHocCuoi = executionTime;
 
-            if (isNew) _context.TienDoHocTaps.Add(tienDo);
-            else _context.Entry(tienDo).State = EntityState.Modified;
+            // KHÔNG CẦN: _context.Entry(tienDo).State = EntityState.Modified;
+            // Vì EF đã tự theo dõi các thuộc tính bị thay đổi.
         }
-
         public async Task<(IEnumerable<BoDeHocResponse> Data, int TotalCount)> GetAllForAdminAsync(int page, int pageSize, int? maChuDe = null, bool? isDeleted = null)
             {
             // Sử dụng .IgnoreQueryFilters() nếu DbContext của bạn có cấu hình xóa mềm mặc định

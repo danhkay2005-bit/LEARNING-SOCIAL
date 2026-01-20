@@ -24,7 +24,43 @@ namespace WinForms.UserControls.Quiz
         {
             InitializeComponent();
             lblMatTruoc.Text = info.MatTruoc;
+            HandleImage(info.HinhAnhSau);
             RenderDapAn(dapAns);
+        }
+
+        private void HandleImage(string? imageSource)
+        {
+            if (string.IsNullOrEmpty(imageSource))
+            {
+                picHinhAnh.Visible = false;
+                lblMatTruoc.Height = 150; // Trả lại chiều cao cho label nếu không có ảnh
+                return;
+            }
+
+            try
+            {
+                // 1. Nếu imageSource là URL hoặc đường dẫn file
+                if (imageSource.StartsWith("http") || System.IO.File.Exists(imageSource))
+                {
+                    picHinhAnh.ImageLocation = imageSource;
+                }
+                // 2. Nếu imageSource là chuỗi Base64
+                else
+                {
+                    byte[] imageBytes = Convert.FromBase64String(imageSource);
+                    using (var ms = new System.IO.MemoryStream(imageBytes))
+                    {
+                        picHinhAnh.Image = Image.FromStream(ms);
+                    }
+                }
+
+                picHinhAnh.Visible = true;
+                lblMatTruoc.Height = 80; // Thu nhỏ label để nhường chỗ cho ảnh
+            }
+            catch
+            {
+                picHinhAnh.Visible = false;
+            }
         }
 
         private void RenderDapAn(List<DapAnTracNghiemResponse> dapAns)
