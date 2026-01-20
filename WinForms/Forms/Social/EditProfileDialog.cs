@@ -204,7 +204,7 @@ namespace WinForms.Forms.Social
                 Font = new Font("Segoe UI", 10F),
                 Multiline = true,
                 MaxLength = 500,
-                PlaceholderText = "Vi?t vài dòng v? b?n..."
+                PlaceholderText = "Viết vài dòng về bạn..."
             };
             this.Controls.Add(lblBio);
             this.Controls.Add(txtBio);
@@ -400,7 +400,7 @@ namespace WinForms.Forms.Social
             {
                 if (!IsValidEmail(txtEmail.Text))
                 {
-                    MessageBox.Show("Email không h?p l?!", "C?nh báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("Email không h?p l?!", "Cảnh báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     txtEmail.Focus();
                     return false;
                 }

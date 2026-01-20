@@ -515,7 +515,7 @@ namespace WinForms.UserControls.Components.Social
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Lỗi:  {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Lỗi: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -531,7 +531,7 @@ namespace WinForms.UserControls.Components.Social
                 
                 if (reactionBinhLuanService == null)
                 {
-                    MessageBox.Show("Không thể tải dịch vụ bình luận", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("Không thể tải dịch vụ bình luận.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
 
@@ -684,12 +684,7 @@ namespace WinForms.UserControls.Components.Social
                     // Gọi API chia sẻ
                     var result = await _chiaSeBaiDangService.ChiaSeBaiDangAsync(request);
 
-                    MessageBox.Show(
-                        "✅ Đã chia sẻ bài viết lên trang cá nhân của bạn!",
-                        "Thành công",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Information
-                    );
+                    MessageBox.Show("✅ Bạn đã chia sẻ bài viết lên trang cá nhân!", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
                     // Cập nhật số lượng chia sẻ (nếu có)
                     System.Diagnostics.Debug.WriteLine($"✅ Đã chia sẻ bài đăng #{_post.MaBaiDang}");
@@ -702,7 +697,7 @@ namespace WinForms.UserControls.Components.Social
                 if (errorMessage.Contains("đã chia sẻ"))
                 {
                     MessageBox.Show(
-                        "❌ Bạn đã chia sẻ bài viết này rồi!",
+                        "❌ Bạn đã chia sẻ bài viết này trước đó!",
                         "Thông báo",
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Warning
@@ -720,7 +715,7 @@ namespace WinForms.UserControls.Components.Social
                 else
                 {
                     MessageBox.Show(
-                        $"Lỗi khi chia sẻ bài viết:\n{errorMessage}",
+                        $"Đã xảy ra lỗi khi chia sẻ bài viết:\n{errorMessage}",
                         "Lỗi",
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Error
