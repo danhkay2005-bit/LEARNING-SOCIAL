@@ -85,219 +85,129 @@ namespace WinForms.UserControls
 
         private void InitializeCustomControls()
         {
-            // ========== HEADER PANEL ==========
+            this.BackColor = Color.FromArgb(240, 242, 245);
+
+            #region HEADER
             pnlHeader = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 250,
-                BackColor = Color.White,
-                Padding = new Padding(30)
+                Height = 230,
+                Padding = new Padding(40, 30, 40, 25),
+                BackColor = Color.White
             };
 
-            // ✅ Avatar - CẢI TIẾN:  Bo tròn, viền đẹp hơn
+            pnlHeader.Paint += (s, e) =>
+            {
+                using var brush = new LinearGradientBrush(
+                    pnlHeader.ClientRectangle,
+                    Color.FromArgb(245, 247, 250),
+                    Color.White,
+                    LinearGradientMode.Vertical);
+
+                e.Graphics.FillRectangle(brush, pnlHeader.ClientRectangle);
+            };
+
             pbAvatar = new PictureBox
             {
-                Width = 150,
-                Height = 150,
-                Location = new Point(30, 30),
+                Size = new Size(140, 140),
+                Location = new Point(40, 40),
                 SizeMode = PictureBoxSizeMode.StretchImage,
-                BackColor = Color.FromArgb(240, 242, 245),
-                BorderStyle = BorderStyle.None, // ✅ Bỏ border cũ
-                Cursor = Cursors.Hand
+                Cursor = Cursors.Hand,
+                BackColor = Color.LightGray
             };
 
-            // ✅ Vẽ viền tròn cho avatar
             pbAvatar.Paint += (s, e) =>
             {
-                if (pbAvatar == null) return;
+                using var path = new GraphicsPath();
+                path.AddEllipse(0, 0, pbAvatar.Width - 1, pbAvatar.Height - 1);
+                pbAvatar.Region = new Region(path);
 
-                // Tạo GraphicsPath hình tròn
-                using (GraphicsPath path = new GraphicsPath())
-                {
-                    path.AddEllipse(0, 0, pbAvatar.Width - 1, pbAvatar.Height - 1);
-                    pbAvatar.Region = new Region(path);
-
-                    // Vẽ viền tròn
-                    e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-                    using (Pen pen = new Pen(Color.FromArgb(24, 119, 242), 3))
-                    {
-                        e.Graphics.DrawEllipse(pen, 1, 1, pbAvatar.Width - 3, pbAvatar.Height - 3);
-                    }
-                }
+                using var pen = new Pen(Color.FromArgb(24, 119, 242), 3);
+                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                e.Graphics.DrawEllipse(pen, 1, 1, pbAvatar.Width - 3, pbAvatar.Height - 3);
             };
 
-            // ✅ Tooltip cho avatar
-            var tooltip = new ToolTip();
-            tooltip.SetToolTip(pbAvatar, "Click để thay đổi ảnh đại diện");
             pbAvatar.Click += BtnChangeAvatar_Click;
 
-            // Tên
             lblName = new Label
             {
-                Location = new Point(210, 30),
-                AutoSize = true,
-                Font = new Font("Segoe UI", 20F, FontStyle.Bold),
-                ForeColor = Color.FromArgb(29, 29, 29)
+                Location = new Point(210, 40),
+                Font = new Font("Segoe UI", 20, FontStyle.Bold),
+                AutoSize = true
             };
 
-            // Email
             lblEmail = new Label
             {
-                Location = new Point(210, 70),
-                AutoSize = true,
-                Font = new Font("Segoe UI", 11F, FontStyle.Regular),
-                ForeColor = Color.Gray
+                Location = new Point(210, 80),
+                Font = new Font("Segoe UI", 11),
+                ForeColor = Color.Gray,
+                AutoSize = true
             };
 
-            // Bio
             lblBio = new Label
             {
-                Location = new Point(210, 100),
+                Location = new Point(210, 110),
                 MaximumSize = new Size(600, 0),
-                AutoSize = true,
-                Font = new Font("Segoe UI", 10F, FontStyle.Italic),
-                ForeColor = Color.FromArgb(65, 65, 65)
+                Font = new Font("Segoe UI", 10, FontStyle.Italic),
+                ForeColor = Color.FromArgb(80, 80, 80),
+                AutoSize = true
             };
 
-            // Nút Chỉnh sửa
-            btnEdit = new Button
-            {
-                Text = "✏️ Chỉnh sửa thông tin",
-                Location = new Point(210, 150),
-                Width = 180,
-                Height = 40,
-                BackColor = Color.FromArgb(24, 119, 242),
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
-                Cursor = Cursors.Hand
-            };
-            btnEdit.FlatAppearance.BorderSize = 0;
+            btnEdit = CreateOutlineButton("✏️ Chỉnh sửa");
+            btnEdit.Location = new Point(210, 155);
             btnEdit.Click += BtnEdit_Click;
 
-            // Stats Panel
             pnlStats = new Panel
             {
-                Location = new Point(210, 200),
-                Size = new Size(600, 40),
+                Location = new Point(210, 195),
+                Size = new Size(450, 50),
                 BackColor = Color.Transparent
             };
 
-            lblPostCount = CreateStatLabel("0 Bài viết", 0);
-            lblFollowers = CreateStatLabel("0 Followers", 150);
-            lblFollowing = CreateStatLabel("0 Following", 300);
+            var statPosts = CreateStatCard("Bài viết", "0", 0);
+            var statFollowers = CreateStatCard("Followers", "0", 150);
+            var statFollowing = CreateStatCard("Following", "0", 300);
 
-            lblFollowers.Click += (s, e) =>
-            {
+            lblPostCount = (Label)statPosts.Tag!;
+            lblFollowers = (Label)statFollowers.Tag!;
+            lblFollowing = (Label)statFollowing.Tag!;
+
+            statFollowers.Click += (s, e) => {
                 if (tabControl != null && tabFollowers != null)
                     tabControl.SelectTab(tabFollowers);
             };
-            lblFollowing.Click += (s, e) =>
-            {
+            statFollowing.Click += (s, e) => {
                 if (tabControl != null && tabFollowing != null)
                     tabControl.SelectTab(tabFollowing);
             };
 
-            pnlStats.Controls.Add(lblPostCount);
-            pnlStats.Controls.Add(lblFollowers);
-            pnlStats.Controls.Add(lblFollowing);
+            pnlStats.Controls.AddRange(new[] { statPosts, statFollowers, statFollowing });
 
-            pnlHeader.Controls.Add(pbAvatar);
-            pnlHeader.Controls.Add(lblName);
-            pnlHeader.Controls.Add(lblEmail);
-            pnlHeader.Controls.Add(lblBio);
-            pnlHeader.Controls.Add(btnEdit);
-            pnlHeader.Controls.Add(pnlStats);
-
-            // ========== TAB CONTROL ==========
-            tabControl = new TabControl
+            pnlHeader.Controls.AddRange(new Control[]
             {
-                Dock = DockStyle.Fill,
-                Font = new Font("Segoe UI", 10F, FontStyle.Regular)
-            };
+        pbAvatar, lblName, lblEmail, lblBio, btnEdit, pnlStats
+            });
+            #endregion
 
-            // Tab Bài viết
-            tabPosts = new TabPage("📝 Bài viết của tôi");
-            flowPosts = new FlowLayoutPanel
+            #region TABS
+            tabControl = CreateModernTabControl();
+
+            tabPosts = CreateTab("📝 Bài viết", out flowPosts);
+            tabMyQuizzes = CreateTab("📚 Bộ đề", out flowMyQuizzes, true);
+            tabChallengeHistory = CreateTab("⚔️ Thách đấu", out flowChallengeHistory);
+            tabFollowers = CreateTab("👥 Followers", out flowFollowers);
+            tabFollowing = CreateTab("➕ Following", out flowFollowing);
+
+            tabControl.TabPages.AddRange(new[]
             {
-                Dock = DockStyle.Fill,
-                FlowDirection = FlowDirection.TopDown,
-                WrapContents = false,
-                AutoScroll = true,
-                BackColor = Color.FromArgb(240, 242, 245),
-                Padding = new Padding(20)
-            };
-            tabPosts.Controls.Add(flowPosts);
-
-            // Tab Followers
-            tabFollowers = new TabPage("👥 Người theo dõi");
-            flowFollowers = new FlowLayoutPanel
-            {
-                Dock = DockStyle.Fill,
-                FlowDirection = FlowDirection.TopDown,
-                WrapContents = false,
-                AutoScroll = true,
-                BackColor = Color.FromArgb(240, 242, 245),
-                Padding = new Padding(20)
-            };
-            tabFollowers.Controls.Add(flowFollowers);
-
-            // Tab Following
-            tabFollowing = new TabPage("➕ Đang theo dõi");
-            flowFollowing = new FlowLayoutPanel
-            {
-                Dock = DockStyle.Fill,
-                FlowDirection = FlowDirection.TopDown,
-                WrapContents = false,
-                AutoScroll = true,
-                BackColor = Color.FromArgb(240, 242, 245),
-                Padding = new Padding(20)
-            };
-            tabFollowing.Controls.Add(flowFollowing);
-
-            tabControl.TabPages.Add(tabPosts);
-            tabControl.TabPages.Add(tabFollowers);
-            tabControl.TabPages.Add(tabFollowing);
+        tabPosts, tabMyQuizzes, tabChallengeHistory, tabFollowers, tabFollowing
+    });
 
             tabControl.SelectedIndexChanged += TabControl_SelectedIndexChanged;
-            tabControl = new TabControl { Dock = DockStyle.Fill, Font = new Font("Segoe UI", 10F, FontStyle.Bold) };
+            #endregion
 
-            // Tab 1: Bài viết
-            tabPosts = new TabPage("📝 Bài viết");
-            flowPosts = CreateTabFlowPanel();
-            tabPosts.Controls.Add(flowPosts);
-
-            // ✅ Tab 2: Bộ đề của tôi
-            tabMyQuizzes = new TabPage("📚 Bộ đề");
-            flowMyQuizzes = CreateTabFlowPanel();
-            // Flow cho bộ đề nên để WrapContents = true để hiện dạng lưới
-            flowMyQuizzes.FlowDirection = FlowDirection.LeftToRight;
-            flowMyQuizzes.WrapContents = true;
-            tabMyQuizzes.Controls.Add(flowMyQuizzes);
-
-            // ✅ Tab 3: Lịch sử thách đấu
-            tabChallengeHistory = new TabPage("⚔️ Thách đấu");
-            flowChallengeHistory = CreateTabFlowPanel();
-            tabChallengeHistory.Controls.Add(flowChallengeHistory);
-
-            // Tab 4: Followers
-            tabFollowers = new TabPage("👥 Người theo dõi");
-            flowFollowers = CreateTabFlowPanel();
-            tabFollowers.Controls.Add(flowFollowers);
-
-            // Tab 5: Following
-            tabFollowing = new TabPage("➕ Đang theo dõi");
-            flowFollowing = CreateTabFlowPanel();
-            tabFollowing.Controls.Add(flowFollowing);
-
-            tabControl.TabPages.AddRange(new TabPage[] { tabPosts, tabMyQuizzes, tabChallengeHistory, tabFollowers, tabFollowing });
-            tabControl.SelectedIndexChanged += TabControl_SelectedIndexChanged;
-
-            this.Controls.Add(tabControl);
-            this.Controls.Add(pnlHeader);
-
-            this.Controls.Add(tabControl);
-            this.Controls.Add(pnlHeader);
+            Controls.Add(tabControl);
+            Controls.Add(pnlHeader);
         }
 
 
@@ -995,9 +905,153 @@ namespace WinForms.UserControls
                 }
             }
             catch (Exception ex)
+
             {
                 MessageBox.Show($"Lỗi mở dialog:  {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
+
+        private TabControl CreateModernTabControl()
+        {
+            var tab = new TabControl
+            {
+                Dock = DockStyle.Fill,
+                DrawMode = TabDrawMode.OwnerDrawFixed,
+                ItemSize = new Size(160, 42),
+                SizeMode = TabSizeMode.Fixed,
+                Font = new Font("Segoe UI Semibold", 10F),
+                BackColor = Color.White
+            };
+
+            tab.DrawItem += (s, e) =>
+            {
+                var page = tab.TabPages[e.Index];
+                bool selected = e.Index == tab.SelectedIndex;
+
+                using var textBrush = new SolidBrush(selected ? Color.Black : Color.Gray);
+                var textSize = e.Graphics.MeasureString(page.Text, tab.Font);
+
+                float x = e.Bounds.Left + (e.Bounds.Width - textSize.Width) / 2;
+                float y = e.Bounds.Top + 12;
+
+                e.Graphics.DrawString(page.Text, tab.Font, textBrush, x, y);
+
+                // Gạch chân tab active
+                if (selected)
+                {
+                    using var pen = new Pen(Color.FromArgb(24, 119, 242), 3);
+                    e.Graphics.DrawLine(
+                        pen,
+                        e.Bounds.Left + 25,
+                        e.Bounds.Bottom - 3,
+                        e.Bounds.Right - 25,
+                        e.Bounds.Bottom - 3
+                    );
+                }
+            };
+
+            return tab;
+        }
+
+        private TabPage CreateTab(
+    string title,
+    out FlowLayoutPanel flow,
+    bool wrap = false)
+        {
+            flow = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                AutoScroll = true,
+                FlowDirection = wrap ? FlowDirection.LeftToRight : FlowDirection.TopDown,
+                WrapContents = wrap,
+                Padding = new Padding(30),
+                BackColor = Color.FromArgb(240, 242, 245)
+            };
+
+            var tab = new TabPage(title)
+            {
+                BackColor = flow.BackColor
+            };
+
+            tab.Controls.Add(flow);
+            return tab;
+        }
+        private Button CreateOutlineButton(string text)
+        {
+            var btn = new Button
+            {
+                Text = text,
+                Size = new Size(180, 40),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(24, 119, 242),
+                Font = new Font("Segoe UI Semibold", 10F),
+                Cursor = Cursors.Hand
+            };
+
+            btn.FlatAppearance.BorderSize = 1;
+            btn.FlatAppearance.BorderColor = Color.FromArgb(24, 119, 242);
+
+            btn.MouseEnter += (s, e) =>
+            {
+                btn.BackColor = Color.FromArgb(24, 119, 242);
+                btn.ForeColor = Color.White;
+            };
+
+            btn.MouseLeave += (s, e) =>
+            {
+                btn.BackColor = Color.White;
+                btn.ForeColor = Color.FromArgb(24, 119, 242);
+            };
+
+            return btn;
+        }
+        private Panel CreateStatCard(string title, string value, int x)
+        {
+            var pnl = new Panel
+            {
+                Size = new Size(130, 45),
+                Location = new Point(x, 0),
+                BackColor = Color.White,
+                Cursor = Cursors.Hand
+            };
+
+            pnl.Paint += (s, e) =>
+            {
+                using var pen = new Pen(Color.Gainsboro);
+                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                e.Graphics.DrawRoundedRectangle(
+                    pen,
+                    new Rectangle(0, 0, pnl.Width - 1, pnl.Height - 1),
+                    10
+                );
+            };
+
+            var lblValue = new Label
+            {
+                Text = value,
+                Font = new Font("Segoe UI", 11F, FontStyle.Bold),
+                Location = new Point(12, 4),
+                AutoSize = true
+            };
+
+            var lblTitle = new Label
+            {
+                Text = title,
+                Font = new Font("Segoe UI", 9F),
+                ForeColor = Color.Gray,
+                Location = new Point(12, 22),
+                AutoSize = true
+            };
+
+            pnl.Controls.Add(lblValue);
+            pnl.Controls.Add(lblTitle);
+
+            // Gán label value vào Tag để update số liệu
+            pnl.Tag = lblValue;
+
+            return pnl;
+        }
+
     }
 }
