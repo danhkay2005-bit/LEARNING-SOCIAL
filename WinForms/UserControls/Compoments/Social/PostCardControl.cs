@@ -184,7 +184,7 @@ namespace WinForms.UserControls.Components.Social
             };
             lblAuthorName = new Label { Location = new Point(65, 10), AutoSize = true, Font = new Font("Segoe UI", 10F, FontStyle.Bold), ForeColor = Color.FromArgb(24, 119, 242) };
             lblTimestamp = new Label { Location = new Point(65, 32), AutoSize = true, Font = new Font("Segoe UI", 8F), ForeColor = Color.Gray };
-            btnMenu = new Button { Text = "⋮", Location = new Point(540, 10), Width = 35, Height = 35, FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 16F), Cursor = Cursors.Hand, ForeColor = Color.Gray };
+            btnMenu = new Button { Text = "...", Location = new Point(540, 10), Width = 35, Height = 35, FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 16F), Cursor = Cursors.Hand, ForeColor = Color.Gray };
             btnMenu.FlatAppearance.BorderSize = 0;
             btnMenu.Click += BtnMenu_Click;
 
