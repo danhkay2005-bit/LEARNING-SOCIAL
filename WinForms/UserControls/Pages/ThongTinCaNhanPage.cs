@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using StudyApp.BLL.Interfaces.Learn;
 using StudyApp.BLL.Interfaces.Social;
 using StudyApp.BLL.Interfaces.User;
 using StudyApp.DTO;
@@ -10,6 +11,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using WinForms.UserControls.Components.Social;
+using WinForms.UserControls.Quiz;
 
 namespace WinForms.UserControls
 {
@@ -51,11 +53,19 @@ namespace WinForms.UserControls
         private FlowLayoutPanel? flowFollowers;
         private FlowLayoutPanel? flowFollowing;
 
+        private readonly IBoDeHocService? _boDeHocService;
+        private readonly IThachDauService? _thachDauService;
+
+        // Tab mới
+        private TabPage? tabMyQuizzes;
+        private TabPage? tabChallengeHistory;
+        private FlowLayoutPanel? flowMyQuizzes;
+        private FlowLayoutPanel? flowChallengeHistory;
+
         public ThongTinCaNhanPage()
         {
             InitializeComponent();
 
-            // Lấy services từ Program. ServiceProvider
             if (Program.ServiceProvider != null)
             {
                 _userProfileService = Program.ServiceProvider.GetService<IUserProfileService>();
@@ -63,6 +73,10 @@ namespace WinForms.UserControls
                 _postService = Program.ServiceProvider.GetService<IPostService>();
                 _reactionService = Program.ServiceProvider.GetService<IReactionService>();
                 _commentService = Program.ServiceProvider.GetService<ICommentService>();
+
+                // ✅ Service mới
+                _boDeHocService = Program.ServiceProvider.GetService<IBoDeHocService>();
+                _thachDauService = Program.ServiceProvider.GetService<IThachDauService>();
             }
 
             InitializeCustomControls();
@@ -71,186 +85,145 @@ namespace WinForms.UserControls
 
         private void InitializeCustomControls()
         {
-            // ========== HEADER PANEL ==========
+            this.BackColor = Color.FromArgb(240, 242, 245);
+
+            #region HEADER
             pnlHeader = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 250,
-                BackColor = Color.White,
-                Padding = new Padding(30)
+                Height = 230,
+                Padding = new Padding(40, 30, 40, 25),
+                BackColor = Color.White
             };
 
-            // ✅ Avatar - CẢI TIẾN:  Bo tròn, viền đẹp hơn
+            pnlHeader.Paint += (s, e) =>
+            {
+                using var brush = new LinearGradientBrush(
+                    pnlHeader.ClientRectangle,
+                    Color.FromArgb(245, 247, 250),
+                    Color.White,
+                    LinearGradientMode.Vertical);
+
+                e.Graphics.FillRectangle(brush, pnlHeader.ClientRectangle);
+            };
+
             pbAvatar = new PictureBox
             {
-                Width = 150,
-                Height = 150,
-                Location = new Point(30, 30),
+                Size = new Size(140, 140),
+                Location = new Point(40, 40),
                 SizeMode = PictureBoxSizeMode.StretchImage,
-                BackColor = Color.FromArgb(240, 242, 245),
-                BorderStyle = BorderStyle.None, // ✅ Bỏ border cũ
-                Cursor = Cursors.Hand
+                Cursor = Cursors.Hand,
+                BackColor = Color.LightGray
             };
 
-            // ✅ Vẽ viền tròn cho avatar
             pbAvatar.Paint += (s, e) =>
             {
-                if (pbAvatar == null) return;
+                using var path = new GraphicsPath();
+                path.AddEllipse(0, 0, pbAvatar.Width - 1, pbAvatar.Height - 1);
+                pbAvatar.Region = new Region(path);
 
-                // Tạo GraphicsPath hình tròn
-                using (GraphicsPath path = new GraphicsPath())
-                {
-                    path.AddEllipse(0, 0, pbAvatar.Width - 1, pbAvatar.Height - 1);
-                    pbAvatar.Region = new Region(path);
-
-                    // Vẽ viền tròn
-                    e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-                    using (Pen pen = new Pen(Color.FromArgb(24, 119, 242), 3))
-                    {
-                        e.Graphics.DrawEllipse(pen, 1, 1, pbAvatar.Width - 3, pbAvatar.Height - 3);
-                    }
-                }
+                using var pen = new Pen(Color.FromArgb(24, 119, 242), 3);
+                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                e.Graphics.DrawEllipse(pen, 1, 1, pbAvatar.Width - 3, pbAvatar.Height - 3);
             };
 
-            // ✅ Tooltip cho avatar
-            var tooltip = new ToolTip();
-            tooltip.SetToolTip(pbAvatar, "Click để thay đổi ảnh đại diện");
             pbAvatar.Click += BtnChangeAvatar_Click;
 
-            // Tên
             lblName = new Label
             {
-                Location = new Point(210, 30),
-                AutoSize = true,
-                Font = new Font("Segoe UI", 20F, FontStyle.Bold),
-                ForeColor = Color.FromArgb(29, 29, 29)
+                Location = new Point(210, 40),
+                Font = new Font("Segoe UI", 20, FontStyle.Bold),
+                AutoSize = true
             };
 
-            // Email
             lblEmail = new Label
             {
-                Location = new Point(210, 70),
-                AutoSize = true,
-                Font = new Font("Segoe UI", 11F, FontStyle.Regular),
-                ForeColor = Color.Gray
+                Location = new Point(210, 80),
+                Font = new Font("Segoe UI", 11),
+                ForeColor = Color.Gray,
+                AutoSize = true
             };
 
-            // Bio
             lblBio = new Label
             {
-                Location = new Point(210, 100),
+                Location = new Point(210, 110),
                 MaximumSize = new Size(600, 0),
-                AutoSize = true,
-                Font = new Font("Segoe UI", 10F, FontStyle.Italic),
-                ForeColor = Color.FromArgb(65, 65, 65)
+                Font = new Font("Segoe UI", 10, FontStyle.Italic),
+                ForeColor = Color.FromArgb(80, 80, 80),
+                AutoSize = true
             };
 
-            // Nút Chỉnh sửa
-            btnEdit = new Button
-            {
-                Text = "✏️ Chỉnh sửa thông tin",
-                Location = new Point(210, 150),
-                Width = 180,
-                Height = 40,
-                BackColor = Color.FromArgb(24, 119, 242),
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
-                Cursor = Cursors.Hand
-            };
-            btnEdit.FlatAppearance.BorderSize = 0;
+            btnEdit = CreateOutlineButton("✏️ Chỉnh sửa");
+            btnEdit.Location = new Point(210, 155);
             btnEdit.Click += BtnEdit_Click;
 
-            // Stats Panel
             pnlStats = new Panel
             {
-                Location = new Point(210, 200),
-                Size = new Size(600, 40),
+                Location = new Point(210, 195),
+                Size = new Size(450, 50),
                 BackColor = Color.Transparent
             };
 
-            lblPostCount = CreateStatLabel("0 Bài viết", 0);
-            lblFollowers = CreateStatLabel("0 Followers", 150);
-            lblFollowing = CreateStatLabel("0 Following", 300);
+            var statPosts = CreateStatCard("Bài viết", "0", 0);
+            var statFollowers = CreateStatCard("Followers", "0", 150);
+            var statFollowing = CreateStatCard("Following", "0", 300);
 
-            lblFollowers.Click += (s, e) =>
-            {
+            lblPostCount = (Label)statPosts.Tag!;
+            lblFollowers = (Label)statFollowers.Tag!;
+            lblFollowing = (Label)statFollowing.Tag!;
+
+            statFollowers.Click += (s, e) => {
                 if (tabControl != null && tabFollowers != null)
                     tabControl.SelectTab(tabFollowers);
             };
-            lblFollowing.Click += (s, e) =>
-            {
+            statFollowing.Click += (s, e) => {
                 if (tabControl != null && tabFollowing != null)
                     tabControl.SelectTab(tabFollowing);
             };
 
-            pnlStats.Controls.Add(lblPostCount);
-            pnlStats.Controls.Add(lblFollowers);
-            pnlStats.Controls.Add(lblFollowing);
+            pnlStats.Controls.AddRange(new[] { statPosts, statFollowers, statFollowing });
 
-            pnlHeader.Controls.Add(pbAvatar);
-            pnlHeader.Controls.Add(lblName);
-            pnlHeader.Controls.Add(lblEmail);
-            pnlHeader.Controls.Add(lblBio);
-            pnlHeader.Controls.Add(btnEdit);
-            pnlHeader.Controls.Add(pnlStats);
-
-            // ========== TAB CONTROL ==========
-            tabControl = new TabControl
+            pnlHeader.Controls.AddRange(new Control[]
             {
-                Dock = DockStyle.Fill,
-                Font = new Font("Segoe UI", 10F, FontStyle.Regular)
-            };
+        pbAvatar, lblName, lblEmail, lblBio, btnEdit, pnlStats
+            });
+            #endregion
 
-            // Tab Bài viết
-            tabPosts = new TabPage("📝 Bài viết của tôi");
-            flowPosts = new FlowLayoutPanel
+            #region TABS
+            tabControl = CreateModernTabControl();
+
+            tabPosts = CreateTab("📝 Bài viết", out flowPosts);
+            tabMyQuizzes = CreateTab("📚 Bộ đề", out flowMyQuizzes, true);
+            tabChallengeHistory = CreateTab("⚔️ Thách đấu", out flowChallengeHistory);
+            tabFollowers = CreateTab("👥 Followers", out flowFollowers);
+            tabFollowing = CreateTab("➕ Following", out flowFollowing);
+
+            tabControl.TabPages.AddRange(new[]
             {
-                Dock = DockStyle.Fill,
-                FlowDirection = FlowDirection.TopDown,
-                WrapContents = false,
-                AutoScroll = true,
-                BackColor = Color.FromArgb(240, 242, 245),
-                Padding = new Padding(20)
-            };
-            tabPosts.Controls.Add(flowPosts);
-
-            // Tab Followers
-            tabFollowers = new TabPage("👥 Người theo dõi");
-            flowFollowers = new FlowLayoutPanel
-            {
-                Dock = DockStyle.Fill,
-                FlowDirection = FlowDirection.TopDown,
-                WrapContents = false,
-                AutoScroll = true,
-                BackColor = Color.FromArgb(240, 242, 245),
-                Padding = new Padding(20)
-            };
-            tabFollowers.Controls.Add(flowFollowers);
-
-            // Tab Following
-            tabFollowing = new TabPage("➕ Đang theo dõi");
-            flowFollowing = new FlowLayoutPanel
-            {
-                Dock = DockStyle.Fill,
-                FlowDirection = FlowDirection.TopDown,
-                WrapContents = false,
-                AutoScroll = true,
-                BackColor = Color.FromArgb(240, 242, 245),
-                Padding = new Padding(20)
-            };
-            tabFollowing.Controls.Add(flowFollowing);
-
-            tabControl.TabPages.Add(tabPosts);
-            tabControl.TabPages.Add(tabFollowers);
-            tabControl.TabPages.Add(tabFollowing);
+        tabPosts, tabMyQuizzes, tabChallengeHistory, tabFollowers, tabFollowing
+    });
 
             tabControl.SelectedIndexChanged += TabControl_SelectedIndexChanged;
+            #endregion
 
-            this.Controls.Add(tabControl);
-            this.Controls.Add(pnlHeader);
+            Controls.Add(tabControl);
+            Controls.Add(pnlHeader);
         }
 
+
+
+        private FlowLayoutPanel CreateTabFlowPanel()
+        {
+            return new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.TopDown,
+                WrapContents = false,
+                AutoScroll = true,
+                BackColor = Color.FromArgb(240, 242, 245),
+                Padding = new Padding(20)
+            };
+        }
         /// <summary>
         /// 🏷️ Tạo label thống kê
         /// </summary>
@@ -265,6 +238,104 @@ namespace WinForms.UserControls
                 ForeColor = Color.FromArgb(24, 119, 242),
                 Cursor = Cursors.Hand
             };
+        }
+
+        /// <summary>
+        /// 📚 Tải danh sách bộ đề của tôi
+        /// </summary>
+        private async Task LoadMyQuizzesAsync()
+        {
+            if (_boDeHocService == null || flowMyQuizzes == null || UserSession.CurrentUser == null) return;
+            flowMyQuizzes.Controls.Clear();
+
+            try
+            {
+                var quizzes = await _boDeHocService.GetByUserAsync(UserSession.CurrentUser.MaNguoiDung);
+                if (quizzes == null || !quizzes.Any())
+                {
+                    flowMyQuizzes.Controls.Add(CreateEmptyLabel("📚 Bạn chưa tạo bộ đề nào. Hãy bắt đầu ngay!"));
+                    return;
+                }
+
+                foreach (var q in quizzes)
+                {
+                    var item = new BoDeItemControl();
+                    item.SetData(q.MaBoDe, q.TieuDe, q.SoLuongThe, q.SoLuotHoc, q.AnhBia ?? "");
+                    item.OnVaoThiClick += (s, ev) => {
+                        if (this.FindForm() is Forms.MainForm mf && Program.ServiceProvider != null)
+                        {
+                            var detail = Program.ServiceProvider.GetRequiredService<ChiTietBoDeControl>();
+                            detail.MaBoDe = q.MaBoDe;
+                            mf.LoadPage(detail);
+                        }
+                    };
+                    flowMyQuizzes.Controls.Add(item);
+                }
+            }
+            catch (Exception ex) { Console.WriteLine(ex.Message); }
+        }
+
+        private Label CreateEmptyLabel(string text)
+        {
+            return new Label
+            {
+                Text = text,
+                AutoSize = true,
+                Font = new Font("Segoe UI", 10F, FontStyle.Italic),
+                ForeColor = Color.Gray,
+                Margin = new Padding(20, 50, 20, 20), // Tạo khoảng cách phía trên để không bị dính vào header
+                TextAlign = ContentAlignment.MiddleCenter
+            };
+        }
+
+        /// <summary>
+        /// ⚔️ Tải lịch sử thách đấu của tôi
+        /// </summary>
+        private async Task LoadChallengeHistoryAsync()
+        {
+            if (_thachDauService == null || flowChallengeHistory == null || UserSession.CurrentUser == null) return;
+            flowChallengeHistory.Controls.Clear();
+
+            try
+            {
+                var history = await _thachDauService.GetLichSuByUserAsync(UserSession.CurrentUser.MaNguoiDung);
+                if (history == null || !history.Any())
+                {
+                    flowChallengeHistory.Controls.Add(CreateEmptyLabel("⚔️ Bạn chưa tham gia trận thách đấu nào."));
+                    return;
+                }
+
+                foreach (var h in history)
+                {
+                    Panel pnlRow = new Panel { Width = 750, Height = 70, BackColor = Color.White, Margin = new Padding(0, 5, 0, 10), BorderStyle = BorderStyle.FixedSingle };
+
+                    string statusText = h.LaNguoiThang ? "🏆 THẮNG" : "💀 THUA";
+                    Color statusColor = h.LaNguoiThang ? Color.Goldenrod : Color.Gray;
+
+                    Label lblResult = new Label
+                    {
+                        Text = $"[{statusText}] {h.TenBoDe} | {h.Diem} điểm | 🎯 {h.TyLeDung}%",
+                        Font = new Font("Segoe UI", 10F, FontStyle.Bold),
+                        ForeColor = statusColor,
+                        Location = new Point(15, 10),
+                        AutoSize = true
+                    };
+
+                    Label lblTime = new Label
+                    {
+                        Text = $"Trận đấu: #{h.MaThachDauGoc} - Kết thúc: {h.ThoiGianKetThuc:dd/MM/yyyy HH:mm}",
+                        Font = new Font("Segoe UI", 9F, FontStyle.Regular),
+                        ForeColor = Color.Gray,
+                        Location = new Point(15, 38),
+                        AutoSize = true
+                    };
+
+                    pnlRow.Controls.Add(lblResult);
+                    pnlRow.Controls.Add(lblTime);
+                    flowChallengeHistory.Controls.Add(pnlRow);
+                }
+            }
+            catch (Exception ex) { Console.WriteLine(ex.Message); }
         }
 
         /// <summary>
@@ -802,17 +873,15 @@ namespace WinForms.UserControls
             if (tabControl == null) return;
 
             if (tabControl.SelectedTab == tabPosts)
-            {
                 await LoadMyPostsAsync();
-            }
+            else if (tabControl.SelectedTab == tabMyQuizzes)
+                await LoadMyQuizzesAsync();
+            else if (tabControl.SelectedTab == tabChallengeHistory)
+                await LoadChallengeHistoryAsync();
             else if (tabControl.SelectedTab == tabFollowers)
-            {
                 await LoadFollowersAsync();
-            }
             else if (tabControl.SelectedTab == tabFollowing)
-            {
                 await LoadFollowingAsync();
-            }
         }
 
         /// <summary>
@@ -836,9 +905,153 @@ namespace WinForms.UserControls
                 }
             }
             catch (Exception ex)
+
             {
                 MessageBox.Show($"Lỗi mở dialog:  {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
+
+        private TabControl CreateModernTabControl()
+        {
+            var tab = new TabControl
+            {
+                Dock = DockStyle.Fill,
+                DrawMode = TabDrawMode.OwnerDrawFixed,
+                ItemSize = new Size(160, 42),
+                SizeMode = TabSizeMode.Fixed,
+                Font = new Font("Segoe UI Semibold", 10F),
+                BackColor = Color.White
+            };
+
+            tab.DrawItem += (s, e) =>
+            {
+                var page = tab.TabPages[e.Index];
+                bool selected = e.Index == tab.SelectedIndex;
+
+                using var textBrush = new SolidBrush(selected ? Color.Black : Color.Gray);
+                var textSize = e.Graphics.MeasureString(page.Text, tab.Font);
+
+                float x = e.Bounds.Left + (e.Bounds.Width - textSize.Width) / 2;
+                float y = e.Bounds.Top + 12;
+
+                e.Graphics.DrawString(page.Text, tab.Font, textBrush, x, y);
+
+                // Gạch chân tab active
+                if (selected)
+                {
+                    using var pen = new Pen(Color.FromArgb(24, 119, 242), 3);
+                    e.Graphics.DrawLine(
+                        pen,
+                        e.Bounds.Left + 25,
+                        e.Bounds.Bottom - 3,
+                        e.Bounds.Right - 25,
+                        e.Bounds.Bottom - 3
+                    );
+                }
+            };
+
+            return tab;
+        }
+
+        private TabPage CreateTab(
+    string title,
+    out FlowLayoutPanel flow,
+    bool wrap = false)
+        {
+            flow = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                AutoScroll = true,
+                FlowDirection = wrap ? FlowDirection.LeftToRight : FlowDirection.TopDown,
+                WrapContents = wrap,
+                Padding = new Padding(30),
+                BackColor = Color.FromArgb(240, 242, 245)
+            };
+
+            var tab = new TabPage(title)
+            {
+                BackColor = flow.BackColor
+            };
+
+            tab.Controls.Add(flow);
+            return tab;
+        }
+        private Button CreateOutlineButton(string text)
+        {
+            var btn = new Button
+            {
+                Text = text,
+                Size = new Size(180, 40),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(24, 119, 242),
+                Font = new Font("Segoe UI Semibold", 10F),
+                Cursor = Cursors.Hand
+            };
+
+            btn.FlatAppearance.BorderSize = 1;
+            btn.FlatAppearance.BorderColor = Color.FromArgb(24, 119, 242);
+
+            btn.MouseEnter += (s, e) =>
+            {
+                btn.BackColor = Color.FromArgb(24, 119, 242);
+                btn.ForeColor = Color.White;
+            };
+
+            btn.MouseLeave += (s, e) =>
+            {
+                btn.BackColor = Color.White;
+                btn.ForeColor = Color.FromArgb(24, 119, 242);
+            };
+
+            return btn;
+        }
+        private Panel CreateStatCard(string title, string value, int x)
+        {
+            var pnl = new Panel
+            {
+                Size = new Size(130, 45),
+                Location = new Point(x, 0),
+                BackColor = Color.White,
+                Cursor = Cursors.Hand
+            };
+
+            pnl.Paint += (s, e) =>
+            {
+                using var pen = new Pen(Color.Gainsboro);
+                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                e.Graphics.DrawRoundedRectangle(
+                    pen,
+                    new Rectangle(0, 0, pnl.Width - 1, pnl.Height - 1),
+                    10
+                );
+            };
+
+            var lblValue = new Label
+            {
+                Text = value,
+                Font = new Font("Segoe UI", 11F, FontStyle.Bold),
+                Location = new Point(12, 4),
+                AutoSize = true
+            };
+
+            var lblTitle = new Label
+            {
+                Text = title,
+                Font = new Font("Segoe UI", 9F),
+                ForeColor = Color.Gray,
+                Location = new Point(12, 22),
+                AutoSize = true
+            };
+
+            pnl.Controls.Add(lblValue);
+            pnl.Controls.Add(lblTitle);
+
+            // Gán label value vào Tag để update số liệu
+            pnl.Tag = lblValue;
+
+            return pnl;
+        }
+
     }
 }

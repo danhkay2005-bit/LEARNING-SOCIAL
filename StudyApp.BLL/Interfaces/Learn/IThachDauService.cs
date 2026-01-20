@@ -68,5 +68,6 @@ namespace StudyApp.BLL.Interfaces.Learn
         Task<bool> BaoCaoReadyNextAsync(int maThachDau, Guid userId, int questionIndex);
 
         Task<IEnumerable<LichSuThachDauResponse>> GetRecentChallengesAsync(int count);
+        Task<IEnumerable<LichSuThachDauResponse>> GetLichSuByUserAsync(Guid userId);
     }
 }

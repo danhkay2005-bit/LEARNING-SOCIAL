@@ -964,7 +964,6 @@ namespace StudyApp.BLL.Services.Learn
             var userIds = responseList.Select(x => x.MaNguoiDung).Distinct().ToList();
 
             // 4. Gọi Service người dùng để lấy thông tin tên (Sử dụng IUserProfileService)
-            // Giả sử đồng chí có hàm lấy danh sách người dùng theo List ID
             var users = await _userDb.GetUsersByIdsAsync(userIds);
 
             // 5. Gộp dữ liệu (Join trong bộ nhớ)
@@ -980,6 +979,7 @@ namespace StudyApp.BLL.Services.Learn
 
             return responseList;
         }
+      
     }
 
     

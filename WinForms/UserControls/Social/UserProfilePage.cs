@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using StudyApp.BLL.Interfaces.Learn;
 using StudyApp.BLL.Interfaces.Social;
 using StudyApp.BLL.Interfaces.User;
 using StudyApp.DTO;
@@ -9,512 +10,231 @@ using System.Drawing;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using WinForms.UserControls.Components.Social;
 using WinForms.Forms;
-using WinForms.Helpers;  // ✅ THÊM để dùng AvatarHelper
+using WinForms.UserControls.Components.Social;
+using WinForms.UserControls.Quiz;
 
 namespace WinForms.UserControls.Social
 {
-    /// <summary>
-    /// 📄 USERPROFILEPAGE - Trang thông tin người dùng
-    /// 
-    /// CHỨC NĂNG:
-    /// 1. Hiển thị thông tin cá nhân (Avatar, Tên, Email, Bio)
-    /// 2. Nút Follow/Unfollow
-    /// 3. Thống kê: Số followers, following
-    /// 4. Danh sách bài viết của người dùng
-    /// </summary>
     public partial class UserProfilePage : UserControl
     {
-        private readonly Guid _userId; // ID người dùng đang xem
+        private readonly Guid _userId;
         private readonly IUserProfileService? _userProfileService;
         private readonly ITheoDoiNguoiDungService? _followService;
         private readonly IPostService? _postService;
         private readonly IReactionService? _reactionService;
         private readonly ICommentService? _commentService;
+        private readonly IBoDeHocService? _boDeHocService;
+        private readonly IThachDauService? _thachDauService;
 
         private NguoiDungResponse? _userInfo;
         private bool _isFollowing = false;
 
-        // Controls
-        private Panel? pnlHeader;
-        private PictureBox? pbAvatar;
-        private Label? lblName;
-        private Label? lblEmail;
-        private Label? lblBio;
-        private Button? btnFollow;
-        private Button? btnBack; // ✅ THÊM
-        private Label? lblFollowers;
-        private Label? lblFollowing;
-        private FlowLayoutPanel? flowPosts;
-
-        public UserProfilePage(
-            Guid userId,
-            IServiceProvider serviceProvider)
+        public UserProfilePage(Guid userId, IServiceProvider serviceProvider)
         {
             _userId = userId;
 
-            // Lấy services
-            _userProfileService = serviceProvider?.GetService(typeof(IUserProfileService)) as IUserProfileService;
-            _followService = serviceProvider?.GetService(typeof(ITheoDoiNguoiDungService)) as ITheoDoiNguoiDungService;
-            _postService = serviceProvider?.GetService(typeof(IPostService)) as IPostService;
-            _reactionService = serviceProvider?.GetService(typeof(IReactionService)) as IReactionService;
-            _commentService = serviceProvider?.GetService(typeof(ICommentService)) as ICommentService;
+            // Resolve Services an toàn
+            _userProfileService = serviceProvider.GetService<IUserProfileService>();
+            _followService = serviceProvider.GetService<ITheoDoiNguoiDungService>();
+            _postService = serviceProvider.GetService<IPostService>();
+            _reactionService = serviceProvider.GetService<IReactionService>();
+            _commentService = serviceProvider.GetService<ICommentService>();
+            _boDeHocService = serviceProvider.GetService<IBoDeHocService>();
+            _thachDauService = serviceProvider.GetService<IThachDauService>();
 
             InitializeComponent();
-            InitializeControls();
+            SetupEventHandlers();
             LoadUserProfileAsync();
         }
 
-        private void InitializeComponent()
+        private void SetupEventHandlers()
         {
-            this.SuspendLayout();
-            this.Name = "UserProfilePage";
-            this.Size = new Size(800, 600);
-            this.BackColor = Color.FromArgb(240, 242, 245);
-            this.ResumeLayout(false);
-        }
-
-        private void InitializeControls()
-        {
-            // ========== HEADER PANEL ==========
-            pnlHeader = new Panel
-            {
-                Dock = DockStyle.Top,
-                Height = 200,
-                BackColor = Color.White,
-                Padding = new Padding(20)
-            };
-
-            // Avatar
-            pbAvatar = new PictureBox
-            {
-                Width = 120,
-                Height = 120,
-                Location = new Point(20, 20),
-                SizeMode = PictureBoxSizeMode.StretchImage,
-                BackColor = Color.LightGray,
-                BorderStyle = BorderStyle.FixedSingle
-            };
-
-            // Tên
-            lblName = new Label
-            {
-                Location = new Point(160, 20),
-                AutoSize = true,
-                Font = new Font("Segoe UI", 18F, FontStyle.Bold),
-                ForeColor = Color.FromArgb(29, 29, 29)
-            };
-
-            // Email
-            lblEmail = new Label
-            {
-                Location = new Point(160, 55),
-                AutoSize = true,
-                Font = new Font("Segoe UI", 10F, FontStyle.Regular),
-                ForeColor = Color.Gray
-            };
-
-            // Bio
-            lblBio = new Label
-            {
-                Location = new Point(160, 85),
-                MaximumSize = new Size(500, 0),
-                AutoSize = true,
-                Font = new Font("Segoe UI", 9F, FontStyle.Italic),
-                ForeColor = Color.FromArgb(65, 65, 65)
-            };
-
-            // ✅ Nút Back (Quay lại)
-            btnBack = new Button
-            {
-                Text = "← Quay lại",
-                Location = new Point(20, 160),
-                Width = 100,
-                Height = 30,
-                BackColor = Color.FromArgb(108, 117, 125),
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 9F, FontStyle.Regular),
-                Cursor = Cursors.Hand
-            };
-            btnBack.FlatAppearance.BorderSize = 0;
             btnBack.Click += BtnBack_Click;
-
-            // Nút Follow/Unfollow
-            btnFollow = new Button
-            {
-                Text = "➕ Theo dõi",
-                Location = new Point(160, 120),
-                Width = 120,
-                Height = 35,
-                BackColor = Color.FromArgb(24, 119, 242),
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
-                Cursor = Cursors.Hand
-            };
-            btnFollow.FlatAppearance.BorderSize = 0;
             btnFollow.Click += BtnFollow_Click;
-
-            // Thống kê Followers
-            lblFollowers = new Label
-            {
-                Text = "0 Followers",
-                Location = new Point(300, 125),
-                AutoSize = true,
-                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
-                ForeColor = Color.FromArgb(24, 119, 242),
-                Cursor = Cursors.Hand
-            };
-            lblFollowers.Click += (s, e) => MessageBox.Show("Chức năng xem danh sách followers", "Thông báo");
-
-            // Thống kê Following
-            lblFollowing = new Label
-            {
-                Text = "0 Following",
-                Location = new Point(420, 125),
-                AutoSize = true,
-                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
-                ForeColor = Color.FromArgb(24, 119, 242),
-                Cursor = Cursors.Hand
-            };
-            lblFollowing.Click += (s, e) => MessageBox.Show("Chức năng xem danh sách following", "Thông báo");
-
-            pnlHeader.Controls.Add(pbAvatar);
-            pnlHeader.Controls.Add(lblName);
-            pnlHeader.Controls.Add(lblEmail);
-            pnlHeader.Controls.Add(lblBio);
-            pnlHeader.Controls.Add(btnBack);    // ✅ Nút quay lại
-            pnlHeader.Controls.Add(btnFollow);  // ✅ Nút theo dõi
-            pnlHeader.Controls.Add(lblFollowers);
-            pnlHeader.Controls.Add(lblFollowing);
-
-            // ========== FLOW POSTS ==========
-            flowPosts = new FlowLayoutPanel
-            {
-                Dock = DockStyle.Fill,
-                FlowDirection = FlowDirection.TopDown,
-                WrapContents = false,
-                AutoScroll = true,
-                BackColor = Color.FromArgb(240, 242, 245),
-                Padding = new Padding(20)
-            };
-
-            this.Controls.Add(flowPosts);
-            this.Controls.Add(pnlHeader);
+            lblFollowers.Click += (s, e) => MessageBox.Show("Tính năng xem danh sách followers đang phát triển.", "Thông báo");
+            lblFollowing.Click += (s, e) => MessageBox.Show("Tính năng xem danh sách following đang phát triển.", "Thông báo");
         }
 
-        /// <summary>
-        /// 🔄 Tải thông tin người dùng
-        /// </summary>
         private async void LoadUserProfileAsync()
         {
-            if (_userProfileService == null || _followService == null)
-            {
-                MessageBox.Show("Service chưa được khởi tạo", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
+            if (_userProfileService == null || _followService == null) return;
 
             try
             {
-                // 1. Lấy thông tin người dùng
                 _userInfo = await _userProfileService.GetProfileAsync(_userId);
-                if (_userInfo == null)
-                {
-                    MessageBox.Show("Không tìm thấy người dùng", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
+                if (_userInfo == null) return;
 
-                // 2. Hiển thị thông tin
-                if (lblName != null) lblName.Text = _userInfo.HoVaTen ?? "Người dùng";
-                if (lblEmail != null) lblEmail.Text = _userInfo.Email ?? "";
-                if (lblBio != null) lblBio.Text = _userInfo.TieuSu ?? "Chưa có tiểu sử";
+                // Bind UI cơ bản
+                lblName.Text = _userInfo.HoVaTen ?? "Người dùng";
+                lblEmail.Text = _userInfo.Email ?? "";
+                lblBio.Text = _userInfo.TieuSu ?? "Chưa có tiểu sử";
+                LoadAvatar(_userInfo.HinhDaiDien, _userInfo.HoVaTen ?? _userInfo.Email);
 
-                // ✅ FIX: Load avatar đúng cách (giống ThongTinCaNhanPage)
-                if (pbAvatar != null)
-                {
-                    LoadAvatar(_userInfo.HinhDaiDien, _userInfo.HoVaTen ?? _userInfo.Email);
-                }
-
-                // ✅ FIX: Kiểm tra nếu đang xem profile chính mình
-                if (UserSession.CurrentUser != null && btnFollow != null)
+                // Kiểm tra follow
+                if (UserSession.CurrentUser != null)
                 {
                     if (_userId == UserSession.CurrentUser.MaNguoiDung)
-                    {
-                        // Đang xem profile chính mình → Ẩn nút follow
                         btnFollow.Visible = false;
-                    }
                     else
                     {
-                        // Đang xem profile người khác → Hiện nút follow
                         btnFollow.Visible = true;
-
-                        // 3. Kiểm tra trạng thái follow
-                        var checkRequest = new KiemTraTheoDoiRequest
+                        var check = await _followService.KiemTraTheoDoiAsync(new KiemTraTheoDoiRequest
                         {
                             MaNguoiTheoDoi = UserSession.CurrentUser.MaNguoiDung,
                             MaNguoiDuocTheoDoi = _userId
-                        };
-                        var checkResult = await _followService.KiemTraTheoDoiAsync(checkRequest);
-                        _isFollowing = checkResult.DangTheoDoi;
-
+                        });
+                        _isFollowing = check.DangTheoDoi;
                         UpdateFollowButtonUI();
                     }
                 }
 
-                // 4. Lấy thống kê
                 var stats = await _followService.LayThongKeTheoDoiAsync(_userId);
-                if (lblFollowers != null) lblFollowers.Text = $"{stats.SoNguoiTheoDoi} Followers";
-                if (lblFollowing != null) lblFollowing.Text = $"{stats.SoDangTheoDoi} Following";
+                lblFollowers.Text = $"{stats.SoNguoiTheoDoi} Followers";
+                lblFollowing.Text = $"{stats.SoDangTheoDoi} Following";
 
-                // 5. Tải bài viết của người dùng
-                await LoadUserPostsAsync();
+                // Tải các tab song song
+                await Task.WhenAll(
+                    LoadUserPostsAsync(),
+                    LoadUserQuizzesAsync(),
+                    LoadChallengeHistoryAsync()
+                );
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Lỗi tải thông tin: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            catch (Exception ex) { Console.WriteLine($"[LoadProfile Error] {ex.Message}"); }
         }
 
-        /// <summary>
-        /// 🔄 Tải bài viết của người dùng
-        /// </summary>
         private async Task LoadUserPostsAsync()
         {
             if (_postService == null || flowPosts == null) return;
+            flowPosts.Controls.Clear();
+            var posts = await _postService.GetUserPostsAsync(_userId, 1);
+            if (!posts.Any()) { flowPosts.Controls.Add(CreateEmptyLabel("📭 Chưa có bài viết nào")); return; }
 
-            try
+            foreach (var post in posts)
             {
-                flowPosts.Controls.Clear();
-
-                var posts = await _postService.GetUserPostsAsync(_userId, 1);
-
-                if (!posts.Any())
+                if (_reactionService != null && _commentService != null)
                 {
-                    var lblEmpty = new Label
-                    {
-                        Text = "📭 Chưa có bài viết nào",
-                        AutoSize = true,
-                        Font = new Font("Segoe UI", 11F, FontStyle.Italic),
-                        ForeColor = Color.Gray,
-                        Margin = new Padding(10, 50, 10, 10)
-                    };
-                    flowPosts.Controls.Add(lblEmpty);
-                    return;
+                    var pc = new PostCardControl(_postService, _reactionService, _commentService) { Width = 740 };
+                    pc.LoadPost(post);
+                    flowPosts.Controls.Add(pc);
                 }
-
-                foreach (var post in posts)
-                {
-                    if (_reactionService != null && _commentService != null)
-                    {
-                        var postCard = new PostCardControl(
-                            _postService,
-                            _reactionService,
-                            _commentService
-                        )
-                        {
-                            Width = 700,
-                            Margin = new Padding(0, 10, 0, 10)
-                        };
-
-                        postCard.LoadPost(post);
-                        flowPosts.Controls.Add(postCard);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Lỗi tải bài viết: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
-        /// <summary>
-        /// 🔘 Xử lý Follow/Unfollow
-        /// </summary>
+        private async Task LoadUserQuizzesAsync()
+        {
+            if (_boDeHocService == null || flowUserQuizzes == null) return;
+            flowUserQuizzes.Controls.Clear();
+            var quizzes = await _boDeHocService.GetByUserAsync(_userId);
+            if (quizzes == null || !quizzes.Any()) { flowUserQuizzes.Controls.Add(CreateEmptyLabel("📚 Chưa tạo bộ đề nào")); return; }
+
+            foreach (var q in quizzes)
+            {
+                var item = new BoDeItemControl();
+                item.SetData(q.MaBoDe, q.TieuDe, q.SoLuongThe, q.SoLuotHoc, q.AnhBia ?? "");
+                item.OnVaoThiClick += (s, ev) => NavigateToQuizDetail(q.MaBoDe);
+                flowUserQuizzes.Controls.Add(item);
+            }
+        }
+
+        private async Task LoadChallengeHistoryAsync()
+        {
+            if (_thachDauService == null || flowChallengeHistory == null) return;
+            flowChallengeHistory.Controls.Clear();
+            try
+            {
+                var history = await _thachDauService.GetLichSuByUserAsync(_userId);
+                if (history == null || !history.Any()) { flowChallengeHistory.Controls.Add(CreateEmptyLabel("⚔️ Chưa có lịch sử thách đấu")); return; }
+
+                foreach (var h in history)
+                {
+                    Panel p = new Panel { Width = 740, Height = 65, BackColor = Color.White, Margin = new Padding(0, 5, 0, 10), BorderStyle = BorderStyle.FixedSingle };
+                    string statusText = h.LaNguoiThang ? "🏆 THẮNG" : "💀 THUA";
+                    Label lbl = new Label { Text = $"[{statusText}] {h.TenBoDe} | ⭐ {h.Diem}đ | 🎯 {h.TyLeDung}%", AutoSize = true, Location = new Point(15, 10), Font = new Font("Segoe UI", 10, FontStyle.Bold), ForeColor = h.LaNguoiThang ? Color.Goldenrod : Color.Gray };
+                    Label lblT = new Label { Text = h.ThoiGianKetThuc.ToString("dd/MM/yyyy HH:mm"), AutoSize = true, Location = new Point(15, 35), ForeColor = Color.Gray };
+                    p.Controls.AddRange(new Control[] { lbl, lblT });
+                    flowChallengeHistory.Controls.Add(p);
+                }
+            }
+            catch { }
+        }
+
+        private Label CreateEmptyLabel(string text) => new Label { Text = text, AutoSize = true, Font = new Font("Segoe UI", 10, FontStyle.Italic), ForeColor = Color.Gray, Margin = new Padding(20) };
+
+        private void NavigateToQuizDetail(int maBoDe)
+        {
+            if (this.FindForm() is MainForm mf && Program.ServiceProvider != null)
+            {
+                var detail = Program.ServiceProvider.GetRequiredService<ChiTietBoDeControl>();
+                detail.MaBoDe = maBoDe;
+                mf.LoadPage(detail);
+            }
+        }
+
         private async void BtnFollow_Click(object? sender, EventArgs e)
         {
-            if (_followService == null || UserSession.CurrentUser == null || btnFollow == null)
-                return;
-
+            if (_followService == null || UserSession.CurrentUser == null) return;
+            btnFollow.Enabled = false;
             try
             {
-                btnFollow.Enabled = false;
-                btnFollow.Text = "⏳ Đang xử lý...";
-
-                if (_isFollowing)
-                {
-                    // Unfollow
-                    var request = new BoTheoDoiNguoiDungRequest
-                    {
-                        MaNguoiTheoDoi = UserSession.CurrentUser.MaNguoiDung,
-                        MaNguoiDuocTheoDoi = _userId
-                    };
-                    await _followService.BoTheoDoiAsync(request);
-                    _isFollowing = false;
-                }
-                else
-                {
-                    // Follow
-                    var request = new TheoDoiNguoiDungRequest
-                    {
-                        MaNguoiTheoDoi = UserSession.CurrentUser.MaNguoiDung,
-                        MaNguoiDuocTheoDoi = _userId
-                    };
-                    await _followService.TheoDoiAsync(request);
-                    _isFollowing = true;
-                }
-
+                if (_isFollowing) await _followService.BoTheoDoiAsync(new BoTheoDoiNguoiDungRequest { MaNguoiTheoDoi = UserSession.CurrentUser.MaNguoiDung, MaNguoiDuocTheoDoi = _userId });
+                else await _followService.TheoDoiAsync(new TheoDoiNguoiDungRequest { MaNguoiTheoDoi = UserSession.CurrentUser.MaNguoiDung, MaNguoiDuocTheoDoi = _userId });
+                _isFollowing = !_isFollowing;
                 UpdateFollowButtonUI();
-
-                // Reload stats
-                var stats = await _followService.LayThongKeTheoDoiAsync(_userId);
-                if (lblFollowers != null) lblFollowers.Text = $"{stats.SoNguoiTheoDoi} Followers";
+                var s = await _followService.LayThongKeTheoDoiAsync(_userId);
+                lblFollowers.Text = $"{s.SoNguoiTheoDoi} Followers";
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Lỗi: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-            finally
-            {
-                if (btnFollow != null)
-                {
-                    btnFollow.Enabled = true;
-                }
-            }
+            finally { btnFollow.Enabled = true; }
         }
 
-        /// <summary>
-        /// 🎨 Cập nhật UI nút Follow
-        /// </summary>
         private void UpdateFollowButtonUI()
         {
-            if (btnFollow == null) return;
-
-            if (_isFollowing)
-            {
-                btnFollow.Text = "✓ Đang theo dõi";
-                btnFollow.BackColor = Color.FromArgb(108, 117, 125);
-            }
-            else
-            {
-                btnFollow.Text = "➕ Theo dõi";
-                btnFollow.BackColor = Color.FromArgb(24, 119, 242);
-            }
+            btnFollow.Text = _isFollowing ? "✓ Đang theo dõi" : "➕ Theo dõi";
+            btnFollow.BackColor = _isFollowing ? Color.Gray : Color.FromArgb(24, 119, 242);
         }
 
-        /// <summary>
-        /// ✅ Load avatar với xử lý nâng cao
-        /// </summary>
-        private void LoadAvatar(string? avatarPath, string? displayName)
+        private void LoadAvatar(string? path, string? name)
         {
-            if (pbAvatar == null) return;
-
             try
             {
-                // Nếu có đường dẫn avatar local
-                if (!string.IsNullOrEmpty(avatarPath) && System.IO.File.Exists(avatarPath))
+                if (!string.IsNullOrEmpty(path) && System.IO.File.Exists(path))
                 {
-                    using (var fs = new System.IO.FileStream(avatarPath, System.IO.FileMode.Open, System.IO.FileAccess.Read))
-                    {
-                        pbAvatar.Image = Image.FromStream(fs);
-                    }
+                    using var fs = new System.IO.FileStream(path, System.IO.FileMode.Open, System.IO.FileAccess.Read);
+                    pbAvatar.Image = Image.FromStream(fs);
                 }
-                else
-                {
-                    // ✅ Tạo avatar placeholder với chữ cái đầu
-                    pbAvatar.Image = CreatePlaceholderAvatar(displayName);
-                }
+                else pbAvatar.Image = CreatePlaceholderAvatar(name);
             }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[LoadAvatar Error] {ex.Message}");
-                pbAvatar.Image = CreatePlaceholderAvatar(displayName);
-            }
+            catch { pbAvatar.Image = CreatePlaceholderAvatar(name); }
         }
 
-        /// <summary>
-        /// ✅ Tạo avatar placeholder với chữ cái đầu
-        /// </summary>
         private Image CreatePlaceholderAvatar(string? name)
         {
-            var size = 120; // Giống size của pbAvatar
-            var bitmap = new Bitmap(size, size);
-            using (var g = Graphics.FromImage(bitmap))
-            {
-                g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-                g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
-
-                // ✅ Vẽ background gradient
-                using (var brush = new System.Drawing.Drawing2D.LinearGradientBrush(
-                    new Rectangle(0, 0, size, size),
-                    Color.FromArgb(24, 119, 242),
-                    Color.FromArgb(66, 153, 225),
-                    System.Drawing.Drawing2D.LinearGradientMode.ForwardDiagonal))
-                {
-                    g.FillEllipse(brush, 0, 0, size, size);
-                }
-
-                // ✅ Lấy chữ cái đầu
-                string initials = GetInitials(name);
-
-                // ✅ Vẽ chữ
-                using (var font = new Font("Segoe UI", 40, FontStyle.Bold))
-                using (var textBrush = new SolidBrush(Color.White))
-                {
-                    var textSize = g.MeasureString(initials, font);
-                    var x = (size - textSize.Width) / 2;
-                    var y = (size - textSize.Height) / 2;
-                    g.DrawString(initials, font, textBrush, x, y);
-                }
-            }
-
-            return bitmap;
+            var b = new Bitmap(120, 120);
+            using var g = Graphics.FromImage(b);
+            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            using var br = new System.Drawing.Drawing2D.LinearGradientBrush(new Rectangle(0, 0, 120, 120), Color.FromArgb(24, 119, 242), Color.FromArgb(66, 153, 225), 45f);
+            g.FillEllipse(br, 0, 0, 120, 120);
+            string i = GetInitials(name);
+            using var f = new Font("Segoe UI", 40, FontStyle.Bold);
+            var sz = g.MeasureString(i, f);
+            g.DrawString(i, f, Brushes.White, (120 - sz.Width) / 2, (120 - sz.Height) / 2);
+            return b;
         }
 
-        /// <summary>
-        /// ✅ Lấy chữ cái đầu từ tên
-        /// </summary>
         private string GetInitials(string? name)
         {
-            if (string.IsNullOrWhiteSpace(name))
-                return "?";
-
-            var parts = name.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
-
-            if (parts.Length == 1)
-                return parts[0].Substring(0, Math.Min(2, parts[0].Length)).ToUpper();
-
-            // Lấy chữ cái đầu của 2 từ đầu tiên
-            return (parts[0][0].ToString() + parts[parts.Length - 1][0].ToString()).ToUpper();
+            if (string.IsNullOrWhiteSpace(name)) return "?";
+            var p = name.Trim().Split(' ');
+            return p.Length == 1 ? p[0].Substring(0, Math.Min(2, p[0].Length)).ToUpper() : (p[0][0].ToString() + p[^1][0]).ToUpper();
         }
 
-        /// <summary>
-        /// ← Quay lại trang trước
-        /// </summary>
         private void BtnBack_Click(object? sender, EventArgs e)
         {
-            // Tìm MainForm parent
-            var mainForm = this.FindForm();
-            if (mainForm is MainForm mf)
+            if (this.FindForm() is MainForm mf)
             {
-                // Load lại Newsfeed
-                try
-                {
-                    // ✅ FIX: Check null trước khi gọi GetRequiredService
-                    if (Program.ServiceProvider == null)
-                    {
-                        MessageBox.Show("Service chưa được khởi tạo", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        return;
-                    }
-
-                    var newsfeedControl = Program.ServiceProvider.GetRequiredService<NewsfeedControl>();
-                    mf.LoadPage(newsfeedControl);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Không thể quay lại: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
+                var provider = Program.ServiceProvider;
+                if (provider != null) mf.LoadPage(provider.GetRequiredService<NewsfeedControl>());
+                else MessageBox.Show("Dịch vụ hệ thống chưa sẵn sàng.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
     }

@@ -50,5 +50,6 @@ namespace StudyApp.BLL.Interfaces.Learn
         Task<int> GetTotalPhienHocCountAsync();
         Task<IEnumerable<LichSuHocBoDeResponse>> GetRecentSessionsAsync(int count);
 
+
     }
 }
