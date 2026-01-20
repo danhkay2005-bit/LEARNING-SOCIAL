@@ -126,7 +126,7 @@ namespace WinForms.UserControls.Social
 
             btnMarkAllRead = new Button
             {
-                Text = "✓ Đánh dấu đã đ���c",
+                Text = "✓ Đánh dấu đã đọc",
                 Location = new Point(240, 10),
                 Width = 150,
                 Height = 30,

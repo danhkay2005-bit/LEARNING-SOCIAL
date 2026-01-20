@@ -11,7 +11,7 @@ using WinForms.UserControls.Components.Social;
 namespace WinForms.UserControls.Social
 {
     /// <summary>
-    /// ?? HASHTAG SEARCH PAGE - Tìm ki?m bài vi?t theo hashtag
+    /// ?? HASHTAG SEARCH PAGE - Tï¿½m ki?m bï¿½i vi?t theo hashtag
     /// </summary>
     public class HashtagSearchPage : UserControl
     {
@@ -67,10 +67,10 @@ namespace WinForms.UserControls.Social
                 Padding = new Padding(20)
             };
 
-            // Nút Back
+            // Nï¿½t Back
             btnBack = new Button
             {
-                Text = "< Quay lai", // ? S?A: Dùng < thay vì ?, b? d?u
+                Text = "< Quay lai", // ? S?A: Dï¿½ng < thay vï¿½ ?, b? d?u
                 Location = new Point(20, 20),
                 Width = 110, // ? T?ng t? 100 ?? fit text
                 Height = 35,
@@ -99,8 +99,8 @@ namespace WinForms.UserControls.Social
                 Text = "?ang t?i...",
                 Location = new Point(20, 95),
                 AutoSize = true,
-                Font = new Font("Segoe UI", 10F, FontStyle.Regular), // ? Gi? nguyên size
-                ForeColor = Color.FromArgb(128, 128, 128) // ? Màu xám ??m h?n
+                Font = new Font("Segoe UI", 10F, FontStyle.Regular), // ? Gi? nguyï¿½n size
+                ForeColor = Color.FromArgb(128, 128, 128) // ? Mï¿½u xï¿½m ??m h?n
             };
 
             pnlHeader.Controls.Add(btnBack);
@@ -135,7 +135,7 @@ namespace WinForms.UserControls.Social
         }
 
         /// <summary>
-        /// ?? T?i bài vi?t theo hashtag
+        /// ?? T?i bï¿½i vi?t theo hashtag
         /// </summary>
         private async void LoadPostsAsync()
         {
@@ -143,13 +143,13 @@ namespace WinForms.UserControls.Social
 
             try
             {
-                // 1. L?y thông tin hashtag
+                // 1. L?y thï¿½ng tin hashtag
                 var hashtagInfo = await _hashtagService.LayThongTinHashtagAsync(_hashtag);
 
-                // 2. Tìm ki?m bài vi?t
+                // 2. Tï¿½m ki?m bï¿½i vi?t
                 var posts = await _hashtagService.TimKiemBaiDangTheoHashtagAsync(_hashtag, page: 1, pageSize: 20);
 
-                // 3. Update stats - ? S?A: ??n gi?n hóa text
+                // 3. Update stats - ? S?A: ??n gi?n hï¿½a text
                 if (lblStats != null && hashtagInfo != null)
                 {
                     lblStats.Text = $"{posts.Count} bai viet | {hashtagInfo.SoLuotDung} luot su dung"; // ? B? d?u
@@ -162,7 +162,7 @@ namespace WinForms.UserControls.Social
                 // 4. Clear loading
                 flowPosts.Controls.Clear();
 
-                // 5. Hi?n th? k?t qu? - ? S?A: Font rõ ràng h?n
+                // 5. Hi?n th? k?t qu? - ? S?A: Font rï¿½ rï¿½ng h?n
                 if (!posts.Any())
                 {
                     var lblEmpty = new Label
@@ -196,7 +196,7 @@ namespace WinForms.UserControls.Social
                         postCard.LoadPost(post);
                         flowPosts.Controls.Add(postCard);
 
-                        // ? Delay nh? ?? tránh DbContext conflict
+                        // ? Delay nh? ?? trï¿½nh DbContext conflict
                         await Task.Delay(50);
                     }
                 }
