@@ -1,6 +1,7 @@
 ﻿using StudyApp.DAL.Entities.Learn;
 using StudyApp.DTO.Requests.Learn;
 using StudyApp.DTO.Responses.Learn;
+using StudyApp.DTO.Responses.Learn.StudyApp.DTO.Responses.Learn;
 
 namespace StudyApp.BLL.Interfaces.Learn
 {
@@ -46,6 +47,8 @@ namespace StudyApp.BLL.Interfaces.Learn
         // Kiểm soát quyền công khai (Admin có thể ẩn bộ đề nếu nội dung không phù hợp)
         Task<bool> TogglePublicStatusAsync(int id, bool isPublic);
         Task<IEnumerable<BoDeHocResponse>> GetByTagAsync(int tagId);
+        Task<int> GetTotalPhienHocCountAsync();
+        Task<IEnumerable<LichSuHocBoDeResponse>> GetRecentSessionsAsync(int count);
 
     }
 }

@@ -21,5 +21,6 @@ namespace StudyApp.BLL.Interfaces.Social
 
         // Tương tác
         Task<bool> TogglePinPostAsync(int postId, bool pin);
+        Task<int> GetTotalPostsCountAsync();
     }
 }

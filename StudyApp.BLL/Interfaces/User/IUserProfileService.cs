@@ -15,4 +15,6 @@ public interface IUserProfileService
     // ✅ Avatar methods (chỉ giữ 1 UpdateAvatarAsync)
     Task<bool> UpdateAvatarAsync(Guid userId, string avatarUrl);
     Task<string?> GetAvatarUrlAsync(Guid userId);
+    Task<List<NguoiDungResponse>> GetUsersByIdsAsync(List<Guid> userIds);
+    Task<int> GetTotalUsersCountAsync();
 }

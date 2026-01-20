@@ -8,6 +8,7 @@ using StudyApp.DAL.Entities.Learn;
 using StudyApp.DTO.Enums;
 using StudyApp.DTO.Requests.Learn;
 using StudyApp.DTO.Responses.Learn;
+using StudyApp.DTO.Responses.Learn.StudyApp.DTO.Responses.Learn;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 
@@ -16,17 +17,19 @@ namespace StudyApp.BLL.Services.Learn
     public class BoDeHocService : IBoDeHocService
     {
         private readonly LearningDbContext _context;
+        private readonly IUserProfileService _userDb;
         private readonly IMapper _mapper;
         private static readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
         // ✅ THÊM CÁC FIELD NÀY
         private readonly IGamificationService _gamificationService;
         private readonly IDailyStreakService _dailyStreakService;
 
-        public BoDeHocService(LearningDbContext context, IMapper mapper, IGamificationService gamificationService, IDailyStreakService dailyStreakService)
+        public BoDeHocService(LearningDbContext context, IMapper mapper, IGamificationService gamificationService,IUserProfileService userDb, IDailyStreakService dailyStreakService)
         {
             _context = context;
             _mapper = mapper;
             _gamificationService = gamificationService;
+            _userDb = userDb;
             _dailyStreakService = dailyStreakService;
         }
 
@@ -931,6 +934,51 @@ namespace StudyApp.BLL.Services.Learn
                 return _mapper.Map<IEnumerable<BoDeHocResponse>>(list);
             }
             finally { _semaphore.Release(); }
+        }
+        public async Task<int> GetTotalPhienHocCountAsync()
+        {
+            // Đảm bảo an toàn luồng với semaphore đã khai báo trong class của đồng chí
+            await _semaphore.WaitAsync();
+            try
+            {
+                return await _context.PhienHocs.CountAsync();
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
+        }
+        public async Task<IEnumerable<LichSuHocBoDeResponse>> GetRecentSessionsAsync(int count)
+        {
+            // 1. Lấy danh sách lịch sử từ DB hiện tại (Học tập)
+            var historyList = await _context.LichSuHocBoDes
+                .Include(x => x.MaBoDeNavigation) // Bộ đề cùng DB thì vẫn Include được
+                .OrderByDescending(x => x.ThoiGian)
+                .Take(count)
+                .ToListAsync();
+
+            // 2. Map sang List Response (Lúc này TenNguoiDung vẫn đang rỗng)
+            var responseList = _mapper.Map<List<LichSuHocBoDeResponse>>(historyList);
+
+            // 3. Lấy danh sách ID người dùng duy nhất có trong lịch sử
+            var userIds = responseList.Select(x => x.MaNguoiDung).Distinct().ToList();
+
+            // 4. Gọi Service người dùng để lấy thông tin tên (Sử dụng IUserProfileService)
+            // Giả sử đồng chí có hàm lấy danh sách người dùng theo List ID
+            var users = await _userDb.GetUsersByIdsAsync(userIds);
+
+            // 5. Gộp dữ liệu (Join trong bộ nhớ)
+            foreach (var item in responseList)
+            {
+                var user = users.FirstOrDefault(u => u.MaNguoiDung == item.MaNguoiDung);
+                item.TenNguoiDung = user?.HoVaTen ?? "Người dùng hệ thống";
+
+                // Gán tên bộ đề (đã lấy được từ Include ở bước 1)
+                var historyEntity = historyList.First(x => x.MaLichSu == item.MaLichSu);
+                item.TenBoDe = historyEntity.MaBoDeNavigation?.TieuDe ?? "Bị xóa";
+            }
+
+            return responseList;
         }
     }
 

@@ -6,207 +6,240 @@
 
         protected override void Dispose(bool disposing)
         {
-            if (disposing && (components != null))
-                components.Dispose();
+            if (disposing && (components != null)) components.Dispose();
             base.Dispose(disposing);
         }
 
         private void InitializeComponent()
         {
-            tabAdmin = new TabControl();
-            tpBoDe = new TabPage();
-            tpChuDe = new TabPage();
-            tpHashtag = new TabPage();
+            this.tabAdmin = new System.Windows.Forms.TabControl();
+            this.tpBoDe = new System.Windows.Forms.TabPage();
+            this.dgvBoDe = new System.Windows.Forms.DataGridView();
+            this.pnlBoDe = new System.Windows.Forms.Panel();
+            this.btnRestore = new System.Windows.Forms.Button();
+            this.btnTogglePublic = new System.Windows.Forms.Button();
+            this.btnDeleteBoDe = new System.Windows.Forms.Button();
+            this.btnPrevBoDe = new System.Windows.Forms.Button();
+            this.lblPageInfoBoDe = new System.Windows.Forms.Label();
+            this.btnNextBoDe = new System.Windows.Forms.Button();
+            this.tpChuDe = new System.Windows.Forms.TabPage();
+            this.dgvChuDe = new System.Windows.Forms.DataGridView();
+            this.pnlChuDe = new System.Windows.Forms.Panel();
+            this.txtTenChuDe = new System.Windows.Forms.TextBox();
+            this.btnAddChuDe = new System.Windows.Forms.Button();
+            this.btnEditChuDe = new System.Windows.Forms.Button();
+            this.btnDeleteChuDe = new System.Windows.Forms.Button();
+            this.tpHashtag = new System.Windows.Forms.TabPage();
+            this.dgvHashtags = new System.Windows.Forms.DataGridView();
+            this.pnlTag = new System.Windows.Forms.Panel();
+            this.txtTagChuan = new System.Windows.Forms.TextBox();
+            this.btnMergeTag = new System.Windows.Forms.Button();
+            this.btnEditTag = new System.Windows.Forms.Button();
+            this.btnDeleteTag = new System.Windows.Forms.Button();
+            this.tpHocTap = new System.Windows.Forms.TabPage();
+            this.dgvLichSuHoc = new System.Windows.Forms.DataGridView();
+            this.tpThachDau = new System.Windows.Forms.TabPage();
+            this.dgvLichSuThachDau = new System.Windows.Forms.DataGridView();
 
-            dgvBoDe = new DataGridView();
-            dgvChuDe = new DataGridView();
-            dgvHashtags = new DataGridView();
+            this.tabAdmin.SuspendLayout();
+            this.tpBoDe.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.dgvBoDe)).BeginInit();
+            this.pnlBoDe.SuspendLayout();
+            this.tpChuDe.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.dgvChuDe)).BeginInit();
+            this.pnlChuDe.SuspendLayout();
+            this.tpHashtag.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.dgvHashtags)).BeginInit();
+            this.pnlTag.SuspendLayout();
+            this.tpHocTap.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.dgvLichSuHoc)).BeginInit();
+            this.tpThachDau.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.dgvLichSuThachDau)).BeginInit();
+            this.SuspendLayout();
 
-            txtTenChuDe = new TextBox();
-            txtTagChuan = new TextBox();
+            // --- tabAdmin (5 Tab chuyên nghiệp) ---
+            this.tabAdmin.Controls.AddRange(new System.Windows.Forms.Control[] { this.tpBoDe, this.tpChuDe, this.tpHashtag, this.tpHocTap, this.tpThachDau });
+            this.tabAdmin.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tabAdmin.Font = new System.Drawing.Font("Segoe UI Semibold", 10.5F);
+            this.tabAdmin.ItemSize = new System.Drawing.Size(180, 45);
+            this.tabAdmin.Location = new System.Drawing.Point(0, 0);
+            this.tabAdmin.Name = "tabAdmin";
+            this.tabAdmin.SizeMode = System.Windows.Forms.TabSizeMode.Fixed;
 
-            btnRestore = new Button();
-            btnDeleteBoDe = new Button();
-            btnTogglePublic = new Button(); // Nút Sửa trạng thái Bộ đề
+            // ================= TAB 1: BỘ ĐỀ (Có phân trang) =================
+            this.tpBoDe.Controls.Add(this.dgvBoDe);
+            this.tpBoDe.Controls.Add(this.pnlBoDe);
+            this.tpBoDe.Text = "📦 Bộ đề học";
+            this.tpBoDe.BackColor = System.Drawing.Color.White;
+            this.dgvBoDe.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.dgvBoDe.BackgroundColor = System.Drawing.Color.White;
+            this.dgvBoDe.BorderStyle = BorderStyle.None;
 
-            btnAddChuDe = new Button();
-            btnEditChuDe = new Button();    // Nút Sửa Chủ đề
-            btnDeleteChuDe = new Button();
+            this.pnlBoDe.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.pnlBoDe.Height = 70;
+            this.pnlBoDe.BackColor = System.Drawing.Color.FromArgb(248, 249, 250);
+            this.pnlBoDe.Controls.AddRange(new System.Windows.Forms.Control[] {
+                this.btnRestore, this.btnTogglePublic, this.btnDeleteBoDe,
+                this.btnPrevBoDe, this.lblPageInfoBoDe, this.btnNextBoDe
+            });
 
-            btnMergeTag = new Button();
-            btnEditTag = new Button();      // Nút Sửa tên Tag
-            btnDeleteTag = new Button();
+            this.btnRestore.Location = new System.Drawing.Point(15, 15);
+            this.btnRestore.Size = new System.Drawing.Size(120, 38);
+            this.btnRestore.Text = "♻️ Khôi phục";
+            this.btnRestore.BackColor = System.Drawing.Color.FromArgb(0, 123, 255);
+            this.btnRestore.ForeColor = System.Drawing.Color.White;
+            this.btnRestore.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnRestore.Click += new System.EventHandler(this.btnRestore_Click);
 
-            btnPrevBoDe = new Button();
-            btnNextBoDe = new Button();
-            lblPageInfoBoDe = new Label();
+            this.btnTogglePublic.Location = new System.Drawing.Point(145, 15);
+            this.btnTogglePublic.Size = new System.Drawing.Size(120, 38);
+            this.btnTogglePublic.Text = "👁️ Hiện/Ẩn";
+            this.btnTogglePublic.BackColor = System.Drawing.Color.FromArgb(108, 92, 231);
+            this.btnTogglePublic.ForeColor = System.Drawing.Color.White;
+            this.btnTogglePublic.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnTogglePublic.Click += new System.EventHandler(this.btnTogglePublic_Click);
 
-            // ===== TabControl =====
-            tabAdmin.Dock = DockStyle.Fill;
-            tabAdmin.Appearance = TabAppearance.FlatButtons;
-            tabAdmin.TabPages.AddRange(new TabPage[] { tpBoDe, tpChuDe, tpHashtag });
+            this.btnDeleteBoDe.Location = new System.Drawing.Point(275, 15);
+            this.btnDeleteBoDe.Size = new System.Drawing.Size(120, 38);
+            this.btnDeleteBoDe.Text = "🗑️ Xóa";
+            this.btnDeleteBoDe.BackColor = System.Drawing.Color.FromArgb(255, 118, 117);
+            this.btnDeleteBoDe.ForeColor = System.Drawing.Color.White;
+            this.btnDeleteBoDe.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnDeleteBoDe.Click += new System.EventHandler(this.btnDeleteBoDe_Click);
 
-            // ================= TAB 1: BỘ ĐỀ =================
-            tpBoDe.Text = "📦 Quản lý Bộ đề";
-            tpBoDe.BackColor = Color.FromArgb(25, 45, 50);
-            dgvBoDe.Dock = DockStyle.Fill;
-            dgvBoDe.BackgroundColor = Color.FromArgb(30, 30, 30);
-            dgvBoDe.ReadOnly = true;
-            dgvBoDe.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            dgvBoDe.AllowUserToAddRows = false;
+            // Nút Phân trang (Căn phải)
+            this.btnPrevBoDe.Location = new System.Drawing.Point(450, 15);
+            this.btnPrevBoDe.Size = new System.Drawing.Size(45, 38);
+            this.btnPrevBoDe.Text = "◀";
+            this.btnPrevBoDe.Click += new System.EventHandler(this.btnPrevBoDe_Click);
 
-            Panel pnlBoDe = new Panel { Dock = DockStyle.Bottom, Height = 60, Padding = new Padding(10) };
+            this.lblPageInfoBoDe.Location = new System.Drawing.Point(505, 24);
+            this.lblPageInfoBoDe.Size = new System.Drawing.Size(100, 20);
+            this.lblPageInfoBoDe.Text = "Trang 1 / 1";
+            this.lblPageInfoBoDe.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
 
-            btnRestore.Text = "♻️ Khôi phục";
-            btnRestore.Size = new Size(110, 40);
-            btnRestore.FlatStyle = FlatStyle.Flat;
-            btnRestore.BackColor = Color.FromArgb(0, 122, 204);
-            btnRestore.ForeColor = Color.White;
-            btnRestore.Click += btnRestore_Click;
-
-            btnTogglePublic.Text = "👁️ Hiện/Ẩn";
-            btnTogglePublic.Location = new Point(130, 10);
-            btnTogglePublic.Size = new Size(110, 40);
-            btnTogglePublic.FlatStyle = FlatStyle.Flat;
-            btnTogglePublic.BackColor = Color.FromArgb(104, 33, 122); // Màu tím quản trị
-            btnTogglePublic.ForeColor = Color.White;
-            btnTogglePublic.Click += btnTogglePublic_Click;
-
-            btnDeleteBoDe.Text = "🗑️ Xóa";
-            btnDeleteBoDe.Location = new Point(250, 10);
-            btnDeleteBoDe.Size = new Size(110, 40);
-            btnDeleteBoDe.FlatStyle = FlatStyle.Flat;
-            btnDeleteBoDe.BackColor = Color.FromArgb(183, 28, 28);
-            btnDeleteBoDe.ForeColor = Color.White;
-            btnDeleteBoDe.Click += btnDeleteBoDe_Click;
-
-            // Cấu hình Nút QUAY LẠI
-            btnPrevBoDe.Text = "◀";
-            btnPrevBoDe.Location = new Point(380, 10); // Đặt sau nút Xóa
-            btnPrevBoDe.Size = new Size(40, 40);
-            btnPrevBoDe.FlatStyle = FlatStyle.Flat;
-            btnPrevBoDe.BackColor = Color.FromArgb(45, 45, 48);
-            btnPrevBoDe.ForeColor = Color.White;
-            btnPrevBoDe.Click += btnPrevBoDe_Click; // Liên kết sự kiện
-
-            // Cấu hình NHÃN THÔNG TIN TRANG
-            lblPageInfoBoDe.Text = "Trang 1 / 1";
-            lblPageInfoBoDe.Location = new Point(430, 20);
-            lblPageInfoBoDe.AutoSize = true;
-            lblPageInfoBoDe.ForeColor = Color.White;
-            lblPageInfoBoDe.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
-
-            // Cấu hình Nút TIẾP THEO
-            btnNextBoDe.Text = "▶";
-            btnNextBoDe.Location = new Point(530, 10);
-            btnNextBoDe.Size = new Size(40, 40);
-            btnNextBoDe.FlatStyle = FlatStyle.Flat;
-            btnNextBoDe.BackColor = Color.FromArgb(45, 45, 48);
-            btnNextBoDe.ForeColor = Color.White;
-            btnNextBoDe.Click += btnNextBoDe_Click; // Liên kết sự kiện
-
-            pnlBoDe.Controls.AddRange(new Control[] {
-        btnRestore,
-        btnTogglePublic,
-        btnDeleteBoDe,
-        btnPrevBoDe,
-        lblPageInfoBoDe,
-        btnNextBoDe
-    });
-            tpBoDe.Controls.AddRange(new Control[] { dgvBoDe, pnlBoDe });
+            this.btnNextBoDe.Location = new System.Drawing.Point(615, 15);
+            this.btnNextBoDe.Size = new System.Drawing.Size(45, 38);
+            this.btnNextBoDe.Text = "▶";
+            this.btnNextBoDe.Click += new System.EventHandler(this.btnNextBoDe_Click);
 
             // ================= TAB 2: CHỦ ĐỀ =================
-            tpChuDe.Text = "📁 Chủ đề hệ thống";
-            tpChuDe.BackColor = Color.FromArgb(25, 45, 50);
-            dgvChuDe.Dock = DockStyle.Fill;
-            dgvChuDe.BackgroundColor = Color.FromArgb(30, 30, 30);
-            dgvChuDe.ReadOnly = true;
-            dgvChuDe.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            dgvChuDe.AllowUserToAddRows = false;
+            this.tpChuDe.Controls.Add(this.dgvChuDe);
+            this.tpChuDe.Controls.Add(this.pnlChuDe);
+            this.tpChuDe.Text = "📁 Chủ đề";
+            this.tpChuDe.BackColor = System.Drawing.Color.White;
+            this.dgvChuDe.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pnlChuDe.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.pnlChuDe.Height = 70;
+            this.pnlChuDe.BackColor = System.Drawing.Color.FromArgb(248, 249, 250);
+            this.pnlChuDe.Controls.AddRange(new System.Windows.Forms.Control[] { this.txtTenChuDe, this.btnAddChuDe, this.btnEditChuDe, this.btnDeleteChuDe });
 
-            Panel pnlChuDe = new Panel { Dock = DockStyle.Bottom, Height = 60, Padding = new Padding(10) };
-            txtTenChuDe.Size = new Size(180, 30);
-            txtTenChuDe.PlaceholderText = "Tên chủ đề...";
+            this.txtTenChuDe.Location = new System.Drawing.Point(15, 20);
+            this.txtTenChuDe.Size = new System.Drawing.Size(200, 30);
+            this.btnAddChuDe.Location = new System.Drawing.Point(230, 15);
+            this.btnAddChuDe.Size = new System.Drawing.Size(100, 38);
+            this.btnAddChuDe.Text = "➕ Thêm";
+            this.btnAddChuDe.BackColor = System.Drawing.Color.FromArgb(40, 167, 69);
+            this.btnAddChuDe.ForeColor = System.Drawing.Color.White;
+            this.btnAddChuDe.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnAddChuDe.Click += new System.EventHandler(this.btnAddChuDe_Click);
 
-            btnAddChuDe.Text = "➕ Thêm";
-            btnAddChuDe.Location = new Point(200, 10);
-            btnAddChuDe.Size = new Size(90, 35);
-            btnAddChuDe.FlatStyle = FlatStyle.Flat;
-            btnAddChuDe.BackColor = Color.FromArgb(46, 125, 50);
-            btnAddChuDe.ForeColor = Color.White;
-            btnAddChuDe.Click += btnAddChuDe_Click;
+            this.btnEditChuDe.Location = new System.Drawing.Point(340, 15);
+            this.btnEditChuDe.Size = new System.Drawing.Size(100, 38);
+            this.btnEditChuDe.Text = "📝 Sửa";
+            this.btnEditChuDe.BackColor = System.Drawing.Color.FromArgb(0, 123, 255);
+            this.btnEditChuDe.ForeColor = System.Drawing.Color.White;
+            this.btnEditChuDe.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnEditChuDe.Click += new System.EventHandler(this.btnEditChuDe_Click);
 
-            btnEditChuDe.Text = "📝 Sửa";
-            btnEditChuDe.Location = new Point(300, 10);
-            btnEditChuDe.Size = new Size(90, 35);
-            btnEditChuDe.FlatStyle = FlatStyle.Flat;
-            btnEditChuDe.BackColor = Color.FromArgb(0, 122, 204);
-            btnEditChuDe.ForeColor = Color.White;
-            btnEditChuDe.Click += btnEditChuDe_Click;
-
-            btnDeleteChuDe.Text = "🗑️ Xóa";
-            btnDeleteChuDe.Location = new Point(400, 10);
-            btnDeleteChuDe.Size = new Size(90, 35);
-            btnDeleteChuDe.FlatStyle = FlatStyle.Flat;
-            btnDeleteChuDe.BackColor = Color.FromArgb(183, 28, 28);
-            btnDeleteChuDe.ForeColor = Color.White;
-            btnDeleteChuDe.Click += btnDeleteChuDe_Click;
-
-            pnlChuDe.Controls.AddRange(new Control[] { txtTenChuDe, btnAddChuDe, btnEditChuDe, btnDeleteChuDe });
-            tpChuDe.Controls.AddRange(new Control[] { dgvChuDe, pnlChuDe });
+            this.btnDeleteChuDe.Location = new System.Drawing.Point(450, 15);
+            this.btnDeleteChuDe.Size = new System.Drawing.Size(100, 38);
+            this.btnDeleteChuDe.Text = "🗑️ Xóa";
+            this.btnDeleteChuDe.BackColor = System.Drawing.Color.FromArgb(255, 118, 117);
+            this.btnDeleteChuDe.ForeColor = System.Drawing.Color.White;
+            this.btnDeleteChuDe.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnDeleteChuDe.Click += new System.EventHandler(this.btnDeleteChuDe_Click);
 
             // ================= TAB 3: HASHTAG =================
-            tpHashtag.Text = "🏷️ Kiểm soát Hashtag";
-            tpHashtag.BackColor = Color.FromArgb(25, 45, 50);
-            dgvHashtags.Dock = DockStyle.Fill;
-            dgvHashtags.BackgroundColor = Color.FromArgb(30, 30, 30);
-            dgvHashtags.ReadOnly = true;
-            dgvHashtags.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            dgvHashtags.AllowUserToAddRows = false;
+            this.tpHashtag.Controls.Add(this.dgvHashtags);
+            this.tpHashtag.Controls.Add(this.pnlTag);
+            this.tpHashtag.Text = "🏷️ Hashtag";
+            this.tpHashtag.BackColor = System.Drawing.Color.White;
+            this.dgvHashtags.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pnlTag.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.pnlTag.Height = 70;
+            this.pnlTag.BackColor = System.Drawing.Color.FromArgb(248, 249, 250);
+            this.pnlTag.Controls.AddRange(new System.Windows.Forms.Control[] { this.txtTagChuan, this.btnMergeTag, this.btnEditTag, this.btnDeleteTag });
 
-            Panel pnlTag = new Panel { Dock = DockStyle.Bottom, Height = 60, Padding = new Padding(10) };
-            txtTagChuan.Size = new Size(180, 30);
-            txtTagChuan.PlaceholderText = "Tên hashtag...";
+            this.txtTagChuan.Location = new System.Drawing.Point(15, 20);
+            this.txtTagChuan.Size = new System.Drawing.Size(200, 30);
+            this.btnMergeTag.Location = new System.Drawing.Point(230, 15);
+            this.btnMergeTag.Size = new System.Drawing.Size(100, 38);
+            this.btnMergeTag.Text = "🔗 Gộp";
+            this.btnMergeTag.BackColor = System.Drawing.Color.FromArgb(253, 150, 68);
+            this.btnMergeTag.ForeColor = System.Drawing.Color.White;
+            this.btnMergeTag.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnMergeTag.Click += new System.EventHandler(this.btnMergeTag_Click);
 
-            btnMergeTag.Text = "🔗 Gộp";
-            btnMergeTag.Location = new Point(200, 10);
-            btnMergeTag.Size = new Size(90, 35);
-            btnMergeTag.FlatStyle = FlatStyle.Flat;
-            btnMergeTag.BackColor = Color.FromArgb(204, 102, 0);
-            btnMergeTag.ForeColor = Color.White;
-            btnMergeTag.Click += btnMergeTag_Click;
+            this.btnEditTag.Location = new System.Drawing.Point(340, 15);
+            this.btnEditTag.Size = new System.Drawing.Size(100, 38);
+            this.btnEditTag.Text = "📝 Sửa";
+            this.btnEditTag.BackColor = System.Drawing.Color.FromArgb(0, 123, 255);
+            this.btnEditTag.ForeColor = System.Drawing.Color.White;
+            this.btnEditTag.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnEditTag.Click += new System.EventHandler(this.btnEditTag_Click);
 
-            btnEditTag.Text = "📝 Sửa";
-            btnEditTag.Location = new Point(300, 10);
-            btnEditTag.Size = new Size(90, 35);
-            btnEditTag.FlatStyle = FlatStyle.Flat;
-            btnEditTag.BackColor = Color.FromArgb(0, 122, 204);
-            btnEditTag.ForeColor = Color.White;
-            btnEditTag.Click += btnEditTag_Click;
+            this.btnDeleteTag.Location = new System.Drawing.Point(450, 15);
+            this.btnDeleteTag.Size = new System.Drawing.Size(100, 38);
+            this.btnDeleteTag.Text = "🗑️ Xóa";
+            this.btnDeleteTag.BackColor = System.Drawing.Color.FromArgb(255, 118, 117);
+            this.btnDeleteTag.ForeColor = System.Drawing.Color.White;
+            this.btnDeleteTag.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnDeleteTag.Click += new System.EventHandler(this.btnDeleteTag_Click);
 
-            btnDeleteTag.Text = "🗑️ Xóa";
-            btnDeleteTag.Location = new Point(400, 10);
-            btnDeleteTag.Size = new Size(90, 35);
-            btnDeleteTag.FlatStyle = FlatStyle.Flat;
-            btnDeleteTag.BackColor = Color.FromArgb(183, 28, 28);
-            btnDeleteTag.ForeColor = Color.White;
-            btnDeleteTag.Click += btnDeleteTag_Click;
+            // ================= TAB 4 & 5 (Log) =================
+            this.tpHocTap.Controls.Add(this.dgvLichSuHoc);
+            this.tpHocTap.Text = "🔥 Log Học";
+            this.tpHocTap.BackColor = System.Drawing.Color.White;
+            this.dgvLichSuHoc.Dock = System.Windows.Forms.DockStyle.Fill;
 
-            pnlTag.Controls.AddRange(new Control[] { txtTagChuan, btnMergeTag, btnEditTag, btnDeleteTag });
-            tpHashtag.Controls.AddRange(new Control[] { dgvHashtags, pnlTag });
+            this.tpThachDau.Controls.Add(this.dgvLichSuThachDau);
+            this.tpThachDau.Text = "⚔️ Log Thách đấu";
+            this.tpThachDau.BackColor = System.Drawing.Color.White;
+            this.dgvLichSuThachDau.Dock = System.Windows.Forms.DockStyle.Fill;
 
-            Controls.Add(tabAdmin);
-            Size = new Size(1000, 700);
-            BackColor = Color.FromArgb(13, 56, 56);
+            // Finalize
+            this.Controls.Add(this.tabAdmin);
+            this.Size = new System.Drawing.Size(1100, 750);
+            this.tabAdmin.ResumeLayout(false);
+            this.tpBoDe.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.dgvBoDe)).EndInit();
+            this.pnlBoDe.ResumeLayout(false);
+            this.pnlBoDe.PerformLayout();
+            this.tpChuDe.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.dgvChuDe)).EndInit();
+            this.pnlChuDe.ResumeLayout(false);
+            this.pnlChuDe.PerformLayout();
+            this.tpHashtag.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.dgvHashtags)).EndInit();
+            this.pnlTag.ResumeLayout(false);
+            this.pnlTag.PerformLayout();
+            this.tpHocTap.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.dgvLichSuHoc)).EndInit();
+            this.tpThachDau.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.dgvLichSuThachDau)).EndInit();
+            this.ResumeLayout(false);
         }
 
-        private TabControl tabAdmin;
-        private TabPage tpBoDe, tpChuDe, tpHashtag;
-        private DataGridView dgvBoDe, dgvChuDe, dgvHashtags;
-        private TextBox txtTenChuDe, txtTagChuan;
-        private Button btnRestore, btnDeleteBoDe, btnTogglePublic, btnAddChuDe, btnEditChuDe, btnDeleteChuDe, btnMergeTag, btnEditTag, btnDeleteTag;
-        private System.Windows.Forms.Button btnPrevBoDe;
-        private System.Windows.Forms.Button btnNextBoDe;
+        private System.Windows.Forms.TabControl tabAdmin;
+        private System.Windows.Forms.TabPage tpBoDe, tpChuDe, tpHashtag, tpHocTap, tpThachDau;
+        private System.Windows.Forms.DataGridView dgvBoDe, dgvChuDe, dgvHashtags, dgvLichSuHoc, dgvLichSuThachDau;
+        private System.Windows.Forms.Panel pnlBoDe, pnlChuDe, pnlTag;
+        private System.Windows.Forms.TextBox txtTenChuDe, txtTagChuan;
+        private System.Windows.Forms.Button btnRestore, btnDeleteBoDe, btnTogglePublic;
+        private System.Windows.Forms.Button btnAddChuDe, btnEditChuDe, btnDeleteChuDe;
+        private System.Windows.Forms.Button btnMergeTag, btnEditTag, btnDeleteTag;
+        private System.Windows.Forms.Button btnPrevBoDe, btnNextBoDe;
         private System.Windows.Forms.Label lblPageInfoBoDe;
     }
 }

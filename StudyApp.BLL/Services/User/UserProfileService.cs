@@ -164,4 +164,34 @@ public class UserProfileService : IUserProfileService
             return null;
         }
     }
+    public async Task<List<NguoiDungResponse>> GetUsersByIdsAsync(List<Guid> userIds)
+    {
+        if (userIds == null || !userIds.Any())
+        {
+            return new List<NguoiDungResponse>();
+        }
+
+        // Truy vấn danh sách người dùng có ID nằm trong list userIds
+        var users = await _context.NguoiDungs
+            .AsNoTracking() // Tăng tốc độ vì chỉ để hiển thị, không cần theo dõi thay đổi
+            .Where(u => userIds.Contains(u.MaNguoiDung))
+            .ToListAsync();
+
+        return _mapper.Map<List<NguoiDungResponse>>(users);
+    }
+
+    public async Task<int> GetTotalUsersCountAsync()
+    {
+        try
+        {
+            // Sử dụng CountAsync của Entity Framework để đếm trực tiếp từ DB
+            return await _context.NguoiDungs.CountAsync();
+        }
+        catch (Exception ex)
+        {
+            // Log lỗi nếu cần thiết
+            System.Diagnostics.Debug.WriteLine($"❌ Lỗi hàm Count: {ex.Message}");
+            return 0;
+        }
+    }
 }

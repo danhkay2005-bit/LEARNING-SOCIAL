@@ -16,6 +16,10 @@ namespace WinForms.UserControls.Admin
         private readonly IPostService _postService;
         private readonly IUserProfileService _userService;
 
+        private List<dynamic> _allRecentActivities = new List<dynamic>();
+        private int _currentLogPage = 0;
+        private const int LOG_PAGE_SIZE = 10;
+
         public AdminDashboardPage(IBoDeHocService boDeHocService, IPostService postService, IUserProfileService userService)
         {
             InitializeComponent();
@@ -35,34 +39,41 @@ namespace WinForms.UserControls.Admin
         {
             try
             {
-                // 1. Lấy dữ liệu thống kê (Giả lập hoặc từ Service nếu đã có hàm Count)
-                // Lưu ý: Nếu Service chưa có hàm Count, bạn có thể lấy List rồi .Count() 
-                var users = await _userService.TimKiemNguoiDungAsync(""); // Lấy tất cả
-                var posts = await _postService.GetNewsfeedAsync(Guid.Empty, 1, 100);
-                var sets = await _boDeHocService.GetPublicRandomAsync(100);
+                // 1. LẤY DỮ LIỆU THỐNG KÊ (Dùng Task.WhenAll để nạp nhanh hơn)
+                var usersTask = await _userService.GetTotalUsersCountAsync();
+                var postsTask = await _postService.GetTotalPostsCountAsync();
+                var setsTask = await _boDeHocService.GetPublicRandomAsync(100);
+                var sessionsCountTask = await _boDeHocService.GetTotalPhienHocCountAsync();
 
-                // 2. Xóa các thẻ cũ nếu có và thêm thẻ mới
+                
+
+                // 2. CẬP NHẬT CARD THỐNG KÊ
                 pnlStatContainer.Controls.Clear();
-                AddStatCard("NGƯỜI DÙNG", users.Count.ToString(), "👥", Color.FromArgb(0, 122, 204));
-                AddStatCard("BỘ ĐỀ HỌC", sets.Count().ToString(), "📚", Color.FromArgb(46, 125, 50));
-                AddStatCard("BÀI ĐĂNG", posts.Count.ToString(), "🌐", Color.FromArgb(204, 102, 0));
-                AddStatCard("PHIÊN HỌC", "Chua them", "🔥", Color.FromArgb(183, 28, 28));
+                AddStatCard("NGƯỜI DÙNG", usersTask.ToString(), "👥", Color.FromArgb(0, 122, 204));
+                AddStatCard("BÀI ĐĂNG MXH", postsTask.ToString(), "🌐", Color.FromArgb(204, 102, 0));
+                AddStatCard("BỘ ĐỀ HỌC", setsTask.Count().ToString(), "📚", Color.FromArgb(46, 125, 50));
+                AddStatCard("PHIÊN HỌC", sessionsCountTask.ToString(), "🔥", Color.FromArgb(183, 28, 28));
 
-                // 3. Nạp dữ liệu vào Grid (Hoạt động gần đây)
-                var logs = posts.Select(p => new {
-                    ThoiGian = p.ThoiGianTao.HasValue ? p.ThoiGianTao.Value.ToString("dd/MM/yyyy HH:mm") : "",
-                    HanhDong = "Bài đăng mới",
-                    NoiDung = !string.IsNullOrEmpty(p.NoiDung)
-        ? (p.NoiDung.Length > 50 ? p.NoiDung.Substring(0, 50) + "..." : p.NoiDung)
-        : "",
-                    NguoiThucHien = p.TenNguoiDung
-                }).ToList();
+                // 3. NẠP NHẬT KÝ HỌC TẬP (KHÔNG TRỘN NỮA)
+                // Lấy 50 phiên học gần nhất
+                var recentSessions = await _boDeHocService.GetRecentSessionsAsync(50);
 
-                dgvRecentLogs.DataSource = logs;
+                // Đổ trực tiếp vào danh sách hoạt động với cấu trúc đồng nhất
+                _allRecentActivities = recentSessions.Select(s => new {
+                    ThoiGian = s.ThoiGian?.ToString("dd/MM/yyyy HH:mm") ?? "N/A",
+                    HanhDong = "🔥 Học tập",
+                    NoiDung = $"Học bộ đề: {s.TenBoDe}",
+                    KetQua = $"{s.TyLeDung}% Đúng",
+                    NguoiThucHien = s.TenNguoiDung
+                }).Cast<dynamic>().ToList();
+
+                // 4. HIỂN THỊ
+                _currentLogPage = 0;
+                DisplayCurrentLogPage();
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Lỗi nạp dữ liệu Dashboard: " + ex.Message);
+                MessageBox.Show("Lỗi nạp Dashboard: " + ex.Message);
             }
         }
 
@@ -106,6 +117,56 @@ namespace WinForms.UserControls.Admin
             card.Controls.Add(lblVal);
             card.Controls.Add(lblTit);
             pnlStatContainer.Controls.Add(card);
+        }
+
+        private void DisplayCurrentLogPage()
+        {
+            if (_allRecentActivities == null || !_allRecentActivities.Any())
+            {
+                dgvRecentLogs.DataSource = null;
+                lblLogPageInfo.Text = "Không có hoạt động nào";
+                return;
+            }
+
+            var pagedData = _allRecentActivities
+                .Skip(_currentLogPage * LOG_PAGE_SIZE)
+                .Take(LOG_PAGE_SIZE)
+                .ToList();
+
+            dgvRecentLogs.DataSource = pagedData;
+
+            // Cấu hình tiêu đề cột cho chuyên nghiệp
+            if (dgvRecentLogs.Columns != null && dgvRecentLogs.Columns.Count > 0)
+            {
+                var columns = dgvRecentLogs.Columns;
+                if (columns["ThoiGian"] != null)
+                    columns["ThoiGian"]!.HeaderText = "THỜI GIAN";
+                if (columns["HanhDong"] != null)
+                    columns["HanhDong"]!.HeaderText = "HÀNH ĐỘNG";
+                if (columns["NoiDung"] != null)
+                    columns["NoiDung"]!.HeaderText = "CHI TIẾT";
+                if (columns["KetQua"] != null)
+                    columns["KetQua"]!.HeaderText = "KẾT QUẢ";
+                if (columns["NguoiThucHien"] != null)
+                    columns["NguoiThucHien"]!.HeaderText = "NGƯỜI HỌC";
+            }
+
+            // Cập nhật trạng thái nút
+            btnPrevLog.Enabled = _currentLogPage > 0;
+            btnNextLog.Enabled = (_currentLogPage + 1) * LOG_PAGE_SIZE < _allRecentActivities.Count;
+
+            lblLogPageInfo.Text = $"Trang {_currentLogPage + 1} / {Math.Max(1, (int)Math.Ceiling((double)_allRecentActivities.Count / LOG_PAGE_SIZE))}";
+        }
+        private void btnNextLog_Click(object sender, EventArgs e)
+        {
+            _currentLogPage++;
+            DisplayCurrentLogPage();
+        }
+
+        private void btnPrevLog_Click(object sender, EventArgs e)
+        {
+            _currentLogPage--;
+            DisplayCurrentLogPage();
         }
     }
 }

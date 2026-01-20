@@ -31,5 +31,6 @@ namespace StudyApp.BLL.Interfaces.Social
         
         /// Lấy từng số  reaction của bài đăng 
         Task<int> LayTongSoReactionAsync(int maBaiDang);
+
     }
 }

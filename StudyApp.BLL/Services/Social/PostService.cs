@@ -288,5 +288,19 @@ namespace StudyApp.BLL.Services.Social
         }
 
         #endregion
+        public async Task<int> GetTotalPostsCountAsync()
+        {
+            try
+            {
+                // Truy vấn trực tiếp vào bảng BaiDang và đếm theo điều kiện
+                return await _context.Set<BaiDang>()
+                    .CountAsync(x => x.DaXoa != true);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"❌ Lỗi hàm CountPost: {ex.Message}");
+                return 0;
+            }
+        }
     }
 }

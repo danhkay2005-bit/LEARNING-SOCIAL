@@ -7,6 +7,8 @@ namespace StudyApp.DTO.Responses.Learn
         public int MaLichSu { get; set; }
         public Guid MaNguoiDung { get; set; }
 
+        public string TenNguoiDung { get; set; } = string.Empty;
+
         // Thông tin bộ đề
         public int? MaBoDe { get; set; }
         public string? TenBoDe { get; set; } // Thêm trường này để hiển thị lên UI

@@ -2,6 +2,7 @@
 using StudyApp.DAL.Entities.Learn;
 using StudyApp.DTO.Requests.Learn;
 using StudyApp.DTO.Responses.Learn;
+using StudyApp.DTO.Responses.Learn.StudyApp.DTO.Responses.Learn;
 using System;
 
 namespace StudyApp.BLL.Mappings.Learn

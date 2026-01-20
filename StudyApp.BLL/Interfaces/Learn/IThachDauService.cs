@@ -66,5 +66,7 @@ namespace StudyApp.BLL.Interfaces.Learn
         /// Đồng bộ trạng thái câu hỏi qua SignalR.
         /// </summary>
         Task<bool> BaoCaoReadyNextAsync(int maThachDau, Guid userId, int questionIndex);
+
+        Task<IEnumerable<LichSuThachDauResponse>> GetRecentChallengesAsync(int count);
     }
 }
