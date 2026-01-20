@@ -8,11 +8,13 @@ using StudyApp.DTO.Requests.Social;
 using StudyApp.DTO.Responses.Social;
 using System;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows.Forms;
 using WinForms.Forms;
 using WinForms.Forms.Social;
+using WinForms.Helpers;
 using WinForms.UserControls.Quiz;
 
 namespace WinForms.UserControls.Components.Social
@@ -143,11 +145,43 @@ namespace WinForms.UserControls.Components.Social
 
         private void InitializeControls()
         {
-            pnlContainer = new Panel { Dock = DockStyle.Fill, BackColor = Color.White, BorderStyle = BorderStyle.FixedSingle, Padding = new Padding(15), AutoSize = true };
+            pnlContainer = new Panel
+            {
+                Dock = DockStyle.Fill,
+                BackColor = Color.White,
+                Padding = new Padding(15),
+                AutoSize = true,
+                Margin = new Padding(0, 10, 0, 10)
+            };
+
+            pnlContainer.Paint += (s, e) => {
+                UIHelper.DrawRoundedPanel(e.Graphics, new Rectangle(0, 0, pnlContainer.Width - 1, pnlContainer.Height - 1),
+                                 16, Color.FromArgb(220, 220, 220), Color.White);
+            };
 
             // Header
             pnlHeader = new Panel { Dock = DockStyle.Top, Height = 60 };
-            pbAvatar = new PictureBox { Width = 45, Height = 45, Location = new Point(10, 7), SizeMode = PictureBoxSizeMode.StretchImage, BackColor = Color.LightGray, BorderStyle = BorderStyle.FixedSingle };
+            pbAvatar = new PictureBox
+            {
+                Size = new Size(45, 45),
+                Location = new Point(10, 8),
+                SizeMode = PictureBoxSizeMode.StretchImage,
+                Cursor = Cursors.Hand
+            };
+
+            // Bây giờ bạn có thể an toàn đăng ký sự kiện Paint
+            pbAvatar.Paint += (s, e) =>
+            {
+                if (pbAvatar == null) return;
+
+                using var path = new GraphicsPath();
+                path.AddEllipse(0, 0, pbAvatar.Width - 1, pbAvatar.Height - 1);
+                pbAvatar.Region = new Region(path);
+
+                using var pen = new Pen(Color.Gainsboro, 1);
+                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                e.Graphics.DrawEllipse(pen, 1, 1, pbAvatar.Width - 3, pbAvatar.Height - 3);
+            };
             lblAuthorName = new Label { Location = new Point(65, 10), AutoSize = true, Font = new Font("Segoe UI", 10F, FontStyle.Bold), ForeColor = Color.FromArgb(24, 119, 242) };
             lblTimestamp = new Label { Location = new Point(65, 32), AutoSize = true, Font = new Font("Segoe UI", 8F), ForeColor = Color.Gray };
             btnMenu = new Button { Text = "...", Location = new Point(540, 10), Width = 35, Height = 35, FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 16F), Cursor = Cursors.Hand, ForeColor = Color.Gray };
@@ -197,7 +231,7 @@ namespace WinForms.UserControls.Components.Social
 
         private Button CreateActionButton(string text, int x)
         {
-            return new Button
+            var btn = new Button
             {
                 Text = text,
                 Location = new Point(x, 7),
@@ -205,12 +239,23 @@ namespace WinForms.UserControls.Components.Social
                 Height = 32,
                 FlatStyle = FlatStyle.Flat,
                 BackColor = Color.White,
-                Font = new Font("Segoe UI", 9F, FontStyle.Regular), // ✅ SỬA
+                Font = new Font("Segoe UI Semibold", 9F),
                 Cursor = Cursors.Hand,
-                FlatAppearance = { BorderSize = 0 }
+                TabStop = false
             };
-        }
+            btn.FlatAppearance.BorderSize = 0;
 
+            btn.MouseEnter += (s, e) =>
+            {
+                btn.BackColor = Color.FromArgb(240, 242, 245);
+            };
+            btn.MouseLeave += (s, e) =>
+            {
+                btn.BackColor = Color.White;
+            };
+
+            return btn;
+        }
         private void RenderPost()
         {
             if (_post == null) return;
@@ -365,7 +410,7 @@ namespace WinForms.UserControls.Components.Social
                 BackColor = Color.LightGray,
                 BorderStyle = BorderStyle.FixedSingle
             };
-            LoadAvatarImage(pbNestedAvatar, originalPost.HinhDaiDien, originalPost.TenNguoiDung);
+            LoadAvatarImage(pbNestedAvatar!, originalPost.HinhDaiDien, originalPost.TenNguoiDung);
 
             var lblNestedAuthor = new Label
             {
